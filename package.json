@@ -1,0 +1,35 @@
+{
+  "name": "logos-webwallet-sdk",
+  "version": "0.0.1",
+  "description": "Create Logos wallets without a full Logos node",
+  "keywords": [
+    "Logos",
+    "WebWallet"
+  ],
+  "homepage": "https://github.com/LogosNetwork/logos-webwallet-sdk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LogosNetwork/logos-webwallet-sdk.git"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "babel src --presets babel-preset-es2015 --out-dir dist",
+    "prepare": "yarn build"
+  },
+  "author": "Tyler Storm <tyler@prometheanlabs.io>",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-preset-es2015": "^6.24.1"
+  },
+  "dependencies": {
+    "assert": "^1.4.1",
+    "big-integer": "^1.6.26",
+    "blakejs": "^1.1.0",
+    "buffer": "^5.0.8",
+    "nano-base32": "1.0.0",
+    "pbkdf2": "^3.0.14",
+    "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef"
+  }
+}
