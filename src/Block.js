@@ -27,6 +27,7 @@ module.exports = function () {
   var previous;       // send, receive and change
   var destination;    // send
   var amount = bigInt(0);// send and receive
+  var decAmount;      // send
   var source;         // receive and open
   var representative; // open and change
   var account;        // open
