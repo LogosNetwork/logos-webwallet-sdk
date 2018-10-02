@@ -131,8 +131,7 @@ function equal_arrays(array1, array2) {
 }
 
 export const keyFromAccount = function(account) {
-  if ( ( (account.startsWith('xrb_1') || account.startsWith('xrb_3')) && (account.length == 64) )
-  || ( (account.startsWith('lgs_1') || account.startsWith('lgs_3')) && (account.length == 65) ) ) {
+  if (((account.startsWith('xrb_1') || account.startsWith('xrb_3') || account.startsWith('lgs_1') || account.startsWith('lgs_3')) && (account.length == 64))) {
     var account_crop = account.replace('xrb_', '').replace('lgs_', '');
     var isValid = /^[13456789abcdefghijkmnopqrstuwxyz]+$/.test(account_crop);
     if (isValid) {
