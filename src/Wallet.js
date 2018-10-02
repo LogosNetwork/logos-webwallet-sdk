@@ -12,29 +12,6 @@ import { hex_uint8, dec2hex, uint8_hex, accountFromHexKey, stringToHex, keyFromA
 var MAIN_NET_WORK_THRESHOLD = "ffffffc000000000";
 var BLOCK_BIT_LEN = 128;
 
-var ALGO = {
-  SHA1: 'sha1',
-  SHA256: 'sha256'
-};
-
-var ZeroPadding = {
-  /*
-   *   Fills remaining block space with 0x00 bytes
-   *   May cause issues if data ends with any 0x00 bytes
-   */
-
-  pad: function (dataBytes, nBytesPerBlock) {
-    var nPaddingBytes = nBytesPerBlock - dataBytes.length % nBytesPerBlock;
-    var zeroBytes = new Buffer(nPaddingBytes).fill(0x00);
-    return Buffer.concat([dataBytes, zeroBytes]);
-  },
-
-  unpad: function (dataBytes) {
-    var unpaddedHex = dataBytes.toString('hex').replace(/(00)+$/, '');
-    return new Buffer(unpaddedHex, 'hex');
-  }
-};
-
 var Iso10126 = {
   /*
    *   Fills remaining block space with random byte values, except for the
@@ -150,8 +127,8 @@ module.exports = function (password) {
    * @param {Array} message - The message to be signed in a byte array
    * @returns {Array} The 64 byte signature
    */
-  api.sign = function (message) {
-    const pk = current.priv;
+  api.sign = function (message, pk) {
+    if (current.priv) pk = current.priv;
     if (pk.length != 32)
       throw "Invalid Secret Key length. Should be 32 bytes.";
     return nacl.sign.detached(message, pk);

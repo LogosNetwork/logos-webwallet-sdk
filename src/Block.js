@@ -20,14 +20,13 @@ module.exports = function () {
   var worked = false; // if block has work
   var signature = ""; // signature
   var work = "";      // work
-  var blockAmount = bigInt(0);// amount transferred
   var blockAccount;   // account owner of this block
   var origin;			// account sending money in case of receive or open block
   var immutable = false; // if true means block has already been confirmed and cannot be changed, some checks are ignored
 
   var previous;       // send, receive and change
   var destination;    // send
-  var balance;        // send
+  var amount = bigInt(0);// send and receive
   var source;         // receive and open
   var representative; // open and change
   var account;        // open
@@ -49,12 +48,12 @@ module.exports = function () {
         data += MAGIC_NUMBER + VERSION_MAX + VERSION_USING + VERSION_MIN + uint8_hex(blockID[type]) + EXTENSIONS;
         data += previous;
         data += destination
-        data += balance;
+        data += amount;
 
         var context = blake.blake2bInit(32, null);
         blake.blake2bUpdate(context, hex_uint8(previous));
         blake.blake2bUpdate(context, hex_uint8(destination));
-        blake.blake2bUpdate(context, hex_uint8(balance));
+        blake.blake2bUpdate(context, hex_uint8(amount));
         hash = uint8_hex(blake.blake2bFinal(context));
         break;
 
@@ -82,12 +81,12 @@ module.exports = function () {
    *
    * @param {string} previousBlockHash - The previous block 32 byte hash hex encoded
    * @param {string} destinationAccount - The Logos account receiving the money
-   * @param {string} balanceRemaining - Remaining balance after sending this block (Raw)
+   * @param {string} sendAmount - Amount of Logos you wish to send in this block (Raw)
    * @throws An exception on invalid block hash
    * @throws An exception on invalid destination account
-   * @throws An exception on invalid balance
+   * @throws An exception on invalid amount
    */
-  api.setSendParameters = function (previousBlockHash, destinationAccount, balanceRemaining) {
+  api.setSendParameters = function (previousBlockHash, destinationAccount, sendAmount) {
     if (!/[0-9A-F]{64}/i.test(previousBlockHash))
       throw "Invalid previous block hash.";
 
@@ -99,8 +98,8 @@ module.exports = function () {
 
     previous = previousBlockHash;
     destination = pk;
-    decBalance = balanceRemaining;
-    balance = dec2hex(balanceRemaining, 16);
+    decAmount = sendAmount;
+    amount = dec2hex(sendAmount, 16);
     type = 'send';
   }
 
@@ -148,23 +147,6 @@ module.exports = function () {
       throw "Work not valid for block";
     work = hex;
     worked = true;
-  }
-
-  /**
-   * Sets block amount, to be retrieved from it directly instead of calculating it quering the chain
-   *
-   * @param {number} am - The amount
-   */
-  api.setAmount = function (am) {
-    blockAmount = bigInt(am);
-  }
-
-  /**
-   *
-   * @returns blockAmount - The amount transferred in raw
-   */
-  api.getAmount = function () {
-    return blockAmount;
   }
 
   /**
@@ -235,12 +217,12 @@ module.exports = function () {
     return type;
   }
 
-  api.getBalance = function (format = 'dec') {
+  api.getAmount = function (format = 'dec') {
     if (format == 'dec') {
-      var dec = bigInt(hex2dec(balance));
+      var dec = bigInt(hex2dec(amount));
       return dec;
     }
-    return balance;
+    return amount;
   }
 
   /**
@@ -294,7 +276,8 @@ module.exports = function () {
         api.build();
         break;
       case 'send':
-        api.setSendParameters(newPrevious, destination, stringFromHex(balance).replace(RAI_TO_RAW, ''));
+        //TODO FIX THIS its annoying
+        api.setSendParameters(newPrevious, destination, amount);
         api.build();
         break;
       case 'change':
@@ -330,7 +313,7 @@ module.exports = function () {
       case 'send':
         obj.previous = previous;
         obj.destination = accountFromHexKey(destination);
-        obj.balance = balance;
+        obj.amount = amount;
         break;
 
       case 'receive':
@@ -366,10 +349,6 @@ module.exports = function () {
     var extras = {};
 
     extras.blockAccount = blockAccount;
-    if (blockAmount)
-      extras.blockAmount = blockAmount.toString();
-    else
-      extras.blockAmount = 0;
     extras.origin = origin;
     obj.extras = extras;
     obj.version = version;
@@ -387,7 +366,7 @@ module.exports = function () {
         type = 'send';
         previous = obj.previous;
         destination = keyFromAccount(obj.destination);
-        balance = obj.balance;
+        amount = obj.amount;
         break;
 
       case 'receive':
@@ -423,7 +402,7 @@ module.exports = function () {
 
     if (obj.extras !== undefined) {
       api.setAccount(obj.extras.blockAccount);
-      api.setAmount(obj.extras.blockAmount ? obj.extras.blockAmount : 0);
+      api.setAmount(obj.amount ? obj.amount : 0);
       api.setOrigin(obj.extras.origin);
     }
     version = v;
