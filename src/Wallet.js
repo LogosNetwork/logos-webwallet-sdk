@@ -128,7 +128,7 @@ module.exports = function (password) {
    * @returns {Array} The 64 byte signature
    */
   api.sign = function (message, pk) {
-    if (current.priv) pk = current.priv;
+    if (current && current.priv) pk = current.priv;
     if (pk.length != 32)
       throw "Invalid Secret Key length. Should be 32 bytes.";
     return nacl.sign.detached(message, pk);
