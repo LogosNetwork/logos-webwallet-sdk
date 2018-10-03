@@ -53,17 +53,6 @@ module.exports = function (isState = true) {
         previous = previousBlock.getHash(true);
       }
 
-      if (!representative) {
-        if (previousBlock) {
-          if (previousBlock.getRepresentative()) {
-            representative = keyFromAccount(previousBlock.getRepresentative());
-          }
-        }
-
-        if (!representative) // still?
-          throw 'Account representative is missing.';
-      }
-
       if (!amount)
         throw "Amount is not set.";
       if (!link)
@@ -74,7 +63,6 @@ module.exports = function (isState = true) {
       blake.blake2bUpdate(context, hex_uint8(STATE_BLOCK_PREAMBLE));
       blake.blake2bUpdate(context, hex_uint8(keyFromAccount(blockAccount)));
       blake.blake2bUpdate(context, hex_uint8(previous));
-      blake.blake2bUpdate(context, hex_uint8(representative));
       blake.blake2bUpdate(context, hex_uint8(amount));
       blake.blake2bUpdate(context, hex_uint8(link));
       hash = uint8_hex(blake.blake2bFinal(context));
