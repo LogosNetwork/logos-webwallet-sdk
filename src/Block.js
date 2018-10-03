@@ -417,11 +417,7 @@ module.exports = function (isState = true) {
       obj.type = 'state';
       obj.previous = previous;
       obj.link = link;
-      if (obj.representative) {
-        obj.representative = accountFromHexKey(representative); // state blocks are processed with the rep encoded as an account
-      } else {
-        obj.representative = blockAccount;
-      }
+      obj.representative = accountFromHexKey(representative); // state blocks are processed with the rep encoded as an account
       obj.account = blockAccount;
       obj.amount = hex2dec(amount); // needs to be processed in dec in state blocks
     } else {
