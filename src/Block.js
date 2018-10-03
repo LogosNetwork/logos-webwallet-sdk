@@ -46,18 +46,6 @@ module.exports = function (isState = true) {
   api.build = function () {
 
     if (isState) {
-      // check if all fields are set
-      if (!blockAccount) {
-        if (previousBlock) {
-          if (previousBlock.getAccount()){
-            blockAccount = previousBlock.getAccount();
-          }
-        }
-
-        if (!blockAccount) // still?
-          throw "Block is of type state and is missing the owner account. Use setAccount to set it, or switch to legacy blocks.";
-      }
-
       if (!previous) {
         if (!previousBlock) {
           throw "Previous block is missing.";
