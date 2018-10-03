@@ -316,8 +316,6 @@ module.exports = function (isState = true) {
    * @returns {string} The previous block hash
    */
   api.getPrevious = function () {
-    if (type == 'open' || previous == HEX_32_BYTE_ZERO)
-      return account;
     return previous;
   }
 
