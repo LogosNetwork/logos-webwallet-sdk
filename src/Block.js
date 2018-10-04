@@ -187,8 +187,8 @@ module.exports = function (isState = true) {
    * @param {string} hex - The hex encoded 8 byte block hash PoW
    * @throws An exception if work is not enough
    */
-  api.setWork = function (hex) {
-    if (!api.checkWork(hex))
+  api.setWork = function (hex, force = false) {
+    if (!force && !api.checkWork(hex))
       throw "Work not valid for block";
     work = hex;
     worked = true;
