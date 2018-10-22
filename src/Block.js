@@ -1,5 +1,6 @@
 var RAI_TO_RAW = "000000000000000000000000";
 var MAIN_NET_WORK_THRESHOLD = "ffffffc000000000";
+var TEST_NET_WORK_THRESHOLD = "ff00000000000000";
 var STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006';
 var HEX_32_BYTE_ZERO = '0000000000000000000000000000000000000000000000000000000000000000';
 var blake = require('blakejs');
@@ -541,12 +542,14 @@ module.exports = function (isState = true) {
       blockHash = api.getPrevious();
     }
 
-    var t = hex_uint8(MAIN_NET_WORK_THRESHOLD);
+    var t = hex_uint8(TEST_NET_WORK_THRESHOLD);
     var context = blake.blake2bInit(8, null);
     blake.blake2bUpdate(context, hex_uint8(work).reverse());
     blake.blake2bUpdate(context, hex_uint8(blockHash));
     var threshold = blake.blake2bFinal(context).reverse();
-
+    console.log(threshold)
+    console.log(t)
+    return true
     if (threshold[0] == t[0])
       if (threshold[1] == t[1])
         if (threshold[2] == t[2])
