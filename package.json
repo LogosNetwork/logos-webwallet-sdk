@@ -1,5 +1,5 @@
 {
-  "name": "logos-webwallet-sdk",
+  "name": "@logosnetwork/logos-webwallet-sdk",
   "version": "0.0.1",
   "description": "Create Logos wallets without a full Logos node",
   "keywords": [
@@ -9,7 +9,7 @@
   "homepage": "https://github.com/LogosNetwork/logos-webwallet-sdk",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LogosNetwork/logos-webwallet-sdk.git"
+    "url": "git+https://github.com/LogosNetwork/logos-webwallet-sdk.git"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -31,5 +31,8 @@
     "nano-base32": "1.0.0",
     "pbkdf2": "^3.0.14",
     "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef"
+  },
+  "bugs": {
+    "url": "https://github.com/LogosNetwork/logos-webwallet-sdk/issues"
   }
 }
