@@ -83,7 +83,7 @@ module.exports = function (password) {
   var api = {};                       // wallet public methods
   var _private = {};                  // wallet private methods
 
-  var officialRepresentative = "xrb_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo"; // Change this so you don't vote for offical rep
+  var officialRepresentative = "lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo"; // Change this so you don't vote for offical rep
 
   var current;                        // current active key (shortcut for keys[currentIdx])
   var currentIdx = -1;                // key being used

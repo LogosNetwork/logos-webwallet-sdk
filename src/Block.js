@@ -233,7 +233,7 @@ module.exports = function (isState = true) {
 
   /**
    * Sets the account which sent the block
-   * @param {string} acc - The xrb account
+   * @param {string} acc - The lgs account
    */
   api.setOrigin = function (acc) {
     if (type == 'receive' || type == 'open')

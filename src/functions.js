@@ -24,7 +24,7 @@ export const accountFromHexKey = function (hex) {
   var checksum_bytes = blake.blake2b(key_bytes, null, 5).reverse();
   var checksum = nanoBase32.encode(checksum_bytes);
   var c_account = nanoBase32.encode(key_bytes);
-  return 'xrb_' + c_account + checksum;
+  return 'lgs_' + c_account + checksum;
 };
 
 export const parseAccount = function(str) {
@@ -131,8 +131,8 @@ function equal_arrays(array1, array2) {
 }
 
 export const keyFromAccount = function(account) {
-  if (((account.startsWith('xrb_1') || account.startsWith('xrb_3') || account.startsWith('lgs_1') || account.startsWith('lgs_3')) && (account.length == 64))) {
-    var account_crop = account.replace('xrb_', '').replace('lgs_', '');
+  if ((account.startsWith('lgs_1') || account.startsWith('lgs_3')) && account.length == 64) {
+    var account_crop = account.replace('lgs_', '');
     var isValid = /^[13456789abcdefghijkmnopqrstuwxyz]+$/.test(account_crop);
     if (isValid) {
       var key_bytes = nanoBase32.decode(account_crop.substring(0, 52));
