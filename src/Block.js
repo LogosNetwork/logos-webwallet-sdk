@@ -1,6 +1,7 @@
 var RAI_TO_RAW = "000000000000000000000000";
 var MAIN_NET_WORK_THRESHOLD = "ffffffc000000000";
 var TEST_NET_WORK_THRESHOLD = "ff00000000000000";
+var testNet = false;
 var STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006';
 var HEX_32_BYTE_ZERO = '0000000000000000000000000000000000000000000000000000000000000000';
 var blake = require('blakejs');
@@ -211,6 +212,24 @@ module.exports = function (isState = true) {
   api.getAmount = function () {
     return amount;
   }
+
+  /**
+   * Sets whether you are on TestNet or MainNet
+   *
+   * @param {boolean} testNet - True if you are on TestNet or False if you are on MainNet
+   */
+  api.setTestNet = function (tn) {
+    testNet = tn;
+  };
+
+  /**
+   *
+   * @returns TestNet - True or False value of if you are on the TestNet or not.
+   */
+  api.getTestNet = function () {
+    return testNet;
+  };
+
 
   /**
    * Sets the account owner of the block
@@ -542,19 +561,16 @@ module.exports = function (isState = true) {
       blockHash = api.getPrevious();
     }
 
-    var t = hex_uint8(TEST_NET_WORK_THRESHOLD);
+    var t = hex_uint8(MAIN_NET_WORK_THRESHOLD);
+    if (testNet) {
+      t = hex_uint8(TEST_NET_WORK_THRESHOLD);
+    }
     var context = blake.blake2bInit(8, null);
     blake.blake2bUpdate(context, hex_uint8(work).reverse());
     blake.blake2bUpdate(context, hex_uint8(blockHash));
     var threshold = blake.blake2bFinal(context).reverse();
-    console.log(threshold)
-    console.log(t)
-    return true
-    if (threshold[0] == t[0])
-      if (threshold[1] == t[1])
-        if (threshold[2] == t[2])
-          if (threshold[3] >= t[3])
-            return true;
+    if (testNet && threshold[0] == t[0]) return true;
+    if (!testNet && threshold[0] == t[0] && threshold[1] == t[1] && threshold[2] == t[2] && threshold[3] >= t[3]) return true;
     return false;
   }
 
