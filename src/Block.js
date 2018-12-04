@@ -31,6 +31,7 @@ module.exports = function (isState = true) {
 
   var previous;       // send, receive and change // it's the block hash
   var destination;    // send
+  var transaction_fee = bigInt(0);// send
   var source;         // receive and open
   var representative; // open and change
   var account;        // open
@@ -59,6 +60,9 @@ module.exports = function (isState = true) {
         throw "Amount is not set.";
       if (!link)
         throw "State block link is missing.";
+      if (!transaction_fee)
+        throw "Transaction fee is missing.";
+      
 
       // all good here, compute the block hash
       var context = blake.blake2bInit(32, null);
@@ -66,6 +70,7 @@ module.exports = function (isState = true) {
       blake.blake2bUpdate(context, hex_uint8(keyFromAccount(blockAccount)));
       blake.blake2bUpdate(context, hex_uint8(previous));
       blake.blake2bUpdate(context, hex_uint8(representative));
+      blake.blake2bUpdate(context, hex_uint8(transaction_fee));
       blake.blake2bUpdate(context, hex_uint8(amount));
       blake.blake2bUpdate(context, hex_uint8(link));
       hash = uint8_hex(blake.blake2bFinal(context));
@@ -76,6 +81,7 @@ module.exports = function (isState = true) {
           blake.blake2bUpdate(context, hex_uint8(previous));
           blake.blake2bUpdate(context, hex_uint8(destination));
           blake.blake2bUpdate(context, hex_uint8(amount));
+          blake.blake2bUpdate(context, hex_uint8(transaction_fee));
           hash = uint8_hex(blake.blake2bFinal(context));
           break;
 
@@ -120,7 +126,7 @@ module.exports = function (isState = true) {
    * @throws An exception on invalid destination account
    * @throws An exception on invalid amount
    */
-  api.setSendParameters = function (previousBlockHash, destinationAccount, sendAmount, previousBlk = false) {
+  api.setSendParameters = function (previousBlockHash, destinationAccount, sendAmount, previousBlk = false, transactionFee = "10000000000000000000000") {
     if (previousBlk) {
       previousBlock = previousBlk;
       previousBlockHash = previousBlk.getHash(true);
@@ -138,6 +144,7 @@ module.exports = function (isState = true) {
     _private.reset();
     previous = previousBlockHash;
     destination = pk;
+    transaction_fee = dec2hex(transactionFee, 16);
     decAmount = sendAmount;
     amount = dec2hex(sendAmount, 16);
 
@@ -211,6 +218,23 @@ module.exports = function (isState = true) {
    */
   api.getAmount = function () {
     return amount;
+  }
+
+  /**
+   * Sets transaction fee
+   *
+   * @param {number} am - The amount
+   */
+  api.setTransactionFee = function (am) {
+    transaction_fee = bigInt(am);
+  }
+
+  /**
+   *
+   * @returns transaction fee - The amount in raw
+   */
+  api.getTransactionFee = function () {
+    return transaction_fee;
   }
 
   /**
@@ -437,6 +461,7 @@ module.exports = function (isState = true) {
       obj.previous = previous;
       obj.link = link;
       obj.representative = accountFromHexKey(representative); // state blocks are processed with the rep encoded as an account
+      obj.transaction_fee = hex2dec(amount);
       obj.account = blockAccount;
       obj.amount = hex2dec(amount); // needs to be processed in dec in state blocks
     } else {
@@ -445,6 +470,7 @@ module.exports = function (isState = true) {
         case 'send':
           obj.previous = previous;
           obj.destination = accountFromHexKey(destination);
+          obj.transaction_fee = transaction_fee;
           obj.amount = amount;
           break;
 
@@ -550,6 +576,7 @@ module.exports = function (isState = true) {
     if (obj.extras !== undefined) {
       api.setAccount(obj.extras.blockAccount);
       api.setAmount(obj.extras.amount ? obj.extras.amount : 0);
+      api.setTransactionFee(obj.extras.transaction_fee ? obj.extras.transaction_fee : 0);
       api.setOrigin(obj.extras.origin);
     }
 
