@@ -1,7 +1,7 @@
 var RAI_TO_RAW = "000000000000000000000000";
 var MAIN_NET_WORK_THRESHOLD = "ffffffc000000000";
 var TEST_NET_WORK_THRESHOLD = "ff00000000000000";
-var testNet = false;
+var testNet = true;
 var STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006';
 var HEX_32_BYTE_ZERO = '0000000000000000000000000000000000000000000000000000000000000000';
 var blake = require('blakejs');
@@ -461,7 +461,7 @@ module.exports = function (isState = true) {
       obj.previous = previous;
       obj.link = link;
       obj.representative = accountFromHexKey(representative); // state blocks are processed with the rep encoded as an account
-      obj.transaction_fee = hex2dec(amount);
+      obj.transaction_fee = hex2dec(transaction_fee);
       obj.account = blockAccount;
       obj.amount = hex2dec(amount); // needs to be processed in dec in state blocks
     } else {
