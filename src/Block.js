@@ -70,8 +70,8 @@ module.exports = function (isState = true) {
       blake.blake2bUpdate(context, hex_uint8(keyFromAccount(blockAccount)));
       blake.blake2bUpdate(context, hex_uint8(previous));
       blake.blake2bUpdate(context, hex_uint8(representative));
-      blake.blake2bUpdate(context, hex_uint8(transaction_fee));
       blake.blake2bUpdate(context, hex_uint8(amount));
+      blake.blake2bUpdate(context, hex_uint8(transaction_fee));
       blake.blake2bUpdate(context, hex_uint8(link));
       hash = uint8_hex(blake.blake2bFinal(context));
     } else { // legacy block
