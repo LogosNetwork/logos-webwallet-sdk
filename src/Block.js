@@ -1,4 +1,4 @@
-import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, keyFromAccount, hexToDec } from './functions'
+import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, keyFromAccount, hexToDec } from './Functions'
 
 const MAIN_NET_WORK_THRESHOLD = 'ffffffc000000000'
 const TEST_NET_WORK_THRESHOLD = 'ff00000000000000'

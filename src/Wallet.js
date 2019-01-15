@@ -1,4 +1,4 @@
-import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, stringToHex, keyFromAccount } from './functions'
+import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, stringToHex, keyFromAccount } from './Functions'
 const pbkdf2 = require('pbkdf2')
 const crypto = require('crypto')
 const assert = require('assert')
