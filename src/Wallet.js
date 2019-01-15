@@ -73,7 +73,7 @@ const AES = {
   }
 }
 
-var KEY_TYPE = {
+const KEY_TYPE = {
   SEEDED: 'seeded',
   EXPLICIT: 'explicit'
 }
@@ -662,7 +662,7 @@ module.exports = (password) => {
    * @param {string} blockHash - The hash of the block we are confirming
    */
   api.removePendingBlock = (blockHash) => {
-    var found = false
+    let found = false
     for (let i in current.pendingBlocks) {
       const tmp = current.pendingBlocks[i]
       if (tmp.getHash(true) === blockHash) {
@@ -739,7 +739,7 @@ module.exports = (password) => {
     walletPendingBlocks.push(blk)
 
     // check if we have received work already
-    var worked = false
+    let worked = false
     for (let i in remoteWork) {
       if (remoteWork[i].hash === blk.getPrevious()) {
         if (remoteWork[i].worked) {
@@ -1029,58 +1029,6 @@ module.exports = (password) => {
     }
   }
 
-  api.importBlock = (blk, acc, broadcast = true) => {
-    api.useAccount(acc)
-    blk.setAccount(acc)
-    if (!blk.ready()) throw new Error('Block should be complete.')
-    current.lastPendingBlock = blk.getHash(true)
-
-    // check if there is a conflicting block pending
-    for (let i in current.pendingBlocks) {
-      if (current.pendingBlocks[i].getPrevious() === blk.getPrevious()) {
-        // conflict
-        _private.fixPreviousChange(blk.getPrevious(), blk.getHash(true), acc)
-      }
-    }
-
-    current.pendingBlocks.push(blk)
-    walletPendingBlocks.push(blk)
-    api.confirmBlock(blk.getHash(true), broadcast)
-  }
-
-  api.importForkedBlock = (blk, acc) => {
-    api.useAccount(acc)
-    const prev = blk.getPrevious()
-
-    for (let i = current.chain.length - 1; i >= 0; i--) {
-      if (current.chain[i].getPrevious() === prev) {
-        // fork found, delete block and its successors
-        current.chain.splice(i, current.chain.length)
-
-        // delete pending blocks if any
-        current.pendingBlocks = []
-
-        // import new block
-        api.importBlock(blk, acc)
-        return true
-      }
-    }
-    return false
-  }
-
-  _private.fixPreviousChange = (oldPrevious, newPrevious, acc) => {
-    api.useAccount(acc)
-    for (let i in current.pendingBlocks) {
-      if (current.pendingBlocks[i].getPrevious() === oldPrevious) {
-        const oldHash = current.pendingBlocks[i].getHash(true)
-        current.pendingBlocks[i].changePrevious(newPrevious)
-        const newHash = current.pendingBlocks[i].getHash(true)
-        current.lastPendingBlock = newHash
-        _private.fixPreviousChange(oldHash, newHash, acc)
-      }
-    }
-  }
-
   api.getLoginKey = () => {
     return loginKey
   }
@@ -1110,7 +1058,7 @@ module.exports = (password) => {
 
     pack.accounts = []
     for (let i in keys) {
-      let key = keys[i]
+      const key = keys[i]
       switch (key.type) {
         case KEY_TYPE.SEEDED:
           pack.accounts.push({
@@ -1134,7 +1082,7 @@ module.exports = (password) => {
     pack = stringToHex(pack)
     pack = Buffer.from(pack, 'hex')
 
-    let context = blake.blake2bInit(32)
+    const context = blake.blake2bInit(32)
     blake.blake2bUpdate(context, pack)
     const checksum = blake.blake2bFinal(context)
 
@@ -1167,7 +1115,7 @@ module.exports = (password) => {
     loginKey = walletData.loginKey !== undefined ? walletData.loginKey : false
 
     for (let i in (walletData.accounts || [])) {
-      let acc = walletData.accounts[i]
+      const acc = walletData.accounts[i]
       switch (acc.type) {
         case KEY_TYPE.SEEDED: {
           let key = _private.newKeyDataFromSeed(acc.seedIndex)
@@ -1201,13 +1149,13 @@ module.exports = (password) => {
     const payload = bytes.slice(48)
     const key = pbkdf2.pbkdf2Sync(passPhrase, salt, iterations, 32, 'sha1')
 
-    let options = {}
+    const options = {}
     options.padding = options.padding || Iso10126
-    var decryptedBytes = AES.decrypt(payload, key, salt, options)
+    const decryptedBytes = AES.decrypt(payload, key, salt, options)
 
-    var context = blake.blake2bInit(32)
+    const context = blake.blake2bInit(32)
     blake.blake2bUpdate(context, decryptedBytes)
-    var hash = uint8ToHex(blake.blake2bFinal(context))
+    const hash = uint8ToHex(blake.blake2bFinal(context))
 
     if (hash !== checksum.toString('hex').toUpperCase()) return false
     return decryptedBytes

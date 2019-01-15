@@ -1,44 +1,33 @@
-var RAI_TO_RAW = "000000000000000000000000";
-var MAIN_NET_WORK_THRESHOLD = "ffffffc000000000";
-var TEST_NET_WORK_THRESHOLD = "ff00000000000000";
-var testNet = true;
-var STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006';
-var HEX_32_BYTE_ZERO = '0000000000000000000000000000000000000000000000000000000000000000';
-var blake = require('blakejs');
-var bigInt = require('big-integer');
-import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, keyFromAccount, hexToDec, stringFromHex } from './functions';
+import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, keyFromAccount, hexToDec } from './functions'
 
-var blockID = { invalid: 0, not_a_block: 1, send: 2, receive: 3, open: 4, change: 5 }
+const MAIN_NET_WORK_THRESHOLD = 'ffffffc000000000'
+const TEST_NET_WORK_THRESHOLD = 'ff00000000000000'
+const STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006'
+const blake = require('blakejs')
+const bigInt = require('big-integer')
 
-module.exports = function (isState = true) {
-  var api = {};       // public methods
-  var _private = {};  // private methods
-  var data = "";      // raw block to be relayed to the network directly
-  var type;           // block type
-  var hash;           // block hash
-  var signed = false; // if block has signature
-  var worked = false; // if block has work
-  var signature = ""; // signature
-  var work = "";      // work
-  var amount = bigInt(0);// amount transferred
-  var decAmount;
-  var blockAccount;   // account owner of this block
-  var origin;			// account sending money in case of receive or open block
-  var immutable = false; // if true means block has already been confirmed and cannot be changed, some checks are ignored
-  var isState = isState; // state or legacy block
-  var isSending;
-  var isReceiving;
+module.exports = () => {
+  const api = {} // public methods
+  const _private = {} // private methods
+  let hash // block hash
+  let signed = false // if block has signature
+  let worked = false // if block has work
+  let signature = '' // signature
+  let work = '' // work
+  let testNet = true
+  let amount = bigInt(0) // amount transferred
+  let blockAccount // account owner of this block
+  let immutable = false // if true means block has already been confirmed and cannot be changed, some checks are ignored
 
-  var previous;       // send, receive and change // it's the block hash
-  var destination;    // send
-  var transaction_fee = bigInt(0);// send
-  var source;         // receive and open
-  var representative; // open and change
-  var account;        // open
-  var previousBlock; // the whole previous block, data type = Block
-  var link;           // state blocks
+  let previous // previous block hash
+  let destination // send
+  let transactionFee = bigInt(0) // send
+  let source // receive and open
+  let representative // open and change
+  let previousBlock // the whole previous block, data type = Block
+  let link // state blocks
 
-  var version = 1;		// to make updates compatible with previous versions of the wallet
+  let version = 1 // to make updates compatible with previous versions of the wallet
 
   /**
    * Builds the block and calculates the hash
@@ -46,73 +35,30 @@ module.exports = function (isState = true) {
    * @throws An exception on invalid type
    * @returns {Array} The block hash
    */
-  api.build = function () {
-
-    if (isState) {
-      if (!previous) {
-        if (!previousBlock) {
-          throw "Previous block is missing.";
-        }
-        previous = previousBlock.getHash(true);
+  api.build = () => {
+    if (!previous) {
+      if (!previousBlock) {
+        throw new Error('Previous block is missing.')
       }
-
-      if (!amount)
-        throw "Amount is not set.";
-      if (!link)
-        throw "State block link is missing.";
-      if (!transaction_fee)
-        throw "Transaction fee is missing.";
-      
-
-      // all good here, compute the block hash
-      var context = blake.blake2bInit(32, null);
-      blake.blake2bUpdate(context, hexToUint8(STATE_BLOCK_PREAMBLE));
-      blake.blake2bUpdate(context, hexToUint8(keyFromAccount(blockAccount)));
-      blake.blake2bUpdate(context, hexToUint8(previous));
-      blake.blake2bUpdate(context, hexToUint8(representative));
-      blake.blake2bUpdate(context, hexToUint8(amount));
-      blake.blake2bUpdate(context, hexToUint8(transaction_fee));
-      blake.blake2bUpdate(context, hexToUint8(link));
-      hash = uint8ToHex(blake.blake2bFinal(context));
-    } else { // legacy block
-      switch (type) {
-        case 'send':
-          var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hexToUint8(previous));
-          blake.blake2bUpdate(context, hexToUint8(destination));
-          blake.blake2bUpdate(context, hexToUint8(amount));
-          blake.blake2bUpdate(context, hexToUint8(transaction_fee));
-          hash = uint8ToHex(blake.blake2bFinal(context));
-          break;
-
-        case 'receive':
-          var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hexToUint8(previous));
-          blake.blake2bUpdate(context, hexToUint8(source));
-          hash = uint8ToHex(blake.blake2bFinal(context));
-          break;
-
-        case 'open':
-          var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hexToUint8(source));
-          blake.blake2bUpdate(context, hexToUint8(representative));
-          blake.blake2bUpdate(context, hexToUint8(account));
-          hash = uint8ToHex(blake.blake2bFinal(context));
-          break;
-
-        case 'change':
-          var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hexToUint8(previous));
-          blake.blake2bUpdate(context, hexToUint8(representative));
-          hash = uint8ToHex(blake.blake2bFinal(context));
-          break;
-
-        default:
-          throw "Block parameters need to be set first.";
-      }
+      previous = previousBlock.getHash(true)
     }
 
-    return hash;
+    if (!amount) throw new Error('Amount is not set.')
+    if (!link) throw new Error('State block link is missing.')
+    if (!transactionFee) throw new Error('Transaction fee is missing.')
+
+    // all good here, compute the block hash
+    const context = blake.blake2bInit(32, null)
+    blake.blake2bUpdate(context, hexToUint8(STATE_BLOCK_PREAMBLE))
+    blake.blake2bUpdate(context, hexToUint8(keyFromAccount(blockAccount)))
+    blake.blake2bUpdate(context, hexToUint8(previous))
+    blake.blake2bUpdate(context, hexToUint8(representative))
+    blake.blake2bUpdate(context, hexToUint8(amount))
+    blake.blake2bUpdate(context, hexToUint8(transactionFee))
+    blake.blake2bUpdate(context, hexToUint8(link))
+    hash = uint8ToHex(blake.blake2bFinal(context))
+
+    return hash
   }
 
   /**
@@ -126,68 +72,38 @@ module.exports = function (isState = true) {
    * @throws An exception on invalid destination account
    * @throws An exception on invalid amount
    */
-  api.setSendParameters = function (previousBlockHash, destinationAccount, sendAmount, previousBlk = false, transactionFee = "10000000000000000000000") {
+  api.setSendParameters = (previousBlockHash, destinationAccount, sendAmount, previousBlk = false, transactionFee = '10000000000000000000000') => {
     if (previousBlk) {
-      previousBlock = previousBlk;
-      previousBlockHash = previousBlk.getHash(true);
+      previousBlock = previousBlk
+      previousBlockHash = previousBlk.getHash(true)
     }
 
-    if (!/[0-9A-F]{64}/i.test(previousBlockHash))
-      throw "Invalid previous block hash.";
+    if (!/[0-9A-F]{64}/i.test(previousBlockHash)) throw new Error('Invalid previous block hash.')
 
+    let pk
     try {
-      var pk = keyFromAccount(destinationAccount);
+      pk = keyFromAccount(destinationAccount)
     } catch (err) {
-      throw "Invalid destination account.";
+      throw new Error('Invalid destination account.')
     }
 
-    _private.reset();
-    previous = previousBlockHash;
-    destination = pk;
-    transaction_fee = decToHex(transactionFee, 16);
-    decAmount = sendAmount;
-    amount = decToHex(sendAmount, 16);
+    _private.reset()
+    previous = previousBlockHash
+    destination = pk
+    transactionFee = decToHex(transactionFee, 16)
+    amount = decToHex(sendAmount, 16)
 
-    if (isState) {
-      link = destination;
-      isSending = true;
-    } else {
-      type = 'send';
-    }
+    link = destination
   }
-
-  /**
-   * Sets the change parameters and builds the block
-   *
-   * @param {string} previousBlockHash - The previous block 32 byte hash hex encoded
-   * @param {string} representativeAccount - The account to be set as representative
-   * @throws An exception on invalid previousBlockHash
-   * @throws An exception on invalid representative account
-   */
-  api.setChangeParameters = function (previousBlockHash, representativeAccount) {
-    if (!/[0-9A-F]{64}/i.test(previousBlockHash))
-      throw "Invalid previous block hash.";
-
-    try {
-      representative = keyFromAccount(representativeAccount);
-    } catch (err) {
-      throw "Invalid representative account.";
-    }
-
-    _private.reset();
-    previous = previousBlockHash;
-    type = "change";
-  }
-
 
   /**
    * Sets the block signature
    *
    * @param {string} hex - The hex encoded 64 byte block hash signature
    */
-  api.setSignature = function (hex) {
-    signature = hex;
-    signed = true;
+  api.setSignature = (hex) => {
+    signature = hex
+    signed = true
   }
 
   /**
@@ -197,27 +113,26 @@ module.exports = function (isState = true) {
    * @throws An exception if work is not enough
    */
   api.setWork = function (hex, force = false) {
-    if (!force && !api.checkWork(hex))
-      throw "Work not valid for block";
-    work = hex;
-    worked = true;
+    if (!force && !api.checkWork(hex)) throw new Error('Work not valid for block')
+    work = hex
+    worked = true
   }
 
   /**
    * Sets block amount, to be retrieved from it directly instead of calculating it quering the chain
    *
-   * @param {number} am - The amount
+   * @param {number | string} am - The amount
    */
-  api.setAmount = function (am) {
-    amount = bigInt(am);
+  api.setAmount = (am) => {
+    amount = bigInt(am)
   }
 
   /**
    *
-   * @returns blockAmount - The amount transferred in raw
+   * @returns {bigInteger} blockAmount - The amount transferred in raw
    */
-  api.getAmount = function () {
-    return amount;
+  api.getAmount = () => {
+    return amount
   }
 
   /**
@@ -226,15 +141,15 @@ module.exports = function (isState = true) {
    * @param {number} am - The amount
    */
   api.setTransactionFee = function (am) {
-    transaction_fee = bigInt(am);
+    transactionFee = bigInt(am)
   }
 
   /**
    *
    * @returns {bigInteger} transaction fee - The amount in raw
    */
-  api.getTransactionFee = function () {
-    return transaction_fee;
+  api.getTransactionFee = () => {
+    return transactionFee
   }
 
   /**
@@ -242,49 +157,33 @@ module.exports = function (isState = true) {
    *
    * @param {boolean} testNet - True if you are on TestNet or False if you are on MainNet
    */
-  api.setTestNet = function (tn) {
-    testNet = tn;
-  };
+  api.setTestNet = (tn) => {
+    testNet = tn
+  }
 
   /**
    *
    * @returns TestNet - True or False value of if you are on the TestNet or not.
    */
-  api.getTestNet = function () {
-    return testNet;
-  };
-
+  api.getTestNet = () => {
+    return testNet
+  }
 
   /**
    * Sets the account owner of the block
    *
    * @param {string} acc - The Logos account
    */
-  api.setAccount = function (acc) {
-    blockAccount = acc;
-    if (type == 'send')
-      origin = acc;
+  api.setAccount = (acc) => {
+    blockAccount = acc
   }
 
   /**
    *
    * @returns blockAccount
    */
-  api.getAccount = function () {
-    return blockAccount;
-  }
-
-  /**
-   * Sets the account which sent the block
-   * @param {string} acc - The lgs account
-   */
-  api.setOrigin = function (acc) {
-    if (type == 'receive' || type == 'open')
-      origin = acc;
-    else if (isState) {
-      isReceiving = true;
-      origin = acc;
-    }
+  api.getAccount = () => {
+    return blockAccount
   }
 
   /**
@@ -292,47 +191,23 @@ module.exports = function (isState = true) {
    * @param {string} rep - The representative account or its hex encoded public key
    * @throws An exception if rep is invalid and a rep cannot be pulled from the previous block
    */
-  api.setRepresentative = function (rep) {
-    if (/[0-9A-F]{64}/i.test(rep))
-      representative = rep;
-    else {
-      rep = keyFromAccount(rep);
-      if (rep)
-        representative = rep;
-      else {
+  api.setRepresentative = (rep) => {
+    if (/[0-9A-F]{64}/i.test(rep)) {
+      representative = rep
+    } else {
+      rep = keyFromAccount(rep)
+      if (rep) {
+        representative = rep
+      } else {
         // try to pull it from the previous block
-        rep = false;
+        rep = false
         if (previousBlock) {
-          rep = keyFromAccount(previousBlock.getRepresentative());
+          rep = keyFromAccount(previousBlock.getRepresentative())
         }
-        if (!rep)
-          throw "Representative passed is invalid. Also, unable to get the one used on the previous block.";
-        representative = rep;
+        if (!rep) throw new Error('Representative passed is invalid. Also, unable to get the one used on the previous block.')
+        representative = rep
       }
     }
-  }
-
-  /**
-   *
-   * @returns originAccount
-   */
-  api.getOrigin = function () {
-    if (type == 'receive' || type == 'open' || (isState && isReceiving))
-      return origin;
-    if (type == 'send' || (isState && isSending))
-      return blockAccount;
-    return false;
-  }
-
-  /**
-   *
-   * @returns destinationAccount
-   */
-  api.getDestination = function () {
-    if (type == 'send' || ( isSending && isState) )
-      return accountFromHexKey(destination);
-    if (type == 'receive' || type == 'open' || (isState && isReceiving))
-      return blockAccount;
   }
 
   /**
@@ -340,18 +215,12 @@ module.exports = function (isState = true) {
    * @param {boolean} hex - To get the hash hex encoded
    * @returns {string} The block hash
    */
-  api.getHash = function (hex = false) {
-    return hex ? hash : hexToUint8(hash);
+  api.getHash = (hex = false) => {
+    return hex ? hash : hexToUint8(hash)
   }
 
-  api.getSignature = function () {
-    return signature;
-  }
-
-  api.getType = function () {
-    if (isState)
-      return 'state';
-    return type;
+  api.getSignature = () => {
+    return signature
   }
 
   /**
@@ -359,266 +228,135 @@ module.exports = function (isState = true) {
    *
    * @returns {string} The previous block hash
    */
-  api.getPrevious = function () {
-    return previous;
+  api.getPrevious = () => {
+    return previous
   }
 
-  api.getSource = function () {
-    return source;
+  api.getSource = () => {
+    return source
   }
 
-  api.getRepresentative = function () {
-    if (type == 'change' || type == 'open' || isState)
-      return accountFromHexKey(representative);
-    else
-      return false;
+  api.getRepresentative = () => {
+    return accountFromHexKey(representative)
   }
 
-  api.getLink = function () {
-    if (isState)
-      return link;
+  api.getLink = () => {
+    return link
   }
 
-  api.getLinkAsAccount = function () {
-    if (isState)
-      return accountFromHexKey(link);
+  api.getLinkAsAccount = () => {
+    return accountFromHexKey(link)
   }
 
-  api.ready = function () {
-    return signed && worked;
+  api.ready = () => {
+    return signed && worked
   }
 
-  api.setImmutable = function (bool) {
-    immutable = bool;
+  api.setImmutable = (bool) => {
+    immutable = bool
   }
 
   api.isImmutable = function () {
-    return immutable;
-  }
-
-  /**
-   * Changes the previous block hash and rebuilds the block
-   *
-   * @param {string} newPrevious - The previous block hash hex encoded
-   * @throws An exception if its an open block
-   * @throws An exception if block is not built
-   */
-  api.changePrevious = function (newPrevious) {
-    switch (type) {
-      case 'open':
-        throw 'Open has no previous block.';
-        break;
-      case 'receive':
-        api.setReceiveParameters(newPrevious, source);
-        api.build();
-        break;
-      case 'send':
-        api.setSendParameters(newPrevious, destination, stringFromHex(amount).replace(RAI_TO_RAW, ''));
-        api.build();
-        break;
-      case 'change':
-        api.setChangeParameters(newPrevious, representative);
-        api.build();
-        break;
-      default:
-        throw "Invalid block type";
-    }
-  }
-
-  /**
-   * Sets the previous block.
-   * @param {Block} blk - The previous block
-   * @throws An exception if the arg passed is not a block.
-   * @throws An exception if the arg passed is an incomplete block.
-   */
-  api.setPreviousBlock = function (blk) {
-    let h;
-    try{
-      h = blk.build();
-    } catch(e) {
-      // block incomplete
-      throw "Block is incomplete.";
-    }
-
-    if(!h) {
-      // not a Block
-      throw "Arg passed is not a Block";
-    }
-    previousBlock = blk;
+    return immutable
   }
 
   /**
    *
    * @returns {string} The block JSON encoded to be broadcasted with RPC
    */
-  api.getJSONBlock = function (pretty = false) {
-    if (!signed)
-      throw "Block lacks signature";
-    var obj = {};
+  api.getJSONBlock = (pretty = false) => {
+    if (!signed) throw new Error('Block lacks signature')
+    const obj = {}
 
-    if (isState) {
-      obj.type = 'state';
-      obj.previous = previous;
-      obj.link = link;
-      obj.representative = accountFromHexKey(representative); // state blocks are processed with the rep encoded as an account
-      obj.transaction_fee = hexToDec(transaction_fee);
-      obj.account = blockAccount;
-      obj.amount = hexToDec(amount); // needs to be processed in dec in state blocks
+    obj.type = 'state'
+    obj.previous = previous
+    obj.link = link
+    obj.representative = accountFromHexKey(representative) // state blocks are processed with the rep encoded as an account
+    obj.transactionFee = hexToDec(transactionFee)
+    obj.account = blockAccount
+    obj.amount = hexToDec(amount) // needs to be processed in dec in state blocks
+
+    obj.work = work
+    obj.signature = signature
+
+    if (pretty) return JSON.stringify(obj, null, 2)
+    return JSON.stringify(obj)
+  }
+
+  api.getEntireJSON = () => {
+    const obj = JSON.parse(api.getJSONBlock())
+    const extras = {}
+
+    extras.blockAccount = blockAccount
+    if (amount) {
+      extras.amount = amount.toString()
     } else {
-      obj.type = type;
-      switch (type) {
-        case 'send':
-          obj.previous = previous;
-          obj.destination = accountFromHexKey(destination);
-          obj.transaction_fee = transaction_fee;
-          obj.amount = amount;
-          break;
-
-        case 'receive':
-          obj.previous = previous;
-          obj.source = source;
-          break;
-
-        case 'open':
-          obj.source = source;
-          obj.representative = accountFromHexKey(representative ? representative : account);
-          obj.account = accountFromHexKey(account);
-          break;
-
-        case 'change':
-          obj.previous = previous;
-          obj.representative = accountFromHexKey(representative);
-          break;
-
-        default:
-          throw "Invalid block type.";
-      }
+      extras.amount = 0
     }
-
-    obj.work = work;
-    obj.signature = signature;
-
-    if (pretty)
-      return JSON.stringify(obj, null, 2);
-    return JSON.stringify(obj);
+    obj.extras = extras
+    obj.version = version
+    return JSON.stringify(obj)
   }
 
-  api.getEntireJSON = function () {
-    var obj = JSON.parse(api.getJSONBlock());
-    var extras = {};
-
-    extras.blockAccount = blockAccount;
-    if (amount)
-      extras.amount = amount.toString();
-    else
-      extras.amount = 0;
-    extras.origin = origin;
-    obj.extras = extras;
-    obj.version = version;
-    return JSON.stringify(obj);
-  }
-
-  api.buildFromJSON = function (json, v = false) {
-    if (typeof(json) != 'object')
-      var obj = JSON.parse(json);
-    else
-      var obj = json;
-
-    isState = false;
-    switch (obj.type) {
-      case 'send':
-        type = 'send';
-        previous = obj.previous;
-        destination = keyFromAccount(obj.destination);
-        amount = obj.amount;
-        break;
-
-      case 'receive':
-        type = 'receive';
-        previous = obj.previous;
-        source = obj.source;
-        break;
-
-      case 'open':
-        type = 'open';
-        source = obj.source;
-        representative = keyFromAccount(obj.representative);
-        account = keyFromAccount(obj.account);
-        break;
-
-      case 'change':
-        type = 'change';
-        previous = obj.previous;
-        representative = keyFromAccount(obj.representative);
-        break;
-
-      case 'state':
-        isState = true;
-        blockAccount = obj.account;
-        previous = obj.previous;
-        api.setRepresentative(obj.representative);
-        amount = decToHex(obj.amount, 16);
-        link = obj.link;
-        break;
-
-      default:
-        throw "Invalid block type.";
+  api.buildFromJSON = (json, v = false) => {
+    let obj
+    if (typeof json !== 'object') {
+      obj = JSON.parse(json)
+    } else {
+      obj = json
     }
+    blockAccount = obj.account
+    previous = obj.previous
+    api.setRepresentative(obj.representative)
+    amount = decToHex(obj.amount, 16)
+    link = obj.link
+    signature = obj.signature
+    work = obj.work
 
-    signature = obj.signature;
-    work = obj.work;
-
-    if (work)
-      worked = true;
-    if (signature)
-      signed = true;
+    if (work) worked = true
+    if (signature) signed = true
 
     if (obj.extras !== undefined) {
-      api.setAccount(obj.extras.blockAccount);
-      api.setAmount(obj.extras.amount ? obj.extras.amount : 0);
-      api.setTransactionFee(obj.extras.transaction_fee ? obj.extras.transaction_fee : 0);
-      api.setOrigin(obj.extras.origin);
+      api.setAccount(obj.extras.blockAccount)
+      api.setAmount(obj.extras.amount ? obj.extras.amount : 0)
+      api.setTransactionFee(obj.extras.transactionFee ? obj.extras.transactionFee : 0)
     }
 
-    api.build();
+    api.build()
   }
 
-  api.checkWork = function (work, blockHash = false) {
+  api.checkWork = (work, blockHash = false) => {
     if (blockHash === false) {
-      blockHash = api.getPrevious();
+      blockHash = api.getPrevious()
     }
-
-    var t = hexToUint8(MAIN_NET_WORK_THRESHOLD);
+    let t = hexToUint8(MAIN_NET_WORK_THRESHOLD)
     if (testNet) {
-      t = hexToUint8(TEST_NET_WORK_THRESHOLD);
+      t = hexToUint8(TEST_NET_WORK_THRESHOLD)
     }
-    var context = blake.blake2bInit(8, null);
-    blake.blake2bUpdate(context, hexToUint8(work).reverse());
-    blake.blake2bUpdate(context, hexToUint8(blockHash));
-    var threshold = blake.blake2bFinal(context).reverse();
-    if (testNet && threshold[0] == t[0]) return true;
-    if (!testNet && threshold[0] == t[0] && threshold[1] == t[1] && threshold[2] == t[2] && threshold[3] >= t[3]) return true;
-    return false;
+    var context = blake.blake2bInit(8, null)
+    blake.blake2bUpdate(context, hexToUint8(work).reverse())
+    blake.blake2bUpdate(context, hexToUint8(blockHash))
+    var threshold = blake.blake2bFinal(context).reverse()
+    if (testNet && threshold[0] === t[0]) return true
+    if (!testNet && threshold[0] === t[0] && threshold[1] === t[1] && threshold[2] === t[2] && threshold[3] >= t[3]) return true
+    return false
   }
 
-  api.getVersion = function () {
-    return version;
+  api.getVersion = () => {
+    return version
   }
 
-  api.setVersion = function (v) {
-    version = v;
+  api.setVersion = (v) => {
+    version = v
   }
 
-  _private.reset = function () {
-    isSending = false;
-    isReceiving = false;
-    signed = false;
-    worked = false;
-    signature = null;
-    work = null;
-    origin = false;
-    destination = false;
+  _private.reset = () => {
+    signed = false
+    worked = false
+    signature = null
+    work = null
+    destination = false
   }
 
-  return api;
+  return api
 }
