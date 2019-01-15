@@ -6,7 +6,7 @@ var STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000
 var HEX_32_BYTE_ZERO = '0000000000000000000000000000000000000000000000000000000000000000';
 var blake = require('blakejs');
 var bigInt = require('big-integer');
-import { hex_uint8, dec2hex, uint8_hex, accountFromHexKey, keyFromAccount, hex2dec, stringFromHex } from './functions';
+import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, keyFromAccount, hexToDec, stringFromHex } from './functions';
 
 var blockID = { invalid: 0, not_a_block: 1, send: 2, receive: 3, open: 4, change: 5 }
 
@@ -66,45 +66,45 @@ module.exports = function (isState = true) {
 
       // all good here, compute the block hash
       var context = blake.blake2bInit(32, null);
-      blake.blake2bUpdate(context, hex_uint8(STATE_BLOCK_PREAMBLE));
-      blake.blake2bUpdate(context, hex_uint8(keyFromAccount(blockAccount)));
-      blake.blake2bUpdate(context, hex_uint8(previous));
-      blake.blake2bUpdate(context, hex_uint8(representative));
-      blake.blake2bUpdate(context, hex_uint8(amount));
-      blake.blake2bUpdate(context, hex_uint8(transaction_fee));
-      blake.blake2bUpdate(context, hex_uint8(link));
-      hash = uint8_hex(blake.blake2bFinal(context));
+      blake.blake2bUpdate(context, hexToUint8(STATE_BLOCK_PREAMBLE));
+      blake.blake2bUpdate(context, hexToUint8(keyFromAccount(blockAccount)));
+      blake.blake2bUpdate(context, hexToUint8(previous));
+      blake.blake2bUpdate(context, hexToUint8(representative));
+      blake.blake2bUpdate(context, hexToUint8(amount));
+      blake.blake2bUpdate(context, hexToUint8(transaction_fee));
+      blake.blake2bUpdate(context, hexToUint8(link));
+      hash = uint8ToHex(blake.blake2bFinal(context));
     } else { // legacy block
       switch (type) {
         case 'send':
           var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hex_uint8(previous));
-          blake.blake2bUpdate(context, hex_uint8(destination));
-          blake.blake2bUpdate(context, hex_uint8(amount));
-          blake.blake2bUpdate(context, hex_uint8(transaction_fee));
-          hash = uint8_hex(blake.blake2bFinal(context));
+          blake.blake2bUpdate(context, hexToUint8(previous));
+          blake.blake2bUpdate(context, hexToUint8(destination));
+          blake.blake2bUpdate(context, hexToUint8(amount));
+          blake.blake2bUpdate(context, hexToUint8(transaction_fee));
+          hash = uint8ToHex(blake.blake2bFinal(context));
           break;
 
         case 'receive':
           var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hex_uint8(previous));
-          blake.blake2bUpdate(context, hex_uint8(source));
-          hash = uint8_hex(blake.blake2bFinal(context));
+          blake.blake2bUpdate(context, hexToUint8(previous));
+          blake.blake2bUpdate(context, hexToUint8(source));
+          hash = uint8ToHex(blake.blake2bFinal(context));
           break;
 
         case 'open':
           var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hex_uint8(source));
-          blake.blake2bUpdate(context, hex_uint8(representative));
-          blake.blake2bUpdate(context, hex_uint8(account));
-          hash = uint8_hex(blake.blake2bFinal(context));
+          blake.blake2bUpdate(context, hexToUint8(source));
+          blake.blake2bUpdate(context, hexToUint8(representative));
+          blake.blake2bUpdate(context, hexToUint8(account));
+          hash = uint8ToHex(blake.blake2bFinal(context));
           break;
 
         case 'change':
           var context = blake.blake2bInit(32, null);
-          blake.blake2bUpdate(context, hex_uint8(previous));
-          blake.blake2bUpdate(context, hex_uint8(representative));
-          hash = uint8_hex(blake.blake2bFinal(context));
+          blake.blake2bUpdate(context, hexToUint8(previous));
+          blake.blake2bUpdate(context, hexToUint8(representative));
+          hash = uint8ToHex(blake.blake2bFinal(context));
           break;
 
         default:
@@ -144,9 +144,9 @@ module.exports = function (isState = true) {
     _private.reset();
     previous = previousBlockHash;
     destination = pk;
-    transaction_fee = dec2hex(transactionFee, 16);
+    transaction_fee = decToHex(transactionFee, 16);
     decAmount = sendAmount;
-    amount = dec2hex(sendAmount, 16);
+    amount = decToHex(sendAmount, 16);
 
     if (isState) {
       link = destination;
@@ -231,7 +231,7 @@ module.exports = function (isState = true) {
 
   /**
    *
-   * @returns transaction fee - The amount in raw
+   * @returns {bigInteger} transaction fee - The amount in raw
    */
   api.getTransactionFee = function () {
     return transaction_fee;
@@ -341,7 +341,7 @@ module.exports = function (isState = true) {
    * @returns {string} The block hash
    */
   api.getHash = function (hex = false) {
-    return hex ? hash : hex_uint8(hash);
+    return hex ? hash : hexToUint8(hash);
   }
 
   api.getSignature = function () {
@@ -461,9 +461,9 @@ module.exports = function (isState = true) {
       obj.previous = previous;
       obj.link = link;
       obj.representative = accountFromHexKey(representative); // state blocks are processed with the rep encoded as an account
-      obj.transaction_fee = hex2dec(transaction_fee);
+      obj.transaction_fee = hexToDec(transaction_fee);
       obj.account = blockAccount;
-      obj.amount = hex2dec(amount); // needs to be processed in dec in state blocks
+      obj.amount = hexToDec(amount); // needs to be processed in dec in state blocks
     } else {
       obj.type = type;
       switch (type) {
@@ -557,7 +557,7 @@ module.exports = function (isState = true) {
         blockAccount = obj.account;
         previous = obj.previous;
         api.setRepresentative(obj.representative);
-        amount = dec2hex(obj.amount, 16);
+        amount = decToHex(obj.amount, 16);
         link = obj.link;
         break;
 
@@ -588,13 +588,13 @@ module.exports = function (isState = true) {
       blockHash = api.getPrevious();
     }
 
-    var t = hex_uint8(MAIN_NET_WORK_THRESHOLD);
+    var t = hexToUint8(MAIN_NET_WORK_THRESHOLD);
     if (testNet) {
-      t = hex_uint8(TEST_NET_WORK_THRESHOLD);
+      t = hexToUint8(TEST_NET_WORK_THRESHOLD);
     }
     var context = blake.blake2bInit(8, null);
-    blake.blake2bUpdate(context, hex_uint8(work).reverse());
-    blake.blake2bUpdate(context, hex_uint8(blockHash));
+    blake.blake2bUpdate(context, hexToUint8(work).reverse());
+    blake.blake2bUpdate(context, hexToUint8(blockHash));
     var threshold = blake.blake2bFinal(context).reverse();
     if (testNet && threshold[0] == t[0]) return true;
     if (!testNet && threshold[0] == t[0] && threshold[1] == t[1] && threshold[2] == t[2] && threshold[3] >= t[3]) return true;

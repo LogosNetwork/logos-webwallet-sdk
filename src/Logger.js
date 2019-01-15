@@ -1,42 +1,35 @@
-module.exports = function Logger(logToConsole) {
+module.exports = () => {
+  let api = {}
+  let logs = []
+  let warnings = []
+  let errors = []
+  let consoleLog = false
 
-  var api = {};
-  var logs = [];
-  var warnings = [];
-  var errors = [];
-  var consoleLog = false;
-
-
-  api.getLogs = function () {
-    return logs;
+  api.getLogs = () => {
+    return logs
   }
 
-  api.getWarnings = function () {
-    return warnings;
+  api.getWarnings = () => {
+    return warnings
   }
 
-  api.getErrors = function () {
-    return errors;
+  api.getErrors = () => {
+    return errors
   }
 
-  api.log = function (data) {
-    logs.push(data);
-    if (consoleLog)
-      console.log(data);
+  api.log = (data) => {
+    logs.push(data)
+    if (consoleLog) console.log(data)
   }
 
-  api.warn = function (data) {
-    warnings.push(data);
-    if (consoleLog)
-      console.warn(data);
+  api.warn = (data) => {
+    warnings.push(data)
+    if (consoleLog) console.warn(data)
   }
 
-  api.error = function (data) {
-    errors.push(data);
-    if (consoleLog)
-      console.error(data);
+  api.error = (data) => {
+    errors.push(data)
+    if (consoleLog) console.error(data)
   }
-
-  return api;
-
-};
+  return api
+}

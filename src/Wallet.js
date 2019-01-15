@@ -1,38 +1,37 @@
-var pbkdf2 = require('pbkdf2');
-var crypto = require('crypto');
-var assert = require('assert');
-var Block = require('./Block');
-var Buffer = require('buffer').Buffer;
-var blake = require('blakejs');
-var bigInt = require('big-integer');
-var Logger = require('./Logger');
-var nacl = require('tweetnacl/nacl'); //We are using a forked version of tweetnacl, so need to import nacl
-import { hex_uint8, dec2hex, uint8_hex, accountFromHexKey, stringToHex, keyFromAccount } from './functions';
+import { hexToUint8, decToHex, uint8ToHex, accountFromHexKey, stringToHex, keyFromAccount } from './functions'
+const pbkdf2 = require('pbkdf2')
+const crypto = require('crypto')
+const assert = require('assert')
+const Block = require('./Block')
+const Buffer = require('buffer').Buffer
+const blake = require('blakejs')
+const bigInt = require('big-integer')
+const Logger = require('./Logger')
+const nacl = require('tweetnacl/nacl') // We are using a forked version of tweetnacl, so need to import nacl
 
-var MAIN_NET_WORK_THRESHOLD = "ffffffc000000000";
-var BLOCK_BIT_LEN = 128;
-var HEX_32_BYTE_ZERO = '0000000000000000000000000000000000000000000000000000000000000000';
+const MAIN_NET_WORK_THRESHOLD = 'ffffffc000000000'
+const BLOCK_BIT_LEN = 128
 
-var Iso10126 = {
+const Iso10126 = {
   /*
    *   Fills remaining block space with random byte values, except for the
    *   final byte, which denotes the byte length of the padding
    */
 
   pad: function (dataBytes, nBytesPerBlock) {
-    var nPaddingBytes = nBytesPerBlock - dataBytes.length % nBytesPerBlock;
-    var paddingBytes = crypto.randomBytes(nPaddingBytes - 1);
-    var endByte = new Buffer([nPaddingBytes]);
-    return Buffer.concat([dataBytes, paddingBytes, endByte]);
+    const nPaddingBytes = nBytesPerBlock - dataBytes.length % nBytesPerBlock
+    const paddingBytes = crypto.randomBytes(nPaddingBytes - 1)
+    const endByte = Buffer.from([nPaddingBytes])
+    return Buffer.concat([dataBytes, paddingBytes, endByte])
   },
 
   unpad: function (dataBytes) {
-    var nPaddingBytes = dataBytes[dataBytes.length - 1];
-    return dataBytes.slice(0, -nPaddingBytes);
+    const nPaddingBytes = dataBytes[dataBytes.length - 1]
+    return dataBytes.slice(0, -nPaddingBytes)
   }
-};
+}
 
-var AES = {
+const AES = {
   CBC: 'aes-256-cbc',
   OFB: 'aes-256-ofb',
   ECB: 'aes-256-ecb',
@@ -44,82 +43,93 @@ var AES = {
    */
 
   encrypt: function (dataBytes, key, salt, options) {
-    options = options || {};
-    assert(Buffer.isBuffer(dataBytes), 'expected `dataBytes` to be a Buffer');
-    assert(Buffer.isBuffer(key), 'expected `key` to be a Buffer');
-    assert(Buffer.isBuffer(salt) || salt === null, 'expected `salt` to be a Buffer or null');
+    options = options || {}
+    assert(Buffer.isBuffer(dataBytes), 'expected `dataBytes` to be a Buffer')
+    assert(Buffer.isBuffer(key), 'expected `key` to be a Buffer')
+    assert(Buffer.isBuffer(salt) || salt === null, 'expected `salt` to be a Buffer or null')
 
-    var cipher = crypto.createCipheriv(options.mode || AES.CBC, key, salt || '');
-    cipher.setAutoPadding(!options.padding);
+    const cipher = crypto.createCipheriv(options.mode || AES.CBC, key, salt || '')
+    cipher.setAutoPadding(!options.padding)
 
-    if (options.padding) dataBytes = options.padding.pad(dataBytes, BLOCK_BIT_LEN / 8);
-    var encryptedBytes = Buffer.concat([cipher.update(dataBytes), cipher.final()]);
+    if (options.padding) dataBytes = options.padding.pad(dataBytes, BLOCK_BIT_LEN / 8)
+    const encryptedBytes = Buffer.concat([cipher.update(dataBytes), cipher.final()])
 
-    return encryptedBytes;
+    return encryptedBytes
   },
 
   decrypt: function (dataBytes, key, salt, options) {
-    options = options || {};
-    assert(Buffer.isBuffer(dataBytes), 'expected `dataBytes` to be a Buffer');
-    assert(Buffer.isBuffer(key), 'expected `key` to be a Buffer');
-    assert(Buffer.isBuffer(salt) || salt === null, 'expected `salt` to be a Buffer or null');
+    options = options || {}
+    assert(Buffer.isBuffer(dataBytes), 'expected `dataBytes` to be a Buffer')
+    assert(Buffer.isBuffer(key), 'expected `key` to be a Buffer')
+    assert(Buffer.isBuffer(salt) || salt === null, 'expected `salt` to be a Buffer or null')
 
-    var decipher = crypto.createDecipheriv(options.mode || AES.CBC, key, salt || '');
-    decipher.setAutoPadding(!options.padding);
+    const decipher = crypto.createDecipheriv(options.mode || AES.CBC, key, salt || '')
+    decipher.setAutoPadding(!options.padding)
 
-    var decryptedBytes = Buffer.concat([decipher.update(dataBytes), decipher.final()]);
-    if (options.padding) decryptedBytes = options.padding.unpad(decryptedBytes);
+    let decryptedBytes = Buffer.concat([decipher.update(dataBytes), decipher.final()])
+    if (options.padding) decryptedBytes = options.padding.unpad(decryptedBytes)
 
-    return decryptedBytes;
+    return decryptedBytes
   }
-};
+}
 
 var KEY_TYPE = {
   SEEDED: 'seeded',
-  EXPLICIT: 'explicit',
+  EXPLICIT: 'explicit'
 }
 
-module.exports = function (password) {
-  var api = {};                       // wallet public methods
-  var _private = {};                  // wallet private methods
+module.exports = (password) => {
+  let api = {} // wallet public methods
+  let _private = {} // wallet private methods
 
-  var officialRepresentative = "lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo"; // Change this so you don't vote for offical rep
+  const officialRepresentative = 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo' // Change this so you don't vote for offical rep
 
-  var current;                        // current active key (shortcut for keys[currentIdx])
-  var currentIdx = -1;                // key being used
-  var minimumReceive = bigInt(1);     // minimum amount to pocket
+  let current // current active key (shortcut for keys[currentIdx])
+  let currentIdx = -1 // active wallet index being used
 
-  var keys = [];                      // wallet keys, accounts, and all necessary data
-  var readyBlocks = [];               // wallet blocks signed and worked, ready to broadcast and add to chain
-  var errorBlocks = [];               // blocks which could not be confirmed
+  let keys = [] // wallet keys, accounts, and all necessary data
+  let readyBlocks = [] // wallet blocks signed and worked, ready to be broadcasted
+  let walletPendingBlocks = [] // Blocks that have been broadcasted but not yet have been confirmed
+  let errorBlocks = [] // blocks which could not be confirmed
 
-  var remoteWork = [];                // work pool
+  let remoteWork = [] // work pool
 
-  var seed = "";                      // wallet seed
-  var lastKeyFromSeed = -1;           // seed index
-  var passPhrase = password;          // wallet password
-  var iterations = 5000;              // pbkdf2 iterations
-  var ciphered = true;
-  var loginKey = false;               // key to tell the server when the wallet was successfully decrypted
-  var version = 2;                    // wallet version
-  var lightWallet = false;            // if true, partial chains can be stored, balances should be set from outside
+  let seed = '' // wallet seed
+  let lastKeyFromSeed = -1 // seed index
+  let passPhrase = password // wallet password
+  let iterations = 5000 // pbkdf2 iterations
+  let ciphered = true
+  let loginKey = false // key to tell the server when the wallet was successfully decrypted
+  let version = 1 // wallet version
 
-  var logger = new Logger();
+  let logger = new Logger()
 
-  api.debug = function () {
-    console.log(readyBlocks);
+  api.debug = () => {
+    console.log(readyBlocks)
   }
 
-  api.debugChain = function () {
-    api.useAccount(keys[1].account);
+  api.debugSendChain = (acc) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
     for (let i in current.chain) {
-      console.log(current.chain[i].getHash(true));
-      console.log(current.chain[i].getPrevious());
+      console.log(current.chain[i].getHash(true))
+      console.log(current.chain[i].getPrevious())
     }
+    api.useAccount(temp)
   }
 
-  api.setLogger = function (loggerObj) {
-    logger = loggerObj;
+  api.debugReceiveChain = (acc) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    for (let i in current.receiveChain) {
+      console.log(current.receiveChain[i].getHash(true))
+      console.log(current.receiveChain[i].getPrevious())
+    }
+    api.useAccount(temp)
+  }
+
+  api.setLogger = (loggerObj) => {
+    logger = loggerObj
   }
 
   /**
@@ -128,42 +138,26 @@ module.exports = function (password) {
    * @param {Array} message - The message to be signed in a byte array
    * @returns {Array} The 64 byte signature
    */
-  api.sign = function (message, pk) {
-    if (current && current.priv) pk = current.priv;
-    if (pk.length != 32)
-      throw "Invalid Secret Key length. Should be 32 bytes.";
-    return nacl.sign.detached(message, pk);
+  api.sign = (message, pk) => {
+    if (current && current.priv) pk = current.priv
+    if (pk.length !== 32) throw new Error('Invalid Secret Key length. Should be 32 bytes.')
+    return nacl.sign.detached(message, pk)
   }
 
-  api.changePass = function (pswd, newPass) {
-    if (ciphered)
-      throw "Wallet needs to be decrypted first.";
-    if (pswd == passPhrase) {
-      passPhrase = newPass;
-      logger.log("Password changed");
+  api.changePass = (pswd, newPass) => {
+    if (ciphered) throw new Error('Wallet needs to be decrypted first.')
+    if (pswd === passPhrase) {
+      passPhrase = newPass
+      logger.log('Password changed')
+    } else {
+      throw new Error('Incorrect password.')
     }
-    else
-      throw "Incorrect password.";
   }
 
-  api.setIterations = function (newIterationNumber) {
-    newIterationNumber = parseInt(newIterationNumber);
-    if (newIterationNumber < 2)
-      throw "Minumum iteration number is 2.";
-
-    iterations = newIterationNumber;
-  }
-
-  api.setMinimumReceive = function (raw_amount) {
-    raw_amount = bigInt(raw_amount);
-    if (raw_amount.lesser(0))
-      return false;
-    minimumReceive = raw_amount;
-    return true;
-  }
-
-  api.getMinimumReceive = function () {
-    return minimumReceive;
+  api.setIterations = (newIterationNumber) => {
+    newIterationNumber = parseInt(newIterationNumber)
+    if (newIterationNumber < 2) throw new Error('Minumum iteration number is 2.')
+    iterations = newIterationNumber
   }
 
   /**
@@ -172,16 +166,14 @@ module.exports = function (password) {
    * @param {string} hexSeed - The 32 byte seed hex encoded
    * @throws An exception on malformed seed
    */
-  api.setSeed = function (hexSeed) {
-    if (!/[0-9A-F]{64}/i.test(hexSeed))
-      throw "Invalid Hex Seed.";
-    seed = hex_uint8(hexSeed);
+  api.setSeed = (hexSeed) => {
+    if (!/[0-9A-F]{64}/i.test(hexSeed)) throw new Error('Invalid Hex Seed.')
+    seed = hexToUint8(hexSeed)
   }
 
-  api.getSeed = function (pswd) {
-    if (pswd == passPhrase)
-      return uint8_hex(seed);
-    throw "Incorrect password.";
+  api.getSeed = (pswd) => {
+    if (pswd === passPhrase) return uint8ToHex(seed)
+    throw new Error('Incorrect password.')
   }
 
   /**
@@ -191,58 +183,56 @@ module.exports = function (password) {
    * @throws An exception on existing seed
    */
   api.setRandomSeed = function (overwrite = false) {
-    if (seed && !overwrite)
-      throw "Seed already exists. To overwrite use setSeed or set overwrite to true";
-    seed = nacl.randomBytes(32);
+    if (seed && !overwrite) throw new Error('Seed already exists. To overwrite use setSeed or set overwrite to true')
+    seed = nacl.randomBytes(32)
   }
 
-  _private.addKey = function(o) {
+  _private.addKey = (o) => {
     let key = {
-      account: accountFromHexKey(uint8_hex(o.pub)),
+      account: accountFromHexKey(uint8ToHex(o.pub)),
       balance: bigInt(0),
-      lastBlock: "",
-      lastPendingBlock: "",
+      lastBlock: '',
+      lastPendingBlock: '',
       pendingBlocks: [],
       subscribed: false,
       chain: [],
-      representative: "",
-      label: ""
+      representative: '',
+      label: ''
     }
     for (let k in o) {
-      key[k] = o[k];
+      key[k] = o[k]
     }
-    keys.push(key);
-    return key;
+    keys.push(key)
+    return key
   }
 
-  _private.newKeyDataFromSeed = function(index) {
-    if (seed.length != 32)
-      throw "Seed should be set first.";
+  _private.newKeyDataFromSeed = (index) => {
+    if (seed.length !== 32) throw new Error('Seed should be set first.')
 
-    let index_bytes = hex_uint8(dec2hex(index, 4));
+    const indexBytes = hexToUint8(decToHex(index, 4))
 
-    let context = blake.blake2bInit(32);
-    blake.blake2bUpdate(context, seed);
-    blake.blake2bUpdate(context, index_bytes);
+    const context = blake.blake2bInit(32)
+    blake.blake2bUpdate(context, seed)
+    blake.blake2bUpdate(context, indexBytes)
 
-    let secretKey = blake.blake2bFinal(context);
-    let publicKey = nacl.sign.keyPair.fromSecretKey(secretKey).publicKey;
+    const secretKey = blake.blake2bFinal(context)
+    const publicKey = nacl.sign.keyPair.fromSecretKey(secretKey).publicKey
 
     return {
       type: KEY_TYPE.SEEDED,
       seedIndex: index,
       priv: secretKey,
-      pub: publicKey,
-    };
+      pub: publicKey
+    }
   }
 
-  _private.newKeyDataFromSecret = function(secretKey) {
-    let publicKey = nacl.sign.keyPair.fromSecretKey(secretKey).publicKey;
+  _private.newKeyDataFromSecret = (secretKey) => {
+    const publicKey = nacl.sign.keyPair.fromSecretKey(secretKey).publicKey
     return {
       type: KEY_TYPE.EXPLICIT,
       priv: secretKey,
-      pub: publicKey,
-    };
+      pub: publicKey
+    }
   }
 
   /**
@@ -251,15 +241,15 @@ module.exports = function (password) {
    * @throws An exception if theres no seed
    * @returns {string} The freshly added account address
    */
-  api.newKeyFromSeed = function () {
-    let index = lastKeyFromSeed + 1;
+  api.newKeyFromSeed = () => {
+    const index = lastKeyFromSeed + 1
 
-    let key = _private.newKeyDataFromSeed(index);
-    key = _private.addKey(key);
-    logger.log("New seeded key added to wallet.");
+    let key = _private.newKeyDataFromSeed(index)
+    key = _private.addKey(key)
+    logger.log('New seeded key added to wallet.')
 
-    lastKeyFromSeed = index;
-    return key.account;
+    lastKeyFromSeed = index
+    return key.account
   }
 
   /**
@@ -270,18 +260,16 @@ module.exports = function (password) {
    * @throws An exception on invalid hex format
    * @returns {string} The freshly added account address
    */
-  api.addSecretKey = function (hex) {
-    if (hex.length != 64)
-      throw "Invalid Secret Key length. Should be 32 bytes.";
+  api.addSecretKey = (hex) => {
+    if (hex.length !== 64) throw new Error('Invalid Secret Key length. Should be 32 bytes.')
 
-    if (!/[0-9A-F]{64}/i.test(hex))
-      throw "Invalid Hex Secret Key.";
+    if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid Hex Secret Key.')
 
-    let key = _private.newKeyDataFromSecret(hex_uint8(hex));
-    key = _private.addKey(key);
-    logger.log("New explicit key added to wallet.");
+    let key = _private.newKeyDataFromSecret(hexToUint8(hex))
+    key = _private.addKey(key)
+    logger.log('New explicit key added to wallet.')
 
-    return key.account;
+    return key.account
   }
 
   /**
@@ -290,10 +278,9 @@ module.exports = function (password) {
    * @returns {string} The public key hex encoded
    * @returns {Array} The public key in a byte array
    */
-  api.getPublicKey = function (hex = false) {
-    if (hex)
-      return uint8_hex(current.pub);
-    return current.pub;
+  api.getPublicKey = (hex = false) => {
+    if (hex) return uint8ToHex(current.pub)
+    return current.pub
   }
 
   /**
@@ -301,9 +288,9 @@ module.exports = function (password) {
    *
    * @returns {Array}
    */
-  api.getAccounts = function () {
-    var accounts = [];
-    for (var i in keys) {
+  api.getAccounts = () => {
+    const accounts = []
+    for (let i in keys) {
       if (!keys[i].balance) {
         keys[i].balance = 0
       }
@@ -313,9 +300,9 @@ module.exports = function (password) {
         balance: bigInt(keys[i].balance),
         label: keys[i].label,
         lastHash: keys[i].chain.length > 0 ? keys[i].chain[keys[i].chain.length - 1] : false
-      });
+      })
     }
-    return accounts;
+    return accounts
   }
 
   /**
@@ -324,64 +311,143 @@ module.exports = function (password) {
    * @param {string} accountToUse
    * @throws An exception if the account is not found in the wallet
    */
-  api.useAccount = function (accountToUse) {
-    for (var i in keys) {
-      if (keys[i].account == accountToUse) {
-        currentIdx = i;
-        current = keys[i];
-        return;
+  api.useAccount = (accountToUse) => {
+    for (let i in keys) {
+      if (keys[i].account === accountToUse) {
+        currentIdx = i
+        current = keys[i]
+        return
       }
     }
-    throw "Account not found in wallet (" + accountToUse + ") " + JSON.stringify(api.getAccounts());
+    throw new Error('Account not found in wallet (' + accountToUse + ') ' + JSON.stringify(api.getAccounts()))
   }
 
-  api.importChain = function (blocks, acc) {
-    api.useAccount(acc);
-    var last = current.chain.length > 0 ? current.chain[current.chain.length - 1].getHash(true) : uint8_hex(current.pub);
+  /**
+   * TODO - Revisit and rewrite or remove
+   *
+   * Doesn't set any global values
+   * Seems to just verify the chain.
+   * Doesn't pull receive chain
+   * But it looks to throw an error on the second block everytime as last is no longer older block?
+   */
+  api.importChain = (blocks, acc) => {
+    api.useAccount(acc)
+    const last = current.chain.length > 0 ? current.chain[current.chain.length - 1].getHash(true) : uint8ToHex(current.pub)
     // verify chain
     for (let i in blocks) {
-      if (blocks[i].getPrevious() != last)
-        throw "Invalid chain";
-      if (!api.verifyBlock(blocks[i]))
-        throw "There is an invalid block";
-
+      if (blocks[i].getPrevious() !== last) throw new Error('Invalid chain')
+      if (!api.verifyBlock(blocks[i])) throw new Error('There is an invalid block')
     }
   }
 
-  api.getLastNBlocks = function (acc, n, offset = 0) {
-    var temp = keys[currentIdx].account;
-    api.useAccount(acc);
-    var blocks = [];
+  /**
+   * Retreives N send blocks from the send chain
+   *
+   * @param {string} acc - Account you wish to retrieve blocks from
+   * @param {number} n - Number of blocks you wish to retrieve
+   * @param {number} offset - Number of blocks back from the frontier tip you wish to start at
+   * @returns {Array} all the blocks
+   */
+  api.getLastNBlocks = (acc, n, offset = 0) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    const blocks = []
 
-    if (n > current.chain.length)
-      n = current.chain.length;
+    if (n > current.chain.length) n = current.chain.length
 
     for (let i = current.chain.length - 1 - offset; i > current.chain.length - 1 - n - offset; i--) {
-      blocks.push(current.chain[i]);
+      blocks.push(current.chain[i])
     }
-    api.useAccount(temp);
-    return blocks;
+    api.useAccount(temp)
+    return blocks
   }
 
-  api.getBlocksUpTo = function (acc, hash) {
-    api.useAccount(acc);
+  /**
+   * Retreives N receive blocks from the receive chain
+   *
+   * @param {string} acc - Account you wish to retrieve blocks from
+   * @param {number} n - Number of blocks you wish to retrieve
+   * @param {number} offset - Number of blocks back from the frontier tip you wish to start at
+   * @returns {Array} all the blocks
+   */
+  api.getLastNReceives = (acc, n, offset = 0) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    const blocks = []
 
-    var blocks = [];
+    if (n > current.receiveChain.length) n = current.receiveChain.length
+
+    for (let i = current.receiveChain.length - 1 - offset; i > current.receiveChain.length - 1 - n - offset; i--) {
+      blocks.push(current.receiveChain[i])
+    }
+    api.useAccount(temp)
+    return blocks
+  }
+
+  /**
+   * Gets the blocks up to a certain hash
+   *
+   * @param {string} acc - Account you wish to retrieve blocks from
+   * @param {string} hash - Hash of the block you wish to stop retrieving blocks at
+   * @returns {Array} all the blocks up to and including the specified block
+   */
+  api.getBlocksUpTo = (acc, hash) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    const blocks = []
     for (let i = current.chain.length - 1; i > 0; i--) {
-      blocks.push(current.chain[i]);
-      if (current.chain[i].getHash(true) == hash)
-        break;
+      blocks.push(current.chain[i])
+      if (current.chain[i].getHash(true) === hash) break
     }
-    return blocks;
+    api.useAccount(temp)
+    return blocks
   }
 
-  api.getAccountBlockCount = function (acc) {
-    var temp = keys[currentIdx].account;
-    api.useAccount(acc);
+  /**
+   * Gets the recieve blocks up to a certain hash
+   *
+   * @param {string} acc - Account you wish to retrieve blocks from
+   * @param {string} hash - Hash of the block you wish to stop retrieving blocks at
+   * @returns {Array} all the blocks up to and including the specified block
+   */
+  api.getReceiveUpTo = (acc, hash) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    const blocks = []
+    for (let i = current.receiveChain.length - 1; i > 0; i--) {
+      blocks.push(current.receiveChain[i])
+      if (current.receiveChain[i].getHash(true) === hash) break
+    }
+    api.useAccount(temp)
+    return blocks
+  }
 
-    var n = current.chain.length;
-    api.useAccount(temp);
-    return n;
+  /**
+   * Gets the total number of blocks
+   *
+   * @param {string} acc - Account you wish to retrieve the block count of
+   * @returns {number} count of all the blocks
+   */
+  api.getAccountBlockCount = (acc) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    const n = current.chain.length
+    api.useAccount(temp)
+    return n
+  }
+
+  /**
+   * Gets the total number of recieve blocks
+   *
+   * @param {string} acc - Account you wish to retrieve the block count of
+   * @returns {number} count of all the blocks
+   */
+  api.getAccountReceiveBlockCount = (acc) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    const n = current.receiveChain.length
+    api.useAccount(temp)
+    return n
   }
 
   /**
@@ -392,429 +458,317 @@ module.exports = function (password) {
    * @throws An exception on invalid block hash hex encoding
    * @returns {string} The 64 byte hex encoded signature
    */
-  api.signBlock = function (block) {
-    var blockHash = block.getHash();
+  api.signBlock = (block) => {
+    const blockHash = block.getHash()
 
-    if (blockHash.length != 32)
-      throw "Invalid block hash length. It should be 32 bytes.";
+    if (blockHash.length !== 32) throw new Error('Invalid block hash length. It should be 32 bytes.')
 
-    block.setSignature(uint8_hex(api.sign(blockHash)));
-    block.setAccount(keys[currentIdx].account);
+    block.setSignature(uint8ToHex(api.sign(blockHash)))
+    block.setAccount(keys[currentIdx].account)
 
-    logger.log("Block " + block.getHash(true) + " signed.");
+    logger.log('Block ' + block.getHash(true) + ' signed.')
   }
 
   /**
-   * Verifies a block signature given its hash, sig and Logos account
+   * Verifies a block signature given its hash, sig, and Logos account
    *
    * @param {string} blockHash - 32 byte hex encoded block hash
    * @param {string} blockSignature - 64 byte hex encoded signature
    * @param {string} account - A Logos account supposed to have signed the block
    * @returns {boolean}
    */
-  api.verifyBlockSignature = function (blockHash, blockSignature, account) {
-    var pubKey = hex_uint8(keyFromAccount(account));
-
-    return nacl.sign.detached.verify(hex_uint8(blockHash), hex_uint8(blockSignature), pubKey);
+  api.verifyBlockSignature = (blockHash, blockSignature, account) => {
+    const pubKey = hexToUint8(keyFromAccount(account))
+    return nacl.sign.detached.verify(hexToUint8(blockHash), hexToUint8(blockSignature), pubKey)
   }
 
-  api.verifyBlock = function (block) {
-    return api.verifyBlockSignature(block.getHash(true), block.getSignature(), block.getAccount());
+  /**
+   * Verifies a signature given a block
+   *
+   * @param {object} block - a block object
+   * @returns {boolean}
+   */
+  api.verifyBlock = (block) => {
+    return api.verifyBlockSignature(block.getHash(true), block.getSignature(), block.getAccount())
   }
 
   /**
    * Returns current account balance
    *
-   * @returns {number} balance
+   * @returns {bigInteger} balance
    */
-  api.getBalance = function () {
-    return current.balance;
+  api.getBalance = () => {
+    return current.balance
   }
 
-  api.getRepresentative = function (acc = false) {
-    var ret;
-    var temp;
+  // TODO Refactor block types
+  /**
+   * Returns account representative
+   *
+   * @param {string} acc - Account you wish to retrieve the representative of
+   * @returns {string} representative
+   */
+  api.getRepresentative = (acc = false) => {
+    let rep
+    let temp
     if (acc) {
-      temp = currentIdx;
-      api.useAccount(acc);
+      temp = currentIdx
+      api.useAccount(acc)
     }
-    if (current.representative)
-        ret = current.representative;
-    else {
+    if (current.representative) {
+      rep = current.representative
+    } else {
       // look for a state, change or open block on the chain
       for (let i in current.pendingBlocks) {
-        if (current.pendingBlocks[i].getType() == 'open' || current.pendingBlocks[i].getType() == 'change' || current.pendingBlocks[i].getType() == 'state') {
-          ret = current.pendingBlocks[i].getRepresentative();
-          break;
+        if (current.pendingBlocks[i].getType() === 'open' || current.pendingBlocks[i].getType() === 'change' || current.pendingBlocks[i].getType() === 'state') {
+          rep = current.pendingBlocks[i].getRepresentative()
         }
       }
-
-      if (!ret) {
+      // No pending change blocks. Scanning previous sends to find rep
+      if (!rep) {
         for (let i in current.chain) {
-          if (current.chain[i].getType() == 'open' || current.chain[i].getType() == 'change' || current.chain[i].getType() == 'state') {
-            ret = current.chain[i].getRepresentative();
-            break;
+          if (current.chain[i].getType() === 'open' || current.chain[i].getType() === 'change' || current.chain[i].getType() === 'state') {
+            rep = current.chain[i].getRepresentative()
           }
         }
       }
     }
 
-    if (temp)
-      api.useAccount(keys[temp].account);
-    return ret;
+    if (temp) api.useAccount(keys[temp].account)
+    return rep
   }
 
-  _private.setRepresentative = function (repr) {
-    current.representative = repr;
+  _private.setRepresentative = (repr) => {
+    current.representative = repr
   }
 
   /**
    * Updates current account balance
    *
-   * @param {number} newBalance - The new balance in logos units
+   * @param {number} newBalance - The new balance in raw units
+   * @returns {bigInteger} balance
    */
-  _private.setBalance = function (newBalance) {
-    current.balance = bigInt(newBalance);
+  _private.setBalance = (newBalance) => {
+    current.balance = bigInt(newBalance)
+    return current.balance
   }
 
-  api.getAccountBalance = function (acc) {
-    api.useAccount(acc);
-    return api.getBalanceUpToBlock(0);
+  /**
+   * Updates current pending balance
+   *
+   * @param {number} newBalance - The new balance in raw units
+   * @returns {bigInteger} pending balance
+   */
+  _private.setPendingBalance = function (newBalance) {
+    current.pendingBalance = bigInt(newBalance)
+    return current.pendingBalance
   }
 
-  api.getWalletBalance = function () {
-    var bal = bigInt(0);
-    var temp;
+  /**
+   * Returns the balance of the specified account
+   *
+   * @param {string} acc - The account you want the balance of
+   * @returns {bigInteger} balance
+   */
+  api.getAccountBalance = (acc) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
+    const bal = api.getBalanceFromChain()
+    api.useAccount(temp)
+    return bal
+  }
+
+  /**
+   * Returns the balance of all the accounts
+   *
+   * @returns {bigInteger} balance
+   */
+  api.getWalletBalance = () => {
+    let bal = bigInt(0)
     for (let i in keys) {
       if (!keys[i].balance) {
         keys[i].balance = 0
       }
-      temp = keys[i].balance;
-      bal = bal.add(temp);
+      bal = bal.add(keys[i].balance)
     }
-    return bal;
-  }
-
-  api.recalculateWalletBalances = function () {
-    for (let i in keys) {
-      api.useAccount(keys[i].account);
-      _private.setBalance(api.getBalanceUpToBlock(0));
-    }
+    return bal
   }
 
   /**
-   * Calculates an account balance at a given block adding all receives until it reaches the account open block, or a send block.
-   * @param {string} blockHash - The block where the search will start
+   * Updates the balance of all the accounts
+   */
+  api.recalculateWalletBalances = () => {
+    const temp = keys[currentIdx].account
+    for (let i in keys) {
+      api.useAccount(keys[i].account)
+      _private.setBalance(api.getBalanceFromChain())
+    }
+    api.useAccount(temp)
+  }
+
+  /**
+   * Calculates the current account's balance at the current time.
    * @returns {bigInteger} - The calculated account balance
    */
-  api.getBalanceUpToBlock = function (blockHash) {
-    if (current.chain.length + current.pendingBlocks.length === 0)
-      return bigInt(0);
+  api.getBalanceFromChain = () => {
+    if (current.chain.length + current.pendingBlocks.length + current.receiveChain.length === 0) return bigInt(0)
 
-    var sum = bigInt(0);
-    var found = blockHash === 0 ? true : false;
-    var blk;
+    let sum = bigInt(0)
+    let blk
 
     // check pending blocks first
     for (let i = current.pendingBlocks.length - 1; i >= 0; i--) {
-      blk = current.pendingBlocks[i];
-
-      if (blk.getHash(true) == blockHash)
-        found = true;
-
-      if (found) {
-        if (blk.getType() == 'open' || blk.getType() == 'receive') {
-          sum = sum.add(blk.getAmount());
-        }
-        else if (blk.getType() == 'send' || blk.getType() == 'state') {
-          sum = sum.add(blk.getBalance());
-          return sum;
-        }
-      }
+      blk = current.pendingBlocks[i]
+      sum = sum.subtract(blk.getAmount())
     }
 
+    // check send chain next
     for (let i = current.chain.length - 1; i >= 0; i--) {
-      blk = current.chain[i];
-
-      if (blk.getHash(true) == blockHash)
-        found = true;
-
-      if (found) {
-        if (blk.getType() == 'open' || blk.getType() == 'receive') {
-          sum = sum.add(blk.getAmount());
-        }
-        else if (blk.getType() == 'send' || blk.getType() == 'state') {
-          sum = sum.add(blk.getBalance());
-          return sum;
-        }
-      }
+      blk = current.chain[i]
+      sum = sum.subtract(blk.getAmount())
     }
-    return sum;
+
+    // Finally check receive chain
+    for (let i = current.receiveChain.length - 1; i >= 0; i--) {
+      blk = current.receiveChain[i]
+      sum = sum.add(blk.getAmount())
+    }
+    return sum
   }
 
   /**
-   * Updates an account balance
-   *
-   * @param {number} - The new balance in raw units
-   * @param {string} Account - The account whose balance is being updated
+   * Add any data you want to the account
+   * @param {string} acc - The account you want to work on
+   * @param {string} label - The label you want to add to the account
+   * @returns true or false if it was successful
    */
-  _private.setAccountBalance = function (newBalance, acc) {
-    var temp = currentIdx;
-    api.useAccount(acc);
-    _private.setBalance(newBalance);
-    api.useAccount(keys[temp].account);
-  }
-
-  api.setAccountBalancePublic = function(newBalance, acc)
-  {
-    if(!lightWallet)
-      throw 'Not allowed';
-    _private.setAccountBalance(newBalance, acc);
-  }
-
-  _private.sumAccountPending = function (acc, amount) {
-    var temp = currentIdx;
-    api.useAccount(acc);
-    _private.setPendingBalance(api.getPendingBalance().sum(amount));
-    api.useAccount(keys[temp].account);
-  }
-
-  api.setLabel = function (acc, label) {
+  api.setLabel = (acc, label) => {
     for (let i in keys) {
-      if (keys[i].account == acc) {
-        keys[i].label = label;
-        return true;
+      if (keys[i].account === acc) {
+        keys[i].label = label
+        return true
       }
     }
-    return false;
+    return false
   }
 
-  api.removePendingBlocks = function () {
-    current.pendingBlocks = [];
+  api.removePendingBlocks = () => {
+    current.pendingBlocks = []
   }
 
-  api.removePendingBlock = function (blockHash) {
-    var found = false;
+  /**
+   * Called when a block is confirmed to remove it from the pending block pool
+   *
+   * @param {string} blockHash - The hash of the block we are confirming
+   */
+  api.removePendingBlock = (blockHash) => {
+    var found = false
     for (let i in current.pendingBlocks) {
-      let tmp = current.pendingBlocks[i];
-      if (tmp.getHash(true) == blockHash) {
-        current.pendingBlocks.splice(i, 1);
-        found = true;
+      const tmp = current.pendingBlocks[i]
+      if (tmp.getHash(true) === blockHash) {
+        current.pendingBlocks.splice(i, 1)
+        found = true
       }
     }
     if (!found) {
-      console.log("Not found");
-      return;
+      console.log('Not found')
+      return
     }
     for (let i in walletPendingBlocks) {
-      let tmp = walletPendingBlocks[i];
-      if (tmp.getHash(true) == blockHash) {
-        walletPendingBlocks.splice(i, 1);
-        return;
+      const tmp = walletPendingBlocks[i]
+      if (tmp.getHash(true) === blockHash) {
+        walletPendingBlocks.splice(i, 1)
+        return
       }
     }
   }
 
-  api.getBlockFromHash = function (blockHash, acc = 0) {
-    if (acc !== 0)
-      api.useAccount(acc);
-    else
-      api.useAccount(keys[0].account);
-
+  /**
+   * Finds the block object of the specified block hash
+   *
+   * @param {string} blockHash - The hash of the block we are looking for the object of
+   * @returns {block} false if no block object of the specified hash was found
+   */
+  api.getBlockFromHash = (blockHash) => {
     for (let i = 0; i < keys.length; i++) {
-      api.useAccount(keys[i].account);
+      api.useAccount(keys[i].account)
       for (let j = current.chain.length - 1; j >= 0; j--) {
-        var blk = current.chain[j];
-        if (blk.getHash(true) == blockHash)
-          return blk;
+        const blk = current.chain[j]
+        if (blk.getHash(true) === blockHash) return blk
       }
-      if (i == keys.length - 1)
-        break;
-      api.useAccount(keys[i + 1].account);
-    }
-    return false;
-  }
-
-  api.addBlockToReadyBlocks = function (blk) {
-    readyBlocks.push(blk);
-    logger.log("Block ready to be broadcasted: " + blk.getHash(true));
-  }
-
-  api.addPendingSendBlock = function (from, to, amount = 0, representative = false) {
-    api.useAccount(from);
-    amount = bigInt(amount);
-
-    var bal = api.getBalanceUpToBlock(0);
-    var remaining = bal.minus(amount);
-    var blk = new Block();
-    var rep;
-
-    if (representative !== false)
-      rep = representative;
-    else {
-      rep = api.getRepresentative();
-      if (!rep)
-        rep = officialRepresentative;
-    }
-
-    blk.setSendParameters(current.lastPendingBlock, to, remaining);
-    blk.setAmount(amount);
-    blk.setAccount(from);
-    blk.setRepresentative(rep);
-    blk.build();
-    api.signBlock(blk);
-
-    current.lastPendingBlock = blk.getHash(true);
-    _private.setBalance(remaining);
-    current.pendingBlocks.push(blk);
-    walletPendingBlocks.push(blk);
-
-    // check if we have received work already
-    var worked = false;
-    for (let i in remoteWork) {
-      if (remoteWork[i].hash == blk.getPrevious()) {
-        if (remoteWork[i].worked) {
-          worked = api.updateWorkPool(blk.getPrevious(), remoteWork[i].work);
-          break;
-        }
+      for (let n = current.receiveChain.length - 1; n >= 0; n--) {
+        const blk = current.receiveChain[n]
+        if (blk.getHash(true) === blockHash) return blk
       }
     }
-    if (!worked)
-      api.workPoolAdd(blk.getPrevious(), from, true);
-    api.workPoolAdd(blk.getHash(true), from);
-
-    logger.log("New send block waiting for work: " + blk.getHash(true));
-
-    return blk;
+    return false
   }
 
-  api.addPendingReceiveBlock = function (sourceBlockHash, acc, from, amount, representative = false) {
-    amount = bigInt(amount);
-    api.useAccount(acc);
-    if (amount.lesser(minimumReceive)) {
-      logger.log("Receive block rejected due to minimum receive amount (" + sourceBlockHash + ")");
-      return false;
-    }
+  api.addBlockToReadyBlocks = (blk) => {
+    readyBlocks.push(blk)
+    logger.log('Block ready to be broadcasted: ' + blk.getHash(true))
+  }
 
-    // make sure this source has not been redeemed yet
-    for (let i in walletPendingBlocks) {
-      if (walletPendingBlocks[i].getSource() == sourceBlockHash)
-        return false;
-    }
+  api.addPendingSendBlock = (from, to, amount = 0, representative = false) => {
+    api.useAccount(from)
+    amount = bigInt(amount)
 
-    for (let i in readyBlocks) {
-      if (readyBlocks[i].getSource() == sourceBlockHash)
-        return false;
-    }
+    let bal = api.getBalanceFromChain()
+    // let bal = current.balance
+    let blk = new Block()
 
-    for (let i in current.chain) {
-      if (current.chain[i].getSource() == sourceBlockHash)
-        return false;
-    }
-
-    var blk = new Block();
-    if (current.lastPendingBlock.length == 64) {
-      // get the last block, if it's not at the end of the chain look at pending
-      var prev;
-      prev = api.getBlockByHash(current.lastPendingBlock);
-      if (!prev.getBalance('hex')) {
-        // set that block balance
-        prev.setBalance(api.getBalanceUpToBlock(prev.getHash(true)));
-      }
-      blk.setReceiveParameters(current.lastPendingBlock, sourceBlockHash, amount, prev);
-    }
-    else
-      blk.setOpenParameters(sourceBlockHash, acc, amount);
-    blk.setAccount(acc);
-    let rep;
+    // This will not be neccessary in next version of Logos
+    let rep
     if (representative !== false) {
-      if (keyFromAccount(representative)) {
-        rep = representative;
-      }
+      rep = representative
     } else {
-      rep = api.getRepresentative();
+      rep = api.getRepresentative()
+      if (!rep) rep = officialRepresentative
     }
-    if (!rep) // first block
-      rep = officialRepresentative;
-    blk.setRepresentative(rep);
-    blk.build();
-    blk.setAmount(amount);
-    api.signBlock(blk);
-    blk.setOrigin(from);
 
-    current.lastPendingBlock = blk.getHash(true);
-    current.pendingBlocks.push(blk);
-    walletPendingBlocks.push(blk);
-    _private.setPendingBalance(api.getPendingBalance().add(amount));
+    blk.setSendParameters(current.lastPendingBlock, to)
+    blk.setAmount(amount)
+    blk.setAccount(from)
+    blk.setRepresentative(rep) // This will not be neccessary in next version of Logos
+    blk.build()
+    api.signBlock(blk)
+
+    current.lastPendingBlock = blk.getHash(true)
+    _private.setBalance(bal.minus(amount))
+    current.pendingBlocks.push(blk)
+    walletPendingBlocks.push(blk)
 
     // check if we have received work already
-    var worked = false;
+    var worked = false
     for (let i in remoteWork) {
-      if (remoteWork[i].hash == blk.getPrevious()) {
+      if (remoteWork[i].hash === blk.getPrevious()) {
         if (remoteWork[i].worked) {
-          worked = api.updateWorkPool(blk.getPrevious(), remoteWork[i].work);
-          break;
+          worked = api.updateWorkPool(blk.getPrevious(), remoteWork[i].work)
+          break
         }
       }
     }
-    if (!worked)
-      api.workPoolAdd(blk.getPrevious(), acc, true);
-    api.workPoolAdd(blk.getHash(true), acc);
 
-    logger.log("New receive block waiting for work: " + blk.getHash(true));
-
-    return blk;
-  }
-
-  api.addPendingChangeBlock = function (acc, repr) {
-    api.useAccount(acc);
-
-    if (!current.lastPendingBlock)
-      throw "There needs to be at least 1 block in the chain.";
-
-    let accBalance = api.getBalanceUpToBlock(current.lastPendingBlock);
-    // change = zero send to the burn account
-    var blk = new Block();
-    blk.setSendParameters(current.lastPendingBlock, accountFromHexKey(HEX_32_BYTE_ZERO), accBalance);
-    blk.setRepresentative(repr);
-    blk.setAmount(0);
-    blk.setAccount(acc);
-    blk.build();
-    api.signBlock(blk);
-
-    current.lastPendingBlock = blk.getHash(true);
-    current.pendingBlocks.push(blk);
-    walletPendingBlocks.push(blk);
-
-    // check if we have received work already
-    var worked = false;
-    for (let i in remoteWork) {
-      if (remoteWork[i].hash == blk.getPrevious()) {
-        if (remoteWork[i].worked) {
-          worked = api.updateWorkPool(blk.getPrevious(), remoteWork[i].work);
-          break;
-        }
-      }
+    if (!worked) {
+      api.workPoolAdd(blk.getPrevious(), from, true)
+      logger.log('New send block waiting for work: ' + blk.getHash(true))
+    } else {
+      api.workPoolAdd(blk.getHash(true), from)
+      logger.log('New send block & we have work: ' + blk.getHash(true))
     }
-    if (!worked)
-      api.workPoolAdd(blk.getPrevious(), acc, true);
-    api.workPoolAdd(blk.getHash(true), acc);
 
-    logger.log("New change block waiting for work: " + blk.getHash(true));
-
-    return blk;
+    return blk
   }
 
-  api.getPendingBlocks = function () {
-    return current.pendingBlocks;
+  api.getPendingBlocks = () => {
+    return current.pendingBlocks
   }
 
-  api.getPendingBlockByHash = function (blockHash) {
+  api.getPendingBlockByHash = (blockHash) => {
     for (let i in walletPendingBlocks) {
-      if (walletPendingBlocks[i].getHash(true) == blockHash)
-        return walletPendingBlocks[i];
+      if (walletPendingBlocks[i].getHash(true) === blockHash) return walletPendingBlocks[i]
     }
-    return false;
+    return false
   }
 
   /**
@@ -822,185 +776,218 @@ module.exports = function (password) {
    * @param {string} blockHash - The hash of the block looked for, hex encoded
    * @returns the block if found, false if not
    */
-  api.getBlockByHash = function (blockHash) {
+  api.getBlockByHash = (blockHash) => {
     for (let i in current.pendingBlocks) {
-      if (current.pendingBlocks[i].getHash(true) == blockHash)
-        return current.pendingBlocks[i];
+      if (current.pendingBlocks[i].getHash(true) === blockHash) return current.pendingBlocks[i]
     }
-
+    for (let i in current.receiveChain) {
+      if (current.receiveChain[i].getHash(true) === blockHash) return current.receiveChain[i]
+    }
     for (let i in current.chain) {
-      if (current.chain[i].getHash(true) == blockHash)
-        return current.chain[i];
+      if (current.chain[i].getHash(true) === blockHash) return current.chain[i]
     }
-    return false;
+    return false
   }
 
-  api.getNextWorkBlockHash = function (acc) {
-    var prevAcc = current.account;
-    api.useAccount(acc);
+  /**
+   * Gets the hash of the previous block or the current public key if no previous block exists
+   * @param {string} acc - The account you want to work on
+   * @returns hash of block to work
+   */
+  api.getNextWorkBlockHash = (acc) => {
+    const temp = keys[currentIdx].account
+    api.useAccount(acc)
 
-    let hash;
+    let hash
     if (current.lastBlock.length > 0) {
-      hash = current.lastBlock;
+      hash = current.lastBlock
     } else {
-      hash = uint8_hex(current.pub);
+      hash = uint8ToHex(current.pub)
     }
 
-    api.useAccount(prevAcc);
-    return hash;
+    api.useAccount(temp)
+    return hash
   }
 
-  _private.setLastBlockHash = function (blockHash) {
-    current.lastBlock = blockHash;
-  }
-
-  api.workPoolAdd = function (hash, acc, needed = false, work = false) {
-    for (let i in remoteWork)
-      if (remoteWork[i].hash == hash)
-        return;
-
+  /**
+   * Adds hashes to the work pool
+   * @param {string} hash - The hash you need to get the work form
+   * @param {string} acc - The account you want to work on
+   * @param {boolean} needed - This represents if work is needed
+   * @param {string} work - The work hex for this block
+   */
+  api.workPoolAdd = (hash, acc, needed = false, work = false) => {
+    for (let i in remoteWork) {
+      if (remoteWork[i].hash === hash) return // Already in the work pool
+    }
     if (work !== false) {
-      remoteWork.push({ hash: hash, worked: true, work: work, requested: true, needed: needed, account: acc });
-    }
-    else {
-      remoteWork.push({ hash: hash, work: "", worked: false, requested: false, needed: needed, account: acc });
-      logger.log("New work target: " + hash);
+      remoteWork.push({ hash: hash, worked: true, work: work, requested: true, needed: needed, account: acc })
+    } else {
+      remoteWork.push({ hash: hash, work: '', worked: false, requested: false, needed: needed, account: acc })
+      logger.log('New work target: ' + hash)
     }
   }
 
-  api.getWorkPool = function () {
-    return remoteWork;
+  /**
+   * Gets work pool
+   * @returns array of work
+   */
+  api.getWorkPool = () => {
+    return remoteWork
   }
 
-  api.setWorkRequested = function (hash) {
+  /**
+   * Update the status of the work saying it has been requested
+   * @param {string} hash - The hash you wish to request work on
+   */
+  api.setWorkRequested = (hash) => {
     for (let i in remoteWork) {
-      if (remoteWork[i].hash == hash) {
-        remoteWork[i].requested = true;
-        break;
+      if (remoteWork[i].hash === hash) {
+        remoteWork[i].requested = true
+        break
       }
     }
   }
 
-  api.setWorkNeeded = function (hash) {
+  /**
+   * Sets needed on the work now it is okay to request work for
+   * @param {string} hash - The hash you need work for
+   */
+  api.setWorkNeeded = (hash) => {
     for (let i in remoteWork) {
-      if (remoteWork[i].hash == hash) {
-        remoteWork[i].needed = true;
-        break;
+      if (remoteWork[i].hash === hash) {
+        remoteWork[i].needed = true
+        break
       }
     }
   }
 
-  api.checkWork = function (hash, work) {
-    var t = hex_uint8(MAIN_NET_WORK_THRESHOLD);
-    var context = blake.blake2bInit(8, null);
-    blake.blake2bUpdate(context, hex_uint8(work).reverse());
-    blake.blake2bUpdate(context, hex_uint8(hash));
-    var threshold = blake.blake2bFinal(context).reverse();
+  /**
+   * Checks to see if a work is valid for a given hash
+   * @param {string} hash - The hash you need validate the work on
+   * @param {string} work - The work
+   * @returns boolean if the work is valid or not
+   */
+  api.checkWork = (hash, work) => {
+    const t = hexToUint8(MAIN_NET_WORK_THRESHOLD)
+    let context = blake.blake2bInit(8, null)
+    blake.blake2bUpdate(context, hexToUint8(work).reverse())
+    blake.blake2bUpdate(context, hexToUint8(hash))
+    const threshold = blake.blake2bFinal(context).reverse()
 
-    if (threshold[0] == t[0])
-      if (threshold[1] == t[1])
-        if (threshold[2] == t[2])
-          if (threshold[3] >= t[3])
-            return true;
-    return false;
+    return (threshold[0] === t[0] &&
+            threshold[1] === t[1] &&
+            threshold[2] === t[2] &&
+            threshold[3] >= t[3])
   }
 
-  api.updateWorkPool = function (hash, work) {
-    var found = false;
+  /**
+   * Update the work pool given the work on a new hash
+   * @param {string} hash - The hash you have work for
+   * @param {string} work - The work that goes with the hash
+   * @returns boolean if the work pool was updated properly with the new worked vaule
+   */
+  api.updateWorkPool = (hash, work) => {
+    let found = false
     if (!api.checkWork(work, hash)) {
-      logger.warn("Invalid PoW received (" + work + ") (" + hash + ").");
-      return false;
+      logger.warn('Invalid PoW received (' + work + ') (' + hash + ').')
+      return false
     }
 
     for (let i in remoteWork) {
-      if (remoteWork[i].hash == hash) {
-        remoteWork[i].work = work;
-        remoteWork[i].worked = true;
-        remoteWork[i].requested = true;
-        remoteWork[i].needed = false;
+      if (remoteWork[i].hash === hash) {
+        remoteWork[i].work = work
+        remoteWork[i].worked = true
+        remoteWork[i].requested = true
+        remoteWork[i].needed = false
 
-        found = true;
+        found = true
         for (let j in walletPendingBlocks) {
-          if (walletPendingBlocks[j].getPrevious() == hash) {
-            logger.log("Work received for block " + walletPendingBlocks[j].getHash(true) + " previous: " + hash);
-            var aux = walletPendingBlocks[j];
-            aux.setWork(work);
+          if (walletPendingBlocks[j].getPrevious() === hash) {
+            logger.log('Work received for block ' + walletPendingBlocks[j].getHash(true) + ' previous: ' + hash)
+            let pendingBlock = walletPendingBlocks[j]
+            pendingBlock.setWork(work)
             try {
-              api.confirmBlock(aux.getHash(true));
-              remoteWork.splice(i, 1);
-              api.setWorkNeeded(aux.getHash(true));
-              return true;
+              api.confirmBlock(pendingBlock.getHash(true))
+              remoteWork.splice(i, 1)
+              api.setWorkNeeded(pendingBlock.getHash(true))
+              return true
             } catch (e) {
-              logger.error("Error adding block " + aux.getHash(true) + " to chain: " + e.message);
-              errorBlocks.push(aux)
+              logger.error('Error adding block ' + pendingBlock.getHash(true) + ' to chain: ' + e.message)
+              errorBlocks.push(pendingBlock)
             }
-            break;
+            break
           }
         }
-        break;
+        break
       }
     }
 
     if (!found) {
-      logger.warn("Work received for missing target: " + hash);
+      logger.warn('Work received for missing target: ' + hash)
       // add to work pool just in case, it may be a cached from the last block
-      api.workPoolAdd(hash, "", false, work);
+      api.workPoolAdd(hash, '', false, work)
+      return false
     }
-    return false;
+    return true
   }
 
-  api.checkWork = function (work, blockHash) {
-    var t = hex_uint8(MAIN_NET_WORK_THRESHOLD);
-    var context = blake.blake2bInit(8, null);
-    blake.blake2bUpdate(context, hex_uint8(work).reverse());
-    blake.blake2bUpdate(context, hex_uint8(blockHash));
-    var threshold = blake.blake2bFinal(context).reverse();
-
-    if (threshold[0] == t[0])
-      if (threshold[1] == t[1])
-        if (threshold[2] == t[2])
-          if (threshold[3] >= t[3])
-            return true;
-    return false;
-  }
-
-  api.waitingRemoteWork = function () {
-    for (var i in remoteWork) {
-      if (!remoteWork[i].worked)
-        return true;
+  /**
+   * @returns boolean true if you have work pending false if you are all up to date on work.
+   */
+  api.waitingRemoteWork = () => {
+    for (let i in remoteWork) {
+      if (!remoteWork[i].worked) return true
     }
-    return false;
+    return false
   }
 
-  api.getReadyBlocks = function () {
-    return readyBlocks;
+  /**
+   * @returns array of blocks that are ready to be published.
+   */
+  api.getReadyBlocks = () => {
+    return readyBlocks
   }
 
-  api.getNextReadyBlock = function () {
-    if (readyBlocks.length > 0)
-      return readyBlocks[0];
-    else
-      return false;
+  /**
+   * @returns next block that is ready to be published.
+   */
+  api.getNextReadyBlock = () => {
+    if (readyBlocks.length > 0) {
+      return readyBlocks[0]
+    } else {
+      return false
+    }
   }
 
-  api.getReadyBlockByHash = function (blockHash) {
+  /**
+   * Get a ready block by hash
+   * @param {string} blockHash - The hash of the block you are looking for
+   * @returns block of the specified blockhash that is ready to be broadcasted
+   */
+  api.getReadyBlockByHash = (blockHash) => {
     for (let i in readyBlocks) {
-      if (readyBlocks[i].getHash(true) == blockHash) {
-        return readyBlocks[i];
+      if (readyBlocks[i].getHash(true) === blockHash) {
+        return readyBlocks[i]
       }
     }
-    return false;
+    return false
   }
 
-  api.removeReadyBlock = function (blockHash) {
+  /**
+   * remove a ready block by hash
+   * @param {string} blockHash - The hash of the block you are looking for
+   * @returns block of the deleted block or false if block was unabled to be found
+   */
+  api.removeReadyBlock = (blockHash) => {
     for (let i in readyBlocks) {
-      if (readyBlocks[i].getHash(true) == blockHash) {
-        var blk = readyBlocks[i];
-        readyBlocks.splice(i, 1);
-        return blk;
+      if (readyBlocks[i].getHash(true) === blockHash) {
+        let blk = readyBlocks[i]
+        readyBlocks.splice(i, 1)
+        return blk
       }
     }
-    return false;
+    return false
   }
 
   /**
@@ -1009,177 +996,104 @@ module.exports = function (password) {
    * @param {string} - blockHash The block hash
    * @throws An exception if the block is not found in the ready blocks array
    * @throws An exception if the previous block does not match the last chain block
-   * @throws An exception if the chain is empty and the block is not of type open
+   * @throws An exception if the block has not yet been signed
+   * @throws An exception if the block amount is greater than your balance minus the transaction fee
    */
-  api.confirmBlock = function (blockHash, broadcast = true)
-  {
-    var blk = api.getPendingBlockByHash(blockHash);
+  api.confirmBlock = (blockHash, broadcast = true) => {
+    const blk = api.getPendingBlockByHash(blockHash)
     if (blk) {
       if (blk.ready()) {
-        api.useAccount(blk.getAccount());
-        if (current.chain.length == 0)
-        {
-          // open block
-          if ( ( blk.getType() != 'open' || ( blk.getType() == 'state' && blk.getPrevious() != HEX_32_BYTE_ZERO ) ) && !lightWallet )
-            throw "First block needs to be 'open'.";
-          current.chain.push(blk);
-          if(broadcast)
-            readyBlocks.push(blk);
-          api.removePendingBlock(blockHash);
-          _private.setPendingBalance(api.getPendingBalance().minus(blk.getAmount()));
-          _private.setBalance(api.getBalance().add(blk.getAmount()));
-        }
-        else
-        {
-          if (blk.getPrevious() == current.chain[current.chain.length - 1].getHash(true)) {
-            if (blk.getType() == 'state')
-            {
-              _private.setRepresentative(blk.getRepresentative());
-
-              // check if it's sending money, and if it is, check if the amount is the one intended
-              let previousBlk = current.chain[current.chain.length - 1];
-              let previousBalance = api.getBalanceUpToBlock(previousBlk.getHash(true));
-              if (blk.getBalance().lesser(previousBalance)) {
-                // it's sending money
-                if (blk.isImmutable()) {
-                  // block is set as immutable when its being imported from the server, it has already been confirmed and cannot change
-                  // so if the hash is correct, the balance is correct and all. Setting amount now for informative purposes
-                  blk.setAmount(previousBalance.minus(blk.getBalance()));
-                } else if (previousBalance.minus(blk.getBalance()).neq(blk.getAmount())) {
-                  // amount being sent does not match amount intended to be sent
-                  logger.error('Sending incorrect amount (' + blk.getAmount().toString() + ') (' + (real.minus(blk.getBalance('dec')).toString() ) + ')');
-                  api.recalculateWalletBalances();
-                  throw "Incorrect send amount.";
-                }
-              }
-            }
-            else if (blk.getType() == 'receive')
-            {
-              _private.setPendingBalance(api.getPendingBalance().minus(blk.getAmount()));
-              _private.setBalance(api.getBalance().add(blk.getAmount()));
-            }
-            else if (blk.getType() == 'send')
-            {
-              // check if amount sent matches amount actually being sent
-              var real = api.getBalanceUpToBlock(blk.getPrevious());
-              if (blk.isImmutable())
-              {
-                blk.setAmount(real.minus(blk.getBalance('dec')));
-              }
-              else if (real.minus(blk.getBalance('dec')).neq(blk.getAmount()))
-              {
-                logger.error('Sending incorrect amount (' + blk.getAmount().toString() + ') (' + (real.minus(blk.getBalance('dec')).toString() ) + ')');
-                api.recalculateWalletBalances();
-                throw "Incorrect send amount.";
-              }
-            }
-            else if (blk.getType() == 'change')
-            {
-              // TODO
-              _private.setRepresentative(blk.getRepresentative());
-            }
-            else
-              throw "Invalid block type";
-            current.chain.push(blk);
-            if(broadcast)
-              readyBlocks.push(blk);
-            api.removePendingBlock(blockHash);
-            api.recalculateWalletBalances();
+        api.useAccount(blk.getAccount())
+        if (blk.getPrevious() === current.chain[current.chain.length - 1].getHash(true)) {
+          if (current.getBalance().minus(blk.getTransactionFee()).lesser(blk.getAmount)) {
+            throw new Error('Insufficient funds to confirm this block')
+          } else {
+            current.chain.push(blk)
+            if (broadcast) readyBlocks.push(blk)
+            api.removePendingBlock(blockHash)
+            api.recalculateWalletBalances()
           }
-          else
-          {
-            console.log(blk.getPrevious() + " " + current.chain[current.chain.length - 1].getHash(true));
-            logger.warn("Previous block does not match actual previous block");
-            throw "Previous block does not match actual previous block";
-          }
+        } else {
+          console.log(blk.getPrevious() + ' ' + current.chain[current.chain.length - 1].getHash(true))
+          logger.warn('Previous block does not match actual previous block')
+          throw new Error('Previous block does not match actual previous block')
         }
-        logger.log("Block added to chain: " + blk.getHash(true));
+        logger.log('Block added to chain: ' + blk.getHash(true))
+      } else {
+        logger.error('Trying to confirm block without signature or work.')
+        throw new Error('Block lacks signature or work.')
       }
-      else
-      {
-        logger.error("Trying to confirm block without signature or work.");
-        throw "Block lacks signature or work.";
-      }
-    }
-    else {
-      logger.warn("Block trying to be confirmed has not been found.");
-      throw 'Block not found';
+    } else {
+      logger.warn('Block trying to be confirmed has not been found.')
+      throw new Error('Block not found')
     }
   }
 
-  api.importBlock = function (blk, acc, broadcast = true) {
-    api.useAccount(acc);
-    blk.setAccount(acc);
-    if (!blk.ready())
-      throw "Block should be complete.";
-
-    current.lastPendingBlock = blk.getHash(true);
+  api.importBlock = (blk, acc, broadcast = true) => {
+    api.useAccount(acc)
+    blk.setAccount(acc)
+    if (!blk.ready()) throw new Error('Block should be complete.')
+    current.lastPendingBlock = blk.getHash(true)
 
     // check if there is a conflicting block pending
     for (let i in current.pendingBlocks) {
-      if (current.pendingBlocks[i].getPrevious() == blk.getPrevious()) {
+      if (current.pendingBlocks[i].getPrevious() === blk.getPrevious()) {
         // conflict
-        _private.fixPreviousChange(blk.getPrevious(), blk.getHash(true), acc);
+        _private.fixPreviousChange(blk.getPrevious(), blk.getHash(true), acc)
       }
     }
 
-    current.pendingBlocks.push(blk);
-    walletPendingBlocks.push(blk);
-    api.confirmBlock(blk.getHash(true), broadcast);
+    current.pendingBlocks.push(blk)
+    walletPendingBlocks.push(blk)
+    api.confirmBlock(blk.getHash(true), broadcast)
   }
 
-  api.importForkedBlock = function (blk, acc) {
-    api.useAccount(acc);
-    var prev = blk.getPrevious();
+  api.importForkedBlock = (blk, acc) => {
+    api.useAccount(acc)
+    const prev = blk.getPrevious()
 
     for (let i = current.chain.length - 1; i >= 0; i--) {
-      if (current.chain[i].getPrevious() == prev) {
+      if (current.chain[i].getPrevious() === prev) {
         // fork found, delete block and its successors
-        current.chain.splice(i, current.chain.length);
+        current.chain.splice(i, current.chain.length)
 
         // delete pending blocks if any
-        current.pendingBlocks = [];
+        current.pendingBlocks = []
 
         // import new block
-        api.importBlock(blk, acc);
-        return true;
+        api.importBlock(blk, acc)
+        return true
       }
     }
-    return false;
+    return false
   }
 
-  _private.fixPreviousChange = function (oldPrevious, newPrevious, acc) {
-    api.useAccount(acc);
+  _private.fixPreviousChange = (oldPrevious, newPrevious, acc) => {
+    api.useAccount(acc)
     for (let i in current.pendingBlocks) {
-      if (current.pendingBlocks[i].getPrevious() == oldPrevious) {
-        var oldHash = current.pendingBlocks[i].getHash(true);
-        current.pendingBlocks[i].changePrevious(newPrevious);
-        var newHash = current.pendingBlocks[i].getHash(true);
-        current.lastPendingBlock = newHash;
-        _private.fixPreviousChange(oldHash, newHash, acc);
+      if (current.pendingBlocks[i].getPrevious() === oldPrevious) {
+        const oldHash = current.pendingBlocks[i].getHash(true)
+        current.pendingBlocks[i].changePrevious(newPrevious)
+        const newHash = current.pendingBlocks[i].getHash(true)
+        current.lastPendingBlock = newHash
+        _private.fixPreviousChange(oldHash, newHash, acc)
       }
     }
   }
 
-  api.getLoginKey = function()
-	{
-		return loginKey;
-	}
+  api.getLoginKey = () => {
+    return loginKey
+  }
 
-	api.setLoginKey = function(lk = false)
-	{
-		if(loginKey === false)
-		  if(lk)
-			  loginKey = lk;
-			else
-			  loginKey = uint8_hex(nacl.randomBytes(32));
-		// cannot be changed
-	}
-
-	api.lightWallet = function(light)
-	{
-	  lightWallet = light;
-	}
+  api.setLoginKey = (lk = false) => {
+    if (loginKey === false) {
+      if (lk) {
+        loginKey = lk
+      } else {
+        loginKey = uint8ToHex(nacl.randomBytes(32))
+      }
+    }
+  }
 
   /**
    * Encrypts an packs the wallet data in a hex string
@@ -1187,156 +1101,129 @@ module.exports = function (password) {
    * @returns {string}
    */
   api.pack = function () {
-    var pack = {};
+    let pack = {}
 
-    pack.seed = uint8_hex(seed);
-    pack.last = lastKeyFromSeed;
-    pack.version = version;
-    pack.loginKey = loginKey;
-    pack.minimumReceive = minimumReceive.toString();
+    pack.seed = uint8ToHex(seed)
+    pack.last = lastKeyFromSeed
+    pack.version = version
+    pack.loginKey = loginKey
 
     pack.accounts = []
-    for (var i in keys) {
-      let key = keys[i];
+    for (let i in keys) {
+      let key = keys[i]
       switch (key.type) {
-      case KEY_TYPE.SEEDED:
-        pack.accounts.push({
-          type: KEY_TYPE.SEEDED,
-          label: key.label,
-          seedIndex: key.seedIndex,
-        });
-        break;
-      case KEY_TYPE.EXPLICIT:
-        pack.accounts.push({
-          type: KEY_TYPE.EXPLICIT,
-          label: key.label,
-          secretKey: uint8_hex(key.priv),
-        });
-        break;
-      default: throw "Unsupported key type"
+        case KEY_TYPE.SEEDED:
+          pack.accounts.push({
+            type: KEY_TYPE.SEEDED,
+            label: key.label,
+            seedIndex: key.seedIndex
+          })
+          break
+        case KEY_TYPE.EXPLICIT:
+          pack.accounts.push({
+            type: KEY_TYPE.EXPLICIT,
+            label: key.label,
+            secretKey: uint8ToHex(key.priv)
+          })
+          break
+        default: throw new Error('Unsupported key type')
       }
     }
 
-    pack = JSON.stringify(pack);
-    pack = stringToHex(pack);
-    pack = new Buffer(pack, 'hex');
+    pack = JSON.stringify(pack)
+    pack = stringToHex(pack)
+    pack = Buffer.from(pack, 'hex')
 
-    var context = blake.blake2bInit(32);
-    blake.blake2bUpdate(context, pack);
-    var checksum = blake.blake2bFinal(context);
+    let context = blake.blake2bInit(32)
+    blake.blake2bUpdate(context, pack)
+    const checksum = blake.blake2bFinal(context)
 
-    var salt = new Buffer(nacl.randomBytes(16));
-    var key = pbkdf2.pbkdf2Sync(passPhrase, salt, iterations, 32, 'sha1');
+    const salt = Buffer.form(nacl.randomBytes(16))
+    const key = pbkdf2.pbkdf2Sync(passPhrase, salt, iterations, 32, 'sha1')
 
+    const options = { mode: AES.CBC, padding: Iso10126 }
+    const encryptedBytes = AES.encrypt(pack, key, salt, options)
 
-    var options = { mode: AES.CBC, padding: Iso10126 };
-    var encryptedBytes = AES.encrypt(pack, key, salt, options);
-
-
-    var payload = Buffer.concat([new Buffer(checksum), salt, encryptedBytes]);
+    const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
 
     // decrypt to check if wallet was corrupted during ecryption somehow
-    if(api.decryptAndCheck(payload).toString('hex') === false)
-      return api.pack(); // try again, shouldnt happen often
-    return payload.toString('hex');
+    if (api.decryptAndCheck(payload).toString('hex') === false) {
+      return api.pack() // try again, shouldnt happen often
+    }
+    return payload.toString('hex')
   }
 
   /**
    * Constructs the wallet from an encrypted base64 encoded wallet
    *
    */
-  api.load = function (data) {
-    var decryptedBytes = api.decryptAndCheck(data);
-    if(decryptedBytes === false)
-      throw "Wallet is corrupted or has been tampered.";
+  api.load = (data) => {
+    const decryptedBytes = api.decryptAndCheck(data)
+    if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
 
-    var walletData = JSON.parse(decryptedBytes.toString('utf8'));
+    const walletData = JSON.parse(decryptedBytes.toString('utf8'))
 
-    if (!walletData.version || walletData.version == 1) {
-      // Migrate data to v2 format
-      let labels = walletData.labels || [];
-      walletData.accounts = [];
-      for(let i = 0; i < (walletData.last || 0) + 1; i++) {
-        let label = '';
-        for (let j in labels) {
-          if (labels[j].key == i) {
-            label = labels[j].label;
-            break;
-          }
-        }
-        walletData.accounts.push({
-          type: KEY_TYPE.SEEDED,
-          label: label,
-          seedIndex: i,
-        });
-      }
-      delete walletData.labels;
-      delete walletData.last;
-    }
-
-    seed = hex_uint8(walletData.seed);
-    minimumReceive = walletData.minimumReceive != undefined ? bigInt(walletData.minimumReceive) : bigInt("1000000000000000000000000");
-    loginKey = walletData.loginKey != undefined ? walletData.loginKey : false;
+    seed = hexToUint8(walletData.seed)
+    loginKey = walletData.loginKey !== undefined ? walletData.loginKey : false
 
     for (let i in (walletData.accounts || [])) {
-      let acc = walletData.accounts[i];
+      let acc = walletData.accounts[i]
       switch (acc.type) {
-      case KEY_TYPE.SEEDED: {
-        let key = _private.newKeyDataFromSeed(acc.seedIndex);
-        key.label = acc.label;
-        _private.addKey(key);
-        lastKeyFromSeed = Math.max(lastKeyFromSeed, acc.seedIndex);
-        break;
-      }
-      case KEY_TYPE.EXPLICIT: {
-        let key = _private.newKeyDataFromSecret(hex_uint8(acc.secretKey));
-        key.label = acc.label;
-        _private.addKey(key);
-        break;
-      }
-      default: throw "Unsupported key type"
+        case KEY_TYPE.SEEDED: {
+          let key = _private.newKeyDataFromSeed(acc.seedIndex)
+          key.label = acc.label
+          _private.addKey(key)
+          lastKeyFromSeed = Math.max(lastKeyFromSeed, acc.seedIndex)
+          break
+        }
+        case KEY_TYPE.EXPLICIT: {
+          let key = _private.newKeyDataFromSecret(hexToUint8(acc.secretKey))
+          key.label = acc.label
+          _private.addKey(key)
+          break
+        }
+        default: throw new Error('Unsupported key type')
       }
     }
 
-    lastKeyFromSeed = Math.max(walletData.last || 0, lastKeyFromSeed);
+    lastKeyFromSeed = Math.max(walletData.last || 0, lastKeyFromSeed)
 
-    api.useAccount(keys[0].account);
+    api.useAccount(keys[0].account)
 
-    ciphered = false;
-    return walletData;
+    ciphered = false
+    return walletData
   }
 
-  api.decryptAndCheck = function(data) {
-    var bytes = new Buffer(data, 'hex');
-    var checksum = bytes.slice(0, 32);
-    var salt = bytes.slice(32, 48);
-    var payload = bytes.slice(48);
-    var key = pbkdf2.pbkdf2Sync(passPhrase, salt, iterations, 32, 'sha1');
+  api.decryptAndCheck = (data) => {
+    const bytes = Buffer.from(data, 'hex')
+    const checksum = bytes.slice(0, 32)
+    const salt = bytes.slice(32, 48)
+    const payload = bytes.slice(48)
+    const key = pbkdf2.pbkdf2Sync(passPhrase, salt, iterations, 32, 'sha1')
 
-    var options = {};
-    options.padding = options.padding || Iso10126;
-    var decryptedBytes = AES.decrypt(payload, key, salt, options);
+    let options = {}
+    options.padding = options.padding || Iso10126
+    var decryptedBytes = AES.decrypt(payload, key, salt, options)
 
-    var context = blake.blake2bInit(32);
-    blake.blake2bUpdate(context, decryptedBytes);
-    var hash = uint8_hex(blake.blake2bFinal(context));
+    var context = blake.blake2bInit(32)
+    blake.blake2bUpdate(context, decryptedBytes)
+    var hash = uint8ToHex(blake.blake2bFinal(context))
 
-    if (hash != checksum.toString('hex').toUpperCase())
-      return false;
-    return decryptedBytes;
+    if (hash !== checksum.toString('hex').toUpperCase()) return false
+    return decryptedBytes
   }
 
-  api.createWallet = function (setSeed = false) {
-    if (!setSeed)
-      seed = nacl.randomBytes(32);
-    else
-      api.setSeed(setSeed);
-    api.newKeyFromSeed();
-    api.useAccount(keys[0].account);
-    loginKey = uint8_hex(nacl.randomBytes(32));
-    return uint8_hex(seed);
+  api.createWallet = (setSeed = false) => {
+    if (!setSeed) {
+      seed = nacl.randomBytes(32)
+    } else {
+      api.setSeed(setSeed)
+    }
+    api.newKeyFromSeed()
+    api.useAccount(keys[0].account)
+    loginKey = uint8ToHex(nacl.randomBytes(32))
+    return uint8ToHex(seed)
   }
 
-
-  return api;
+  return api
 }
