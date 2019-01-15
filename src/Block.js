@@ -333,10 +333,10 @@ module.exports = () => {
     if (testNet) {
       t = hexToUint8(TEST_NET_WORK_THRESHOLD)
     }
-    var context = blake.blake2bInit(8, null)
+    const context = blake.blake2bInit(8, null)
     blake.blake2bUpdate(context, hexToUint8(work).reverse())
     blake.blake2bUpdate(context, hexToUint8(blockHash))
-    var threshold = blake.blake2bFinal(context).reverse()
+    const threshold = blake.blake2bFinal(context).reverse()
     if (testNet && threshold[0] === t[0]) return true
     if (!testNet && threshold[0] === t[0] && threshold[1] === t[1] && threshold[2] === t[2] && threshold[3] >= t[3]) return true
     return false
