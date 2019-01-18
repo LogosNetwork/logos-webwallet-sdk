@@ -232,7 +232,7 @@ function getRandomValues (buf) {
     buf.set(bytes)
     return buf
   } else {
-    throw new Error('No secure random number generator available.');
+    throw new Error('No secure random number generator available.')
   }
 }
 

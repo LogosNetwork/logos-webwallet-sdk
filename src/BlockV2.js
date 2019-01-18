@@ -286,7 +286,12 @@ class Block {
     return keyFromAccount(this._account)
   }
 
-  async generateWork (testNet = false) {
+  /**
+   * Creates a work for the block.
+   * @param {boolean} [testNet] generate PoW for test net instead of real network
+   * @returns {Promise<Work>}
+   */
+  async createWork (testNet = false) {
     if (!this._previous) throw new Error('Previous is not set.')
     let work = await generateWork(this._previous, testNet)
     this._work = work
