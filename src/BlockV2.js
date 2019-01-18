@@ -1,7 +1,4 @@
-import { hexToUint8, decToHex, uint8ToHex, keyFromAccount } from './Functions'
-const testNet = true
-const MAIN_NET_WORK_THRESHOLD = 'ffffffc000000000'
-const TEST_NET_WORK_THRESHOLD = 'ff00000000000000'
+import { hexToUint8, decToHex, uint8ToHex, keyFromAccount, checkWork, generateWork } from './Functions'
 const STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006'
 const blake = require('blakejs')
 
@@ -165,7 +162,6 @@ class Block {
     }
   }
 
-  // TODO Look into generating work on get work
   /**
    * Return the work of the block
    * @type {hex}
@@ -290,6 +286,12 @@ class Block {
     return keyFromAccount(this._account)
   }
 
+  async generateWork (testNet = false) {
+    if (!this._previous) throw new Error('Previous is not set.')
+    let work = await generateWork(this._previous, testNet)
+    this._work = work
+  }
+
   toJSON (pretty = false) {
     const obj = {}
     obj.type = 'state'
@@ -301,20 +303,9 @@ class Block {
     obj.amount = this._amount
     obj.work = this._work
     obj.signature = this._signature
+    if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }
-}
-
-function checkWork (work, previousHash) {
-  let t = hexToUint8(MAIN_NET_WORK_THRESHOLD)
-  if (testNet) t = hexToUint8(TEST_NET_WORK_THRESHOLD)
-  const context = blake.blake2bInit(8, null)
-  blake.blake2bUpdate(context, hexToUint8(work).reverse())
-  blake.blake2bUpdate(context, hexToUint8(previousHash))
-  const threshold = blake.blake2bFinal(context).reverse()
-  if (testNet && threshold[0] === t[0]) return true
-  if (!testNet && threshold[0] === t[0] && threshold[1] === t[1] && threshold[2] === t[2] && threshold[3] >= t[3]) return true
-  return false
 }
 
 module.exports = Block
