@@ -1,14 +1,13 @@
 import { hexToUint8, decToHex, uint8ToHex, keyFromAccount, checkWork, generateWork } from './Functions'
 const STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006'
 const blake = require('blakejs')
-
+const nacl = require('tweetnacl/nacl')
 /**
  * The base class for all blocks.
  * We will create different classes for each request type once we get those implemented on core
  */
 class Block {
   constructor (options = {
-    hash: null,
     signature: null,
     work: null,
     amount: null,
@@ -18,13 +17,6 @@ class Block {
     destination: null,
     account: null
   }) {
-    /**
-     * Hash of the block
-     * @type {string}
-     * @private
-     */
-    this._hash = options.hash
-
     /**
      * Signature of the block
      * @type {string}
@@ -74,7 +66,7 @@ class Block {
     this._destination = options.destination
 
     /**
-     * Account public key of block publisher
+     * Account logos address of the block author
      * @type {string}
      * @private
      */
@@ -295,6 +287,26 @@ class Block {
     if (!this._previous) throw new Error('Previous is not set.')
     let work = await generateWork(this._previous, testNet)
     this._work = work
+  }
+
+  /**
+   * Creates a signature for the block.
+   * @param {string} privateKey - private key in hex
+   */
+  sign (privateKey) {
+    if (privateKey.length !== 32) throw new Error('Invalid Secret Key length. Should be 32 bytes.')
+    this.signature = uint8ToHex(nacl.sign.detached(this.hash, privateKey))
+  }
+
+  /**
+   * Verifies the blocks integrity
+   * @param {string} privateKey - private key in hex
+   */
+  verify () {
+    if (!this.hash) throw new Error('Hash is not set.')
+    if (!this.signature) throw new Error('Signature is not set.')
+    if (!this._account) throw new Error('Account is not set.')
+    return nacl.sign.detached.verify(hexToUint8(this.hash), hexToUint8(this.signature), hexToUint8(this.account))
   }
 
   toJSON (pretty = false) {
