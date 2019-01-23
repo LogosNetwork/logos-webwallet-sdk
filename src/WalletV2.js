@@ -1,7 +1,7 @@
 import { uint8ToHex, hexToUint8, decToHex, accountFromHexKey } from './Functions'
 const Logger = require('./Logger')
-const Account = require('./Account.js')
 const logger = new Logger()
+const Account = require('./Account.js')
 const nacl = require('tweetnacl/nacl')
 const blake = require('blakejs')
 const bigInt = require('big-integer')
@@ -12,6 +12,7 @@ class Wallet {
     deterministicKeyIndex: 0,
     currentAccountAddress: null,
     accounts: {},
+    walletID: false,
     locked: true,
     version: 1
   }) {
@@ -65,14 +66,44 @@ class Wallet {
     this._wallet = options.wallet
 
     /**
+     * Wallet Identifer
+     * @type {string}
+     * @private
+     */
+    this._walletID = options.walletID
+
+    /**
      * PBKDF2 Iterations
      * I don't think people need to edit this
      * NIST guidelines recommend 10,000 so lets do that
      * @type {number}
      * @private
      */
-
     this._iterations = 10000
+  }
+
+  /**
+   * The id of the wallet
+   * @type {string} The hex identifier of the wallet
+   * @readonly
+   */
+  get walletID () {
+    return this._walletID
+  }
+
+  /**
+   * Sets the current account
+   *
+   * @param {string} address - The address of the account you want to use
+   */
+  set walletID (id) {
+    if (this._walletID === false) {
+      if (id) {
+        this._walletID = id
+      } else {
+        this._walletID = uint8ToHex(nacl.randomBytes(32))
+      }
+    }
   }
 
   /**
@@ -116,7 +147,7 @@ class Wallet {
   }
 
   /**
-   * The balance of all the wallets in reason
+   * The current balance of all the wallets in reason
    * @type {bigInt}
    * @readonly
    */
@@ -160,6 +191,19 @@ class Wallet {
   get seed () {
     if (this._locked) throw new Error('Wallet needs to be unlocked first.')
     return this._seed
+  }
+
+  /**
+   * Return all the blocks that are pending in every account associated to this wallet
+   * @type {string}
+   * @readonly
+   */
+  get pendingBlocks () {
+    let pendingBlocks = []
+    Object.keys(this._accounts).forEach(account => {
+      pendingBlocks.concat(account.pendingChain)
+    })
+    return pendingBlocks
   }
 
   /**
@@ -223,8 +267,38 @@ class Wallet {
    */
   recalculateWalletBalancesFromChain () {
     Object.keys(this._accounts).forEach(account => {
-      account.updateBalanceFromChain()
+      account.updateBalancesFromChain()
     })
+  }
+
+  /**
+   * Finds the block object of the specified hash of one of our accounts
+   *
+   * @param {string} hash - The hash of the block we are looking for the object of
+   * @returns {string} false if no block object of the specified hash was found
+   */
+  getBlock (hash) {
+    Object.keys(this._accounts).forEach(account => {
+      let block = account.getBlock(hash)
+      if (block !== false) {
+        return block
+      }
+    })
+    return false
+  }
+
+  /**
+   * Adds block to account chain
+   *
+   * @param {string} - blockHash The block hash
+   * @param {string} - hash The block hash
+   * @throws An exception if the block is not found in the ready blocks array
+   * @throws An exception if the previous block does not match the last chain block
+   * @throws An exception if the block amount is greater than your balance minus the transaction fee
+   */
+  confirmBlock (account, hash) {
+    this.setAccount = account
+    return account.confirmBlock(hash)
   }
 
   _generateAccountOptionsFromSeed (index) {

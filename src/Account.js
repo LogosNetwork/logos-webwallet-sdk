@@ -1,18 +1,27 @@
 const bigInt = require('big-integer')
+const Block = require('./BlockV2.js')
+const Logger = require('./Logger')
+const logger = new Logger()
+const minimumTransactionFee = '10000000000000000000000'
+const EMPTY_WORK = '0000000000000000'
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
+const officialRepresentative = 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'
+
 class Account {
   constructor (options = {
     label: null,
     address: null,
     publicKey: null,
     privateKey: null,
+    previous: null,
     balance: bigInt(0),
     pendingBalance: bigInt(0),
     representative: null,
     chain: [],
     receiveChain: [],
     pendingChain: [],
-    version: 1
+    version: 1,
+    remoteWork: true
   }) {
     /**
      * Label of this account
@@ -97,11 +106,25 @@ class Account {
     this._pendingChain = options.pendingChain
 
     /**
+     * Previous hexadecimal hash of the last confirmed or pending block
+     * @type {string}
+     * @private
+     */
+    this._previous = options.previous
+
+    /**
      * Account version of webwallet SDK
      * @type {number}
      * @private
      */
-    this._version = 1
+    this._version = options.version
+
+    /**
+     * Remote work enabled
+     * @type {boolean}
+     * @private
+     */
+    this._remoteWork = options.remoteWork
   }
 
   /**
@@ -167,18 +190,24 @@ class Account {
    * @readonly
    */
   get representative () {
-    let rep = null
+    let rep = officialRepresentative
     if (this._representative) {
       rep = this._representative
     } else {
       // look for a state, change or open block on the chain
       this._pendingChain.forEach(block => {
-        if (block.representative) rep = block.representative
+        if (block.representative) {
+          rep = block.representative
+          this._representative = rep
+        }
       })
       // No pending change blocks. Scanning previous sends to find rep
       if (!rep) {
         this._chain.forEach(block => {
-          if (block.representative) rep = block.representative
+          if (block.representative) {
+            rep = block.representative
+            this._representative = rep
+          }
         })
       }
     }
@@ -216,6 +245,33 @@ class Account {
   }
 
   /**
+   * Gets the total number of blocks on the send chain
+   *
+   * @returns {number} count of all the blocks
+   */
+  get blockCount () {
+    return this._chain.length
+  }
+
+  /**
+   * Gets the total number of blocks on the pending chain
+   *
+   * @returns {number} count of all the blocks
+   */
+  get pendingBlockCount () {
+    return this._pendingChain.length
+  }
+
+  /**
+   * Gets the total number of blocks on the receive chain
+   *
+   * @returns {number} count of all the blocks
+   */
+  get receiveCount () {
+    return this._receiveChain.length
+  }
+
+  /**
    * Add any data you want to the account
    * @param {string} label - The label you want to add to the account
    * @returns {string} label you set
@@ -226,24 +282,52 @@ class Account {
   }
 
   /**
-   * Updates the balance of the account by traversing the chain
-   *
-   * @returns {boolean}
+   * Return the previous block as hash
+   * @type {hex}
+   * @returns {hash} hash of the previous transaction
    */
-  updateBalanceFromChain () {
+  get previous () {
+    if (this._previous !== null) {
+      return this._previous
+    } else {
+      if (this._pendingChain.length > 0) {
+        return this._pendingChain[this.pendingChain.length - 1].hash
+      } else if (this._chain.length > 0) {
+        return this._chain[this._chain.length - 1].hash
+      } else {
+        return null
+      }
+    }
+  }
+
+  /**
+   * Sets the previous block hash
+   *
+   * @param {string} hex - The hex encoded 64 byte previous block hash
+   * @throws An exception on invalid block hash
+   */
+  set previous (val) {
+    if (!/[0-9A-F]{64}/i.test(val)) throw new Error('Invalid previous block hash.')
+    this._previous = val
+  }
+
+  /**
+   * Updates the balances of the account by traversing the chain
+   */
+  updateBalancesFromChain () {
     if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
     this._chain.forEach(block => {
-      sum = sum.minus(bigInt(block.amount))
-    })
-    this._pendingChain.forEach(block => {
       sum = sum.minus(bigInt(block.amount))
     })
     this._receiveChain.forEach(block => {
       sum = sum.plus(bigInt(block.amount))
     })
     this._balance = sum
-    return sum
+    this._pendingChain.forEach(block => {
+      sum = sum.minus(bigInt(block.amount))
+    })
+    this._pendingBalance = sum
   }
 
   /**
@@ -375,30 +459,134 @@ class Account {
   }
 
   /**
-   * Gets the total number of blocks on the send chain
-   *
-   * @returns {number} count of all the blocks
+   * Removes all pending blocks from the pending chain
    */
-  get blockCount () {
-    return this._chain.length
+  removePendingBlocks () {
+    this._pendingChain = []
+    this._pendingBalance = bigInt(0)
   }
 
   /**
-   * Gets the total number of blocks on the pending chain
+   * Called when a block is confirmed to remove it from the pending block pool
    *
-   * @returns {number} count of all the blocks
+   * @param {string} blockHash - The hash of the block we are confirming
    */
-  get pendingBlockCount () {
-    return this._pendingChain.length
+  removePendingBlock (blockHash) {
+    let found = false
+    for (let i in this._pendingChain) {
+      const block = this._pendingChain[i]
+      if (block.hash === blockHash) {
+        this._pendingChain.splice(i, 1)
+        return true
+      }
+    }
+    if (!found) {
+      console.log('Not found')
+      return false
+    }
   }
 
   /**
-   * Gets the total number of blocks on the receive chain
+   * Finds the block object of the specified block hash
    *
-   * @returns {number} count of all the blocks
+   * @param {string} hash - The hash of the block we are looking for
+   * @returns {block} false if no block object of the specified hash was found
    */
-  get receiveCount () {
-    return this._receiveChain.length
+  getBlock (hash) {
+    for (let j = this._chain.length - 1; j >= 0; j--) {
+      const blk = this._chain[j]
+      if (blk.hash === hash) return blk
+    }
+    for (let n = this._receiveChain.length - 1; n >= 0; n--) {
+      const blk = this._receiveChain[n]
+      if (blk.hash === hash) return blk
+    }
+    for (let n = this._pendingChain.length - 1; n >= 0; n--) {
+      const blk = this._receiveChain[n]
+      if (blk.hash === hash) return blk
+    }
+    return false
+  }
+
+  /**
+   * Finds the block object of the specified block hash in the pending chain
+   *
+   * @param {string} hash - The hash of the block we are looking for
+   * @returns {block} false if no block object of the specified hash was found
+   */
+  getPendingBlock (hash) {
+    for (let n = this._pendingChain.length - 1; n >= 0; n--) {
+      const blk = this._receiveChain[n]
+      if (blk.hash === hash) return blk
+    }
+    return false
+  }
+
+  /**
+   * Creates a block from the specified information
+   *
+   * @param {string} to - The account address of who you are sending to
+   * @param {string | bigInt | number} amount - The amount you wish to send in reason
+   * @returns {block} the block object
+   */
+  async createBlock (to, amount = 0) {
+    let block = new Block({
+      signature: null,
+      work: null,
+      amount: amount.toString(),
+      previous: this.previous,
+      transactionFee: minimumTransactionFee,
+      representative: this.representative,
+      destination: to,
+      account: this._address
+    })
+
+    block.sign(this._privateKey)
+
+    this._previous = block.hash
+    this._balance = this._balance.minus(bigInt(amount))
+    if (block.work === null) {
+      if (this._remoteWork) {
+        // TODO Send request to the remote work cluster
+        block.work = EMPTY_WORK
+      } else {
+        await block.createWork(true)
+      }
+    }
+    this._pendingChain.push(block)
+
+    return block
+  }
+
+  /**
+   * Confirms the block in the local chain
+   *
+   * @param {string} hash The block hash
+   * @throws An exception if the block is not found in the pending blocks array
+   * @throws An exception if the previous block does not match the last chain block
+   * @throws An exception if the block amount is greater than your balance minus the transaction fee
+   */
+  confirmBlock (hash) {
+    const block = this.getPendingBlock(hash)
+    if (block) {
+      if (block.previous === this._chain[this._chain.length - 1].hash) {
+        if (this._balance.minus(block.transactionFee).lesser(block.amount)) {
+          throw new Error('Insufficient funds to confirm this block there must be an issue in our local chain or someone is sending us bad blocks')
+        } else {
+          // Confirm the block add it to the local confirmed chain and remove from pending.
+          this._chain.push(block)
+          this.removePendingBlock(hash)
+          this.updateBalancesFromChain()
+          logger.log('Block added to chain: ' + block.hash)
+        }
+      } else {
+        console.log(`Block Previous :${block.previous}\n Local Previous: ${this._chain[this._chain.length - 1].hash}`)
+        throw new Error('Previous block does not match actual previous block')
+      }
+    } else {
+      logger.warn('Block trying to be confirmed has not been found.')
+      throw new Error('Block not found')
+    }
   }
 }
 

@@ -52,14 +52,14 @@ class Block {
     this._transactionFee = options.transactionFee
 
     /**
-     * Representative's public key of the account
+     * Representative's address of the account
      * @type {string}
      * @private
      */
     this._representative = options.representative
 
     /**
-     * Destination of where you are sending the block to
+     * Destination address of where you are sending the block to
      * @type {string}
      * @private
      */
@@ -147,7 +147,6 @@ class Block {
   set work (val) {
     if (!this._previous) throw new Error('Previous is not set.')
     if (checkWork(val, this._previous)) {
-      if (this._signature) this._signature = null
       this._work = val
     } else {
       throw new Error('Invalid Work for this Block')
@@ -233,12 +232,12 @@ class Block {
   }
 
   /**
-   * Return the account of the representative
+   * Return the public key of the representative account
    * @type {string}
    * @readonly
    */
   get representative () {
-    return this._representative
+    return keyFromAccount(this._representative)
   }
 
   /**
@@ -281,12 +280,13 @@ class Block {
   /**
    * Creates a work for the block.
    * @param {boolean} [testNet] generate PoW for test net instead of real network
-   * @returns {Promise<Work>}
+   * @returns {Work}
    */
   async createWork (testNet = false) {
     if (!this._previous) throw new Error('Previous is not set.')
     let work = await generateWork(this._previous, testNet)
     this._work = work
+    return work
   }
 
   /**
@@ -314,7 +314,7 @@ class Block {
     obj.type = 'state'
     obj.previous = this._previous
     obj.link = this.destination
-    obj.representative = this._representative
+    obj.representative = this.representative
     obj.transactionFee = this._transactionFee
     obj.account = this.account
     obj.amount = this._amount
