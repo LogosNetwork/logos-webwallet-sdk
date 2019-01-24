@@ -267,6 +267,7 @@ class Wallet {
     }
     const account = new Account(options)
     this._accounts[account.address] = account
+    this._currentAccountAddress = account.address
     logger.log('New account added to wallet.')
     return this._accounts[account.address]
   }
