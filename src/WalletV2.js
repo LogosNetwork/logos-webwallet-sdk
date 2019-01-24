@@ -28,7 +28,12 @@ class Wallet {
      * @type {string} The 32 byte seed hex encoded
      * @private
      */
-    this._seed = options.seed
+    if (!options.seed) {
+      this._seed = nacl.randomBytes(32)
+      this.createAccount()
+    } else {
+      this._seed = options.seed
+    }
 
     /**
      * Deterministic Key Index is used to generate accounts
@@ -70,7 +75,11 @@ class Wallet {
      * @type {string}
      * @private
      */
-    this._walletID = options.walletID
+    if (!options.walletID) {
+      this._walletID = uint8ToHex(nacl.randomBytes(32))
+    } else {
+      this._walletID = options.walletID
+    }
 
     /**
      * PBKDF2 Iterations
