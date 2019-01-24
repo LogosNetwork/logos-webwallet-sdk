@@ -1,5 +1,5 @@
 const bigInt = require('big-integer')
-const Block = require('./BlockV2.js')
+const Block = require('./Block.js')
 const Logger = require('./Logger')
 const logger = new Logger()
 const minimumTransactionFee = '10000000000000000000000'
@@ -21,7 +21,8 @@ class Account {
     receiveChain: [],
     pendingChain: [],
     version: 1,
-    remoteWork: true
+    remoteWork: true,
+    index: null
   }) {
     /**
      * Label of this account
@@ -32,6 +33,14 @@ class Account {
      * @private
      */
     this._label = options.label
+
+    /**
+     * Deterministic Key Index used to generate this account
+     *
+     * @type {string}
+     * @private
+     */
+    if (options.index !== null) this._index = options.index
 
     /**
      * Address of this account
