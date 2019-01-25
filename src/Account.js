@@ -14,8 +14,8 @@ class Account {
     publicKey: null,
     privateKey: null,
     previous: null,
-    balance: bigInt(0),
-    pendingBalance: bigInt(0),
+    balance: '0',
+    pendingBalance: '0',
     representative: null,
     chain: [],
     receiveChain: [],
@@ -37,86 +37,79 @@ class Account {
     /**
      * Deterministic Key Index used to generate this account
      *
-     * @type {string}
+     * @type {number}
      * @private
      */
     if (options.index !== null) this._index = options.index
 
     /**
      * Address of this account
-     * @type {string}
+     * @type {LogosAddress}
      * @private
      */
     this._address = options.address
 
     /**
      * Public Key of this account
-     * @type {string}
+     * @type {Hexadecimal64Length}
      * @private
      */
     this._publicKey = options.publicKey
 
     /**
      * Private Key of this account
-     * @type {string}
+     * @type {Hexadecimal64Length}
      * @private
      */
     this._privateKey = options.privateKey
 
     /**
      * Balance of this account in reason
-     * @type {string | number}
+     * @type {string}
      * @private
      */
-    this._balance = bigInt(options.balance)
+    this._balance = options.balance
 
     /**
      * Pending Balance of the account in reason
      *
      * pending balance is balance minus the sends that are pending
-     * @type {string | number}
+     * @type {string}
      * @private
      */
-    this._pendingBalance = bigInt(options.pendingBalance)
+    this._pendingBalance = options.pendingBalance
 
     /**
      * Representative of the account
-     * @type {string}
+     * @type {LogosAddress}
      * @private
      */
     this._representative = options.representative
 
     /**
      * Chain of the account
-     * @type {array<Block>}
+     * @type {Block[]}
      * @private
      */
     this._chain = options.chain
 
     /**
      * Receive chain of the account
-     * @type {array<Block>}
+     * @type {Block[]}
      * @private
      */
     this._receiveChain = options.receiveChain
 
     /**
      * Pending chain of the account (local unconfirmed sends)
-     * @type {array<Block>}
-     * @private
-     */
-    this._chain = options.chain
-
-    /**
-     * Chain of confirmed blocks
-     * @type {array<blocks>}
+     * @type {Block[]}
      * @private
      */
     this._pendingChain = options.pendingChain
 
     /**
      * Previous hexadecimal hash of the last confirmed or pending block
-     * @type {string}
+     * @type {Hexadecimal64Length}
      * @private
      */
     this._previous = options.previous
@@ -139,7 +132,6 @@ class Account {
   /**
    * The label of the account
    * @type {string}
-   * @readonly
    */
   get label () {
     return this._label
@@ -147,7 +139,7 @@ class Account {
 
   /**
    * The address of the account
-   * @type {string}
+   * @type {LogosAddress}
    * @readonly
    */
   get address () {
@@ -156,7 +148,7 @@ class Account {
 
   /**
    * The public key of the account
-   * @type {hex}
+   * @type {Hexadecimal64Length}
    * @readonly
    */
   get publicKey () {
@@ -165,7 +157,7 @@ class Account {
 
   /**
    * The private key of the account
-   * @type {hex}
+   * @type {Hexadecimal64Length}
    * @readonly
    */
   get privateKey () {
@@ -178,7 +170,7 @@ class Account {
    * @readonly
    */
   get balance () {
-    return this._balance.toString()
+    return this._balance
   }
 
   /**
@@ -190,12 +182,12 @@ class Account {
    * @readonly
    */
   get pendingBalance () {
-    return this._pendingBalance.toString()
+    return this._pendingBalance
   }
 
   /**
    * The representative of the account
-   * @type {string}
+   * @type {LogosAddress}
    * @readonly
    */
   get representative () {
@@ -225,7 +217,7 @@ class Account {
 
   /**
    * array of confirmed blocks on the account
-   * @type {array<Block>}
+   * @type {Block[]}
    * @readonly
    */
   get chain () {
@@ -234,7 +226,7 @@ class Account {
 
   /**
    * array of confirmed receive blocks on the account
-   * @type {array<Block>}
+   * @type {Block[]}
    * @readonly
    */
   get receiveChain () {
@@ -246,7 +238,7 @@ class Account {
    *
    * These blocks have been sent for consensus but we haven't heard back on if they are confirmed yet.
    *
-   * @type {array<Block>}
+   * @type {Block[]}
    * @readonly
    */
   get pendingChain () {
@@ -256,7 +248,8 @@ class Account {
   /**
    * Gets the total number of blocks on the send chain
    *
-   * @returns {number} count of all the blocks
+   * @type {number} count of all the blocks
+   * @readonly
    */
   get blockCount () {
     return this._chain.length
@@ -265,7 +258,8 @@ class Account {
   /**
    * Gets the total number of blocks on the pending chain
    *
-   * @returns {number} count of all the blocks
+   * @type {number} count of all the blocks
+   * @readonly
    */
   get pendingBlockCount () {
     return this._pendingChain.length
@@ -274,26 +268,25 @@ class Account {
   /**
    * Gets the total number of blocks on the receive chain
    *
-   * @returns {number} count of all the blocks
+   * @type {number} count of all the blocks
+   * @readonly
    */
   get receiveCount () {
     return this._receiveChain.length
   }
 
   /**
-   * Add any data you want to the account
+   * Add any label you want to the account (e.g. Checking Account)
    * @param {string} label - The label you want to add to the account
-   * @returns {string} label you set
    */
   set label (label) {
     this._label = label
-    return this._label
   }
 
   /**
    * Return the previous block as hash
-   * @type {hex}
-   * @returns {hash} hash of the previous transaction
+   * @type {Hexadecimal64Length}
+   * @returns {Hexadecimal64Length} hash of the previous transaction
    */
   get previous () {
     if (this._previous !== null) {
@@ -310,18 +303,8 @@ class Account {
   }
 
   /**
-   * Sets the previous block hash
-   *
-   * @param {string} hex - The hex encoded 64 byte previous block hash
-   * @throws An exception on invalid block hash
-   */
-  set previous (val) {
-    if (!/[0-9A-F]{64}/i.test(val)) throw new Error('Invalid previous block hash.')
-    this._previous = val
-  }
-
-  /**
    * Updates the balances of the account by traversing the chain
+   * @returns {void}
    */
   updateBalancesFromChain () {
     if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
@@ -332,11 +315,11 @@ class Account {
     this._receiveChain.forEach(block => {
       sum = sum.plus(bigInt(block.amount))
     })
-    this._balance = sum
+    this._balance = sum.toString()
     this._pendingChain.forEach(block => {
       sum = sum.minus(bigInt(block.amount))
     })
-    this._pendingBalance = sum
+    this._pendingBalance = sum.toString()
   }
 
   /**
@@ -379,7 +362,7 @@ class Account {
    *
    * @param {number} count - Number of blocks you wish to retrieve
    * @param {number} offset - Number of blocks back from the frontier tip you wish to start at
-   * @returns {Array} all the blocks
+   * @returns {Block[]} all the blocks
    */
   recentBlocks (count = 5, offset = 0) {
     const blocks = []
@@ -395,7 +378,7 @@ class Account {
    *
    * @param {number} count - Number of blocks you wish to retrieve
    * @param {number} offset - Number of blocks back from the frontier tip you wish to start at
-   * @returns {Array} all the blocks
+   * @returns {Block[]} all the blocks
    */
   recentPendingBlocks (count = 5, offset = 0) {
     const blocks = []
@@ -411,7 +394,7 @@ class Account {
    *
    * @param {number} count - Number of blocks you wish to retrieve
    * @param {number} offset - Number of blocks back from the frontier tip you wish to start at
-   * @returns {Array} all the blocks
+   * @returns {Block[]} all the blocks
    */
   recentReceiveBlocks (count = 5, offset = 0) {
     const blocks = []
@@ -425,8 +408,8 @@ class Account {
   /**
    * Gets the blocks up to a certain hash from the send chain
    *
-   * @param {string} hash - Hash of the block you wish to stop retrieving blocks at
-   * @returns {Array} all the blocks up to and including the specified block
+   * @param {Hexadecimal64Length} hash - Hash of the block you wish to stop retrieving blocks at
+   * @returns {Block[]} all the blocks up to and including the specified block
    */
   getBlocksUpTo (hash) {
     const blocks = []
@@ -440,8 +423,8 @@ class Account {
   /**
    * Gets the blocks up to a certain hash from the pending chain
    *
-   * @param {string} hash - Hash of the block you wish to stop retrieving blocks at
-   * @returns {Array} all the blocks up to and including the specified block
+   * @param {Hexadecimal64Length} hash - Hash of the block you wish to stop retrieving blocks at
+   * @returns {Block[]} all the blocks up to and including the specified block
    */
   getPendingBlocksUpTo (hash) {
     const blocks = []
@@ -455,8 +438,8 @@ class Account {
   /**
    * Gets the blocks up to a certain hash from the receive chain
    *
-   * @param {string} hash - Hash of the block you wish to stop retrieving blocks at
-   * @returns {Array} all the blocks up to and including the specified block
+   * @param {Hexadecimal64Length} hash - Hash of the block you wish to stop retrieving blocks at
+   * @returns {Block[]} all the blocks up to and including the specified block
    */
   getReceiveBlocksUpTo (hash) {
     const blocks = []
@@ -469,22 +452,24 @@ class Account {
 
   /**
    * Removes all pending blocks from the pending chain
+   * @returns {void}
    */
   removePendingBlocks () {
     this._pendingChain = []
-    this._pendingBalance = bigInt(0)
+    this._pendingBalance = '0'
   }
 
   /**
    * Called when a block is confirmed to remove it from the pending block pool
    *
-   * @param {string} blockHash - The hash of the block we are confirming
+   * @param {Hexadecimal64Length} hash - The hash of the block we are confirming
+   * @returns {boolean}
    */
-  removePendingBlock (blockHash) {
+  removePendingBlock (hash) {
     let found = false
     for (let i in this._pendingChain) {
       const block = this._pendingChain[i]
-      if (block.hash === blockHash) {
+      if (block.hash === hash) {
         this._pendingChain.splice(i, 1)
         return true
       }
@@ -498,8 +483,8 @@ class Account {
   /**
    * Finds the block object of the specified block hash
    *
-   * @param {string} hash - The hash of the block we are looking for
-   * @returns {block} false if no block object of the specified hash was found
+   * @param {Hexadecimal64Length} hash - The hash of the block we are looking for
+   * @returns {Block} false if no block object of the specified hash was found
    */
   getBlock (hash) {
     for (let j = this._chain.length - 1; j >= 0; j--) {
@@ -520,8 +505,8 @@ class Account {
   /**
    * Finds the block object of the specified block hash in the pending chain
    *
-   * @param {string} hash - The hash of the block we are looking for
-   * @returns {block} false if no block object of the specified hash was found
+   * @param {Hexadecimal64Length} hash - The hash of the block we are looking for
+   * @returns {Block} false if no block object of the specified hash was found
    */
   getPendingBlock (hash) {
     for (let n = this._pendingChain.length - 1; n >= 0; n--) {
@@ -534,9 +519,9 @@ class Account {
   /**
    * Creates a block from the specified information
    *
-   * @param {string} to - The account address of who you are sending to
-   * @param {string | bigInt | number} amount - The amount you wish to send in reason
-   * @returns {block} the block object
+   * @param {LogosAddress} to - The account address of who you are sending to
+   * @param {string} amount - The amount you wish to send in reason
+   * @returns {Block} the block object
    */
   async createBlock (to, amount = 0) {
     let block = new Block({
@@ -553,7 +538,7 @@ class Account {
     block.sign(this._privateKey)
 
     this._previous = block.hash
-    this._balance = this._balance.minus(bigInt(amount))
+    this._balance = bigInt(this._balance).minus(bigInt(amount)).toString()
     if (block.work === null) {
       if (this._remoteWork) {
         // TODO Send request to the remote work cluster
@@ -570,16 +555,17 @@ class Account {
   /**
    * Confirms the block in the local chain
    *
-   * @param {string} hash The block hash
+   * @param {Hexadecimal64Length} hash The block hash
    * @throws An exception if the block is not found in the pending blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
+   * @returns void
    */
   confirmBlock (hash) {
     const block = this.getPendingBlock(hash)
     if (block) {
       if (block.previous === this._chain[this._chain.length - 1].hash) {
-        if (this._balance.minus(block.transactionFee).lesser(block.amount)) {
+        if (bigInt(this._balance).minus(block.transactionFee).lesser(block.amount)) {
           throw new Error('Insufficient funds to confirm this block there must be an issue in our local chain or someone is sending us bad blocks')
         } else {
           // Confirm the block add it to the local confirmed chain and remove from pending.

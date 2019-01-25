@@ -26,7 +26,7 @@ class Wallet {
 
     /**
      * Seed used to generate accounts
-     * @type {string} The 32 byte seed hex encoded
+     * @type {Hexadecimal64Length} The 32 byte seed hex encoded
      * @private
      */
     if (!options.seed) {
@@ -45,14 +45,14 @@ class Wallet {
 
     /**
      * Current Account address is the public key of the current account
-     * @type {string}
+     * @type {LogosAddress}
      * @private
      */
     this._currentAccountAddress = options.currentAccountAddress
 
     /**
      * Array of accounts in this wallet
-     * @type {object<Account>}
+     * @type {Map<LogosAddress, Account>}
      * @private
      */
     this._accounts = options.accounts
@@ -95,30 +95,23 @@ class Wallet {
   /**
    * The id of the wallet
    * @type {string} The hex identifier of the wallet
-   * @readonly
    */
   get walletID () {
     return this._walletID
   }
 
   /**
-   * Sets the current account
+   * Sets the wallet id
    *
-   * @param {string} address - The address of the account you want to use
+   * @param {string} id - The id of the wallet
    */
   set walletID (id) {
-    if (this._walletID === false) {
-      if (id) {
-        this._walletID = id
-      } else {
-        this._walletID = uint8ToHex(nacl.randomBytes(32))
-      }
-    }
+    this._walletID = id
   }
 
   /**
    * List all the accounts in the wallet
-   * @type {array<Account>}
+   * @type {Account[]}
    * @readonly
    */
   get accounts () {
@@ -132,17 +125,26 @@ class Wallet {
   /**
    * The current account
    * @type {Account}
+   * @readonly
    */
   get account () {
     return this._accounts[this._currentAccountAddress]
   }
 
   /**
-   * Sets the current account
-   *
-   * @param {string} address - The address of the account you want to use
+   * The current account address
+   * @type {LogosAddress}
    */
-  set account (address) {
+  get currentAccountAddress () {
+    return this._currentAccountAddress
+  }
+
+  /**
+   * Sets the current account address
+   *
+   * @param {LogosAddress} address - The address of the account you want to use
+   */
+  set currentAccountAddress (address) {
     if (!this._accounts.hasOwnProperty(address)) throw new Error(`Account ${address} does not exist in this wallet.`)
     this._currentAccountAddress = address
   }
@@ -158,7 +160,7 @@ class Wallet {
 
   /**
    * The current balance of all the wallets in reason
-   * @type {bigInt}
+   * @type {string}
    * @readonly
    */
   get balance () {
@@ -175,16 +177,16 @@ class Wallet {
    * @param {string} password - The password you want to use to encrypt the wallet
    * @throws An exception if the wallet hasn't been unlocked
    */
-  set password (newPassword) {
+  setPassword (password) {
     if (this.locked) throw new Error('Wallet needs to be unlocked first.')
-    this._password = newPassword
+    this._password = password
     logger.log('Password changed')
   }
 
   /**
    * Sets a seed for the wallet
    *
-   * @param {string} hexSeed - The 32 byte seed hex encoded
+   * @param {Hexadecimal64Length} hexSeed - The 32 byte seed hex encoded
    * @throws An exception on malformed seed
    */
   set seed (hexSeed) {
@@ -195,8 +197,7 @@ class Wallet {
   /**
    * Return the seed of the wallet
    * @throws An exception if wallet is locked
-   * @type {string}
-   * @readonly
+   * @type {Hexadecimal64Length}
    */
   get seed () {
     if (this._locked) throw new Error('Wallet needs to be unlocked first.')
@@ -205,7 +206,7 @@ class Wallet {
 
   /**
    * Return all the blocks that are pending in every account associated to this wallet
-   * @type {string}
+   * @type {Block[]}
    * @readonly
    */
   get pendingBlocks () {
@@ -221,11 +222,12 @@ class Wallet {
    *
    * @param {boolean} overwrite - Set to true to overwrite an existing seed
    * @throws An exception on existing seed
-   * @returns {Seed<hex>}
+   * @returns {Hexadecimal64Length}
    */
   createSeed (overwrite = false) {
     if (this._seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
     this._seed = uint8ToHex(nacl.randomBytes(32))
+    return this._seed
   }
 
   /**
@@ -244,7 +246,7 @@ class Wallet {
    *
    * You are allowed to create an account using your seed, precalculated account options, or a privateKey
    *
-   * @param {Object} options - the options to populate the account. If you send just private key it will generate the account from that privateKey. If you just send index it will genereate the account from that determinstic seed index.
+   * @param {AccountOptions} options - the options to populate the account. If you send just private key it will generate the account from that privateKey. If you just send index it will genereate the account from that determinstic seed index.
    * @returns {Account}
    */
   createAccount (options = null) {
@@ -279,6 +281,7 @@ class Wallet {
 
   /**
    * Updates the balance of all the accounts
+   * @returns {void}
    */
   recalculateWalletBalancesFromChain () {
     Object.keys(this._accounts).forEach(account => {
@@ -289,8 +292,8 @@ class Wallet {
   /**
    * Finds the block object of the specified hash of one of our accounts
    *
-   * @param {string} hash - The hash of the block we are looking for the object of
-   * @returns {string} false if no block object of the specified hash was found
+   * @param {Hexadecimal64Length} hash - The hash of the block we are looking for the object of
+   * @returns {Block | boolean} false if no block object of the specified hash was found
    */
   getBlock (hash) {
     Object.keys(this._accounts).forEach(account => {
@@ -305,15 +308,16 @@ class Wallet {
   /**
    * Adds block to account chain
    *
-   * @param {string} - blockHash The block hash
-   * @param {string} - hash The block hash
+   * @param {LogosAddress} account logos address
+   * @param {Hexadecimal64Length} hash The block hash
    * @throws An exception if the block is not found in the ready blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
+   * @returns {void}
    */
   confirmBlock (account, hash) {
-    this.setAccount = account
-    return account.confirmBlock(hash)
+    this.currentAccountAddress(account)
+    account.confirmBlock(hash)
   }
 
   /**
@@ -370,10 +374,11 @@ class Wallet {
   /**
    * Constructs the wallet from an encrypted base64 encoded wallet
    *
-   * @returns {string} wallet data
+   * @param {string} - encrypted wallet
+   * @returns {WalletData} wallet data
    */
   load (encryptedWallet) {
-    const decryptedBytes = this.decrypt(encryptedWallet)
+    const decryptedBytes = this._decrypt(encryptedWallet)
     if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
 
     const walletData = JSON.parse(decryptedBytes.toString('utf8'))
@@ -406,7 +411,9 @@ class Wallet {
   /**
    * Decrypts the wallet data
    *
-   * @returns {object} or returns false if it is unable to decrypt the data
+   * @param {string} - encrypted wallet
+   * @returns {WalletData | boolean} The block data or returns false if it is unable to decrypt the data
+   * @private
    */
   _decrypt (encryptedWallet) {
     const bytes = Buffer.from(encryptedWallet, 'hex')
@@ -427,6 +434,13 @@ class Wallet {
     return decryptedBytes
   }
 
+  /**
+   * Generates and account based on the determinstic index of the key
+   *
+   * @param {number} - The determinstic seed index
+   * @returns {MinimialAccount} The account options
+   * @private
+   */
   _generateAccountOptionsFromSeed (index) {
     if (this.seed.length !== 32) throw new Error('Invalid Seed.')
     const indexBytes = hexToUint8(decToHex(index, 4))

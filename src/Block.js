@@ -19,14 +19,14 @@ class Block {
   }) {
     /**
      * Signature of the block
-     * @type {string}
+     * @type {Hexadecimal64Length}
      * @private
      */
     this._signature = options.signature
 
     /**
      * Work of the block based on previous hash
-     * @type {string}
+     * @type {Hexadecimal16Length}
      * @private
      */
     this._work = options.work
@@ -39,7 +39,7 @@ class Block {
 
     /**
      * Previous block hash
-     * @type {string}
+     * @type {Hexadecimal64Length}
      * @private
      */
     this._previous = options.previous
@@ -53,21 +53,21 @@ class Block {
 
     /**
      * Representative's address of the account
-     * @type {string}
+     * @type {LogosAddress}
      * @private
      */
     this._representative = options.representative
 
     /**
      * Destination address of where you are sending the block to
-     * @type {string}
+     * @type {LogosAddress}
      * @private
      */
     this._destination = options.destination
 
     /**
      * Account logos address of the block author
-     * @type {string}
+     * @type {LogosAddress}
      * @private
      */
     this._account = options.account
@@ -84,7 +84,8 @@ class Block {
    * Returns calculated hash or Builds the block and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @returns {string} The block hash
+   * @type {Hexadecimal64Length}
+   * @readonly
    */
   get hash () {
     if (this._hash !== null) {
@@ -124,15 +125,15 @@ class Block {
   /**
    * Sets the block signature
    *
-   * @param {string} hex - The hex encoded 64 byte block hash signature
+   * @param {Hexadecimal64Length} hex - The hex encoded 64 byte block hash signature
    */
-  set signature (val) {
-    this._signature = val
+  set signature (hex) {
+    this._signature = hex
   }
 
   /**
    * Return the signature of the block
-   * @type {hex}
+   * @type {Hexadecimal64Length}
    * @readonly
    */
   get signature () {
@@ -142,12 +143,12 @@ class Block {
   /**
    * Sets the block work
    *
-   * @param {string} hex - The hex encoded 8 byte block hash PoW
+   * @param {Hexadecimal16Length} hex - The hex encoded 8 byte block hash PoW
    */
-  set work (val) {
+  set work (hex) {
     if (!this._previous) throw new Error('Previous is not set.')
-    if (checkWork(val, this._previous)) {
-      this._work = val
+    if (checkWork(hex, this._previous)) {
+      this._work = hex
     } else {
       throw new Error('Invalid Work for this Block')
     }
@@ -155,8 +156,7 @@ class Block {
 
   /**
    * Return the work of the block
-   * @type {hex}
-   * @readonly
+   * @type {Hexadecimal16Length}
    */
   get work () {
     return this._work
@@ -165,17 +165,16 @@ class Block {
   /**
    * Sets block amount
    *
-   * @param {number | string} am - The amount in reason
+   * @param {string} amount - The amount in reason
    */
-  set amount (val) {
+  set amount (amount) {
     if (this._signature) this._signature = null
-    this._amount = val
+    this._amount = amount
   }
 
   /**
    * Return the amount of the block as string
    * @type {string}
-   * @readonly
    */
   get amount () {
     return this._amount
@@ -184,19 +183,18 @@ class Block {
   /**
    * Sets the previous block hash
    *
-   * @param {string} hex - The hex encoded 64 byte previous block hash
+   * @param {Hexadecimal64Length} hex - The hex encoded 64 byte previous block hash
    * @throws An exception on invalid block hash
    */
-  set previous (val) {
-    if (!/[0-9A-F]{64}/i.test(val)) throw new Error('Invalid previous block hash.')
+  set previous (hex) {
+    if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid previous block hash.')
     if (this._signature) this._signature = null
-    this._previous = val
+    this._previous = hex
   }
 
   /**
    * Return the previous block as hash
-   * @type {hex}
-   * @readonly
+   * @type {Hexadecimal64Length}
    */
   get previous () {
     return this._previous
@@ -205,7 +203,7 @@ class Block {
   /**
    * Sets the transaction fee
    *
-   * @param {number | string} amount - The amount in reason
+   * @param {string} amount - The amount in reason
    */
   set transactionFee (val) {
     if (this._signature) this._signature = null
@@ -215,7 +213,6 @@ class Block {
   /**
    * Return the string amount of the transaction fee in reason
    * @type {string}
-   * @readonly
    */
   get transactionFee () {
     return this._transactionFee
@@ -224,16 +221,17 @@ class Block {
   /**
    * Sets the representative
    *
-   * @param {string} account - The Logos account that is your representative
+   * @param {LogosAddress} account - The Logos account that is your representative
+   * @returns {void}
    */
-  set representative (val) {
+  setRepresentative (account) {
     if (this._signature) this._signature = null
-    this._representative = val
+    this._representative = account
   }
 
   /**
    * Return the public key of the representative account
-   * @type {string}
+   * @type {Hexadecimal64Length}
    * @readonly
    */
   get representative () {
@@ -243,15 +241,16 @@ class Block {
   /**
    * Sets the destination
    *
-   * @param {string} account - The Logos account that receives the block
+   * @param {LogosAddress} account - The Logos account that receives the block in hex
+   * @returns {void}
    */
-  set destination (val) {
+  setDestination (account) {
     if (this._signature) this._signature = null
-    this._destination = val
+    this._destination = account
   }
   /**
    * The destination public key of the block
-   * @type {hex}
+   * @type {Hexadecimal64Length}
    * @readonly
    */
   get destination () {
@@ -261,16 +260,17 @@ class Block {
   /**
    * Sets the account
    *
-   * @param {string} account - The Logos account that creates the block
+   * @param {LogosAddress} account - The Logos account that creates the block
+   * @returns {void}
    */
-  set account (val) {
+  setAccount (account) {
     if (this._signature) this._signature = null
-    this._account = val
+    this._account = account
   }
 
   /**
    * The account public key
-   * @type {hex}
+   * @type {Hexadecimal64Length}
    * @readonly
    */
   get account () {
@@ -280,7 +280,7 @@ class Block {
   /**
    * Creates a work for the block.
    * @param {boolean} [testNet] generate PoW for test net instead of real network
-   * @returns {Work}
+   * @returns {Hexadecimal16Length}
    */
   async createWork (testNet = false) {
     if (!this._previous) throw new Error('Previous is not set.')
@@ -291,7 +291,8 @@ class Block {
 
   /**
    * Creates a signature for the block.
-   * @param {string} privateKey - private key in hex
+   * @param {Hexadecimal64Length} privateKey - private key in hex
+   * @returns {void}
    */
   sign (privateKey) {
     if (privateKey.length !== 32) throw new Error('Invalid Secret Key length. Should be 32 bytes.')
@@ -301,6 +302,7 @@ class Block {
   /**
    * Verifies the blocks integrity
    * @param {string} privateKey - private key in hex
+   * @returns {boolean}
    */
   verify () {
     if (!this.hash) throw new Error('Hash is not set.')
@@ -309,6 +311,11 @@ class Block {
     return nacl.sign.detached.verify(hexToUint8(this.hash), hexToUint8(this.signature), hexToUint8(this.account))
   }
 
+  /**
+   * Returns the block JSON ready for broadcast to the Logos Network
+   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
+   * @returns {BlockJSON} JSON block
+   */
   toJSON (pretty = false) {
     const obj = {}
     obj.type = 'state'
@@ -317,7 +324,7 @@ class Block {
     obj.representative = this.representative
     obj.transactionFee = this._transactionFee
     obj.account = this.account
-    obj.amount = this._amount
+    obj.amount = this.amount
     obj.work = this._work
     obj.signature = this._signature
     if (pretty) return JSON.stringify(obj, null, 2)
