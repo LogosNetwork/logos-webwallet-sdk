@@ -1,1 +1,16 @@
-src
+# Packages
+node_modules/
+yarn.lock
+
+# Log files
+logs/
+*.log
+
+# NPM ignore
+.eslintrc.json
+.gitattributes
+.gitignore
+webpack.config.js
+test/
+tsconfig.json
+tslint.json

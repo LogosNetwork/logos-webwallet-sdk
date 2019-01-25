@@ -7,8 +7,8 @@
 declare module 'logos-webwallet-sdk' {
 //#region Classes
 
-	export class Wallet {
-		constructor(options?: WalletOptions)
+  export class Wallet {
+    constructor(options?: WalletOptions)
     public walletID: string
     public currentAccountAddress: LogosAddress
     public seed: Hexadecimal64Length

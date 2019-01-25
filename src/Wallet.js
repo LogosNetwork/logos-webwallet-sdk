@@ -1,6 +1,4 @@
-import { uint8ToHex, hexToUint8, decToHex, accountFromHexKey, stringToHex, AES, Iso10126 } from './Utils'
-const Logger = require('./Logger')
-const logger = new Logger()
+const Utils = require('./Utils')
 const pbkdf2 = require('pbkdf2')
 const Account = require('./Account')
 const nacl = require('tweetnacl/nacl')
@@ -30,7 +28,7 @@ class Wallet {
      * @private
      */
     if (!options.seed) {
-      this._seed = uint8ToHex(nacl.randomBytes(32))
+      this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
       this.createAccount()
     } else {
       this._seed = options.seed
@@ -77,7 +75,7 @@ class Wallet {
      * @private
      */
     if (!options.walletID) {
-      this._walletID = uint8ToHex(nacl.randomBytes(32))
+      this._walletID = Utils.uint8ToHex(nacl.randomBytes(32))
     } else {
       this._walletID = options.walletID
     }
@@ -180,7 +178,6 @@ class Wallet {
   setPassword (password) {
     if (this.locked) throw new Error('Wallet needs to be unlocked first.')
     this._password = password
-    logger.log('Password changed')
   }
 
   /**
@@ -226,7 +223,7 @@ class Wallet {
    */
   createSeed (overwrite = false) {
     if (this._seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
-    this._seed = uint8ToHex(nacl.randomBytes(32))
+    this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
     return this._seed
   }
 
@@ -263,8 +260,8 @@ class Wallet {
       } else if (options.privateKey) {
         if (options.privateKey.length !== 64) throw new Error('Invalid Private Key length. Should be 32 bytes.')
         if (!/[0-9A-F]{64}/i.test(options.privateKey)) throw new Error('Invalid Hex Private Key.')
-        const publicKey = nacl.sign.keyPair.fromSecretKey(hexToUint8(options.privateKey)).publicKey
-        const address = accountFromHexKey(publicKey)
+        const publicKey = nacl.sign.keyPair.fromSecretKey(Utils.hexToUint8(options.privateKey)).publicKey
+        const address = Utils.accountFromHexKey(publicKey)
         accountOptions = {
           privateKey: options.privateKey,
           publicKey: publicKey,
@@ -275,7 +272,6 @@ class Wallet {
     const account = new Account(accountOptions)
     this._accounts[account.address] = account
     this._currentAccountAddress = account.address
-    logger.log('New account added to wallet.')
     return this._accounts[account.address]
   }
 
@@ -349,7 +345,7 @@ class Wallet {
     })
 
     encryptedWallet = JSON.stringify(encryptedWallet)
-    encryptedWallet = stringToHex(encryptedWallet)
+    encryptedWallet = Utils.stringToHex(encryptedWallet)
     encryptedWallet = Buffer.from(encryptedWallet, 'hex')
 
     const context = blake.blake2bInit(32)
@@ -359,8 +355,8 @@ class Wallet {
     const salt = Buffer.form(nacl.randomBytes(16))
     const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha1')
 
-    const options = { mode: AES.CBC, padding: Iso10126 }
-    const encryptedBytes = AES.encrypt(encryptedWallet, key, salt, options)
+    const options = { mode: Utils.AES.CBC, padding: Utils.Iso10126 }
+    const encryptedBytes = Utils.AES.encrypt(encryptedWallet, key, salt, options)
 
     const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
 
@@ -423,12 +419,12 @@ class Wallet {
     const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha1')
 
     const options = {}
-    options.padding = options.padding || Iso10126
-    const decryptedBytes = AES.decrypt(payload, key, salt, options)
+    options.padding = options.padding || Utils.Iso10126
+    const decryptedBytes = Utils.AES.decrypt(payload, key, salt, options)
 
     const context = blake.blake2bInit(32)
     blake.blake2bUpdate(context, decryptedBytes)
-    const hash = uint8ToHex(blake.blake2bFinal(context))
+    const hash = Utils.uint8ToHex(blake.blake2bFinal(context))
 
     if (hash !== checksum.toString('hex').toUpperCase()) return false
     return decryptedBytes
@@ -443,7 +439,7 @@ class Wallet {
    */
   _generateAccountOptionsFromSeed (index) {
     if (this.seed.length !== 32) throw new Error('Invalid Seed.')
-    const indexBytes = hexToUint8(decToHex(index, 4))
+    const indexBytes = Utils.hexToUint8(Utils.decToHex(index, 4))
 
     const context = blake.blake2bInit(32)
     blake.blake2bUpdate(context, this.seed)
@@ -451,7 +447,7 @@ class Wallet {
 
     const privateKey = blake.blake2bFinal(context)
     const publicKey = nacl.sign.keyPair.fromSecretKey(privateKey).publicKey
-    const address = accountFromHexKey(publicKey)
+    const address = Utils.accountFromHexKey(publicKey)
 
     return {
       privateKey: privateKey,
@@ -462,4 +458,4 @@ class Wallet {
   }
 }
 
-module.export = Wallet
+module.exports = Wallet

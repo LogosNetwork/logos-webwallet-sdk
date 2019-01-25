@@ -8,7 +8,7 @@ const crypto = require('crypto')
 const alphabet = '13456789abcdefghijkmnopqrstuwxyz'
 const assert = require('assert')
 
-export const Iso10126 = {
+const Iso10126 = {
   /*
    *   Fills remaining block space with random byte values, except for the
    *   final byte, which denotes the byte length of the padding
@@ -27,7 +27,7 @@ export const Iso10126 = {
   }
 }
 
-export const AES = {
+const AES = {
   CBC: 'aes-256-cbc',
   OFB: 'aes-256-ofb',
   ECB: 'aes-256-ecb',
@@ -151,7 +151,7 @@ function decode (input) {
   return output
 }
 
-export const stringFromHex = (hex) => {
+const stringFromHex = (hex) => {
   let stringHex = hex.toString() // force conversion
   let str = ''
   for (let i = 0; i < stringHex.length; i += 2) {
@@ -160,7 +160,7 @@ export const stringFromHex = (hex) => {
   return str
 }
 
-export const stringToHex = (str) => {
+const stringToHex = (str) => {
   let hex = ''
   for (let i = 0; i < str.length; i++) {
     hex += '' + str.charCodeAt(i).toString(16)
@@ -168,7 +168,7 @@ export const stringToHex = (str) => {
   return hex
 }
 
-export const accountFromHexKey = function (hex) {
+const accountFromHexKey = function (hex) {
   let keyBytes = hexToUint8(hex)
   let checksumBytes = blake.blake2b(keyBytes, null, 5).reverse()
   let checksum = encode(checksumBytes)
@@ -176,7 +176,7 @@ export const accountFromHexKey = function (hex) {
   return 'lgs_' + account + checksum
 }
 
-export const parseAccount = (str) => {
+const parseAccount = (str) => {
   let i = str.indexOf('lgs_')
   let acc = false
   if (i !== -1) acc = str.slice(i, i + 64)
@@ -188,7 +188,7 @@ export const parseAccount = (str) => {
   }
 }
 
-export const decToHex = (str, bytes = null) => {
+const decToHex = (str, bytes = null) => {
   let dec = str.toString().split('')
   let sum = []
   let hex = []
@@ -214,7 +214,7 @@ export const decToHex = (str, bytes = null) => {
   return hex
 }
 
-export const hexToDec = (s) => {
+const hexToDec = (s) => {
   function add (x, y) {
     let c = 0
     let r = []
@@ -240,14 +240,14 @@ export const hexToDec = (s) => {
   return dec
 }
 
-export const hexToUint8 = (hex) => {
+const hexToUint8 = (hex) => {
   const length = (hex.length / 2) | 0
   const uint8 = new Uint8Array(length)
   for (let i = 0; i < length; i++) uint8[i] = parseInt(hex.substr(i * 2, 2), 16)
   return uint8
 }
 
-export const uint8ToHex = (uint8) => {
+const uint8ToHex = (uint8) => {
   let hex = ''
   let aux
   for (let i = 0; i < uint8.length; i++) {
@@ -259,7 +259,7 @@ export const uint8ToHex = (uint8) => {
   return hex
 }
 
-export const uint4ToHex = (uint4) => {
+const uint4ToHex = (uint4) => {
   let hex = ''
   for (let i = 0; i < uint4.length; i++) hex += uint4[i].toString(16).toUpperCase()
   return (hex)
@@ -320,7 +320,7 @@ function generator256 (hash, testNet) {
   return false
 }
 
-export const checkWork = (work, previousHash, testNet) => {
+const checkWork = (work, previousHash, testNet) => {
   let t = hexToUint8(MAIN_NET_WORK_THRESHOLD)
   if (testNet) t = hexToUint8(TEST_NET_WORK_THRESHOLD)
   const context = blake.blake2bInit(8, null)
@@ -332,7 +332,7 @@ export const checkWork = (work, previousHash, testNet) => {
   return false
 }
 
-export const generateWork = (hash, testNet) => {
+const generateWork = (hash, testNet) => {
   return new Promise((resolve, reject) => {
     for (let i = 0; i < 4096; i++) {
       let validWork = generator256(hash, testNet)
@@ -341,7 +341,7 @@ export const generateWork = (hash, testNet) => {
   })
 }
 
-export const keyFromAccount = (account) => {
+const keyFromAccount = (account) => {
   if ((account.startsWith('lgs_1') || account.startsWith('lgs_3')) && account.length === 64) {
     const accountCrop = account.replace('lgs_', '')
     const isValid = /^[13456789abcdefghijkmnopqrstuwxyz]+$/.test(accountCrop)
@@ -359,4 +359,21 @@ export const keyFromAccount = (account) => {
     }
   }
   throw new Error('Invalid Logos account.')
+}
+
+module.exports = {
+  Iso10126: Iso10126,
+  AES: AES,
+  stringFromHex: stringFromHex,
+  stringToHex: stringToHex,
+  accountFromHexKey: accountFromHexKey,
+  parseAccount: parseAccount,
+  decToHex: decToHex,
+  hexToDec: hexToDec,
+  hexToUint8: hexToUint8,
+  uint8ToHex: uint8ToHex,
+  uint4ToHex: uint4ToHex,
+  checkWork: checkWork,
+  generateWork: generateWork,
+  keyFromAccount: keyFromAccount
 }

@@ -1,7 +1,5 @@
 const bigInt = require('big-integer')
 const Block = require('./Block.js')
-const Logger = require('./Logger')
-const logger = new Logger()
 const minimumTransactionFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
@@ -572,17 +570,15 @@ class Account {
           this._chain.push(block)
           this.removePendingBlock(hash)
           this.updateBalancesFromChain()
-          logger.log('Block added to chain: ' + block.hash)
         }
       } else {
         console.log(`Block Previous :${block.previous}\n Local Previous: ${this._chain[this._chain.length - 1].hash}`)
         throw new Error('Previous block does not match actual previous block')
       }
     } else {
-      logger.warn('Block trying to be confirmed has not been found.')
       throw new Error('Block not found')
     }
   }
 }
 
-module.export = Account
+module.exports = Account

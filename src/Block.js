@@ -1,4 +1,4 @@
-import { hexToUint8, decToHex, uint8ToHex, keyFromAccount, checkWork, generateWork } from './Utils'
+const Utils = require('./Utils')
 const STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006'
 const blake = require('blakejs')
 const nacl = require('tweetnacl/nacl')
@@ -99,22 +99,22 @@ class Block {
       if (!this._representative) throw new Error('Representative is not set.')
 
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, hexToUint8(STATE_BLOCK_PREAMBLE))
+      blake.blake2bUpdate(context, Utils.hexToUint8(STATE_BLOCK_PREAMBLE))
       try {
-        blake.blake2bUpdate(context, hexToUint8(this.account))
+        blake.blake2bUpdate(context, Utils.hexToUint8(this.account))
       } catch (err) {
         throw new Error(`Invalid account ${this._account}`)
       }
-      blake.blake2bUpdate(context, hexToUint8(this._previous))
-      blake.blake2bUpdate(context, hexToUint8(this._representative))
-      blake.blake2bUpdate(context, hexToUint8(decToHex(this._amount, 16)))
-      blake.blake2bUpdate(context, hexToUint8(decToHex(this._transactionFee, 16)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this._previous))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this._representative))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this._amount, 16)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this._transactionFee, 16)))
       try {
-        blake.blake2bUpdate(context, hexToUint8(this.destination))
+        blake.blake2bUpdate(context, Utils.hexToUint8(this.destination))
       } catch (err) {
         throw new Error(`Invalid desintation ${this._destination}`)
       }
-      let hash = uint8ToHex(blake.blake2bFinal(context))
+      let hash = Utils.uint8ToHex(blake.blake2bFinal(context))
 
       this._hash = hash
 
@@ -147,7 +147,7 @@ class Block {
    */
   set work (hex) {
     if (!this._previous) throw new Error('Previous is not set.')
-    if (checkWork(hex, this._previous)) {
+    if (Utils.checkWork(hex, this._previous)) {
       this._work = hex
     } else {
       throw new Error('Invalid Work for this Block')
@@ -235,7 +235,7 @@ class Block {
    * @readonly
    */
   get representative () {
-    return keyFromAccount(this._representative)
+    return Utils.keyFromAccount(this._representative)
   }
 
   /**
@@ -254,7 +254,7 @@ class Block {
    * @readonly
    */
   get destination () {
-    return keyFromAccount(this._destination)
+    return Utils.keyFromAccount(this._destination)
   }
 
   /**
@@ -274,7 +274,7 @@ class Block {
    * @readonly
    */
   get account () {
-    return keyFromAccount(this._account)
+    return Utils.keyFromAccount(this._account)
   }
 
   /**
@@ -284,7 +284,7 @@ class Block {
    */
   async createWork (testNet = false) {
     if (!this._previous) throw new Error('Previous is not set.')
-    let work = await generateWork(this._previous, testNet)
+    let work = await Utils.generateWork(this._previous, testNet)
     this._work = work
     return work
   }
@@ -296,7 +296,7 @@ class Block {
    */
   sign (privateKey) {
     if (privateKey.length !== 32) throw new Error('Invalid Secret Key length. Should be 32 bytes.')
-    this.signature = uint8ToHex(nacl.sign.detached(this.hash, privateKey))
+    this.signature = Utils.uint8ToHex(nacl.sign.detached(this.hash, privateKey))
   }
 
   /**
@@ -308,7 +308,7 @@ class Block {
     if (!this.hash) throw new Error('Hash is not set.')
     if (!this.signature) throw new Error('Signature is not set.')
     if (!this._account) throw new Error('Account is not set.')
-    return nacl.sign.detached.verify(hexToUint8(this.hash), hexToUint8(this.signature), hexToUint8(this.account))
+    return nacl.sign.detached.verify(Utils.hexToUint8(this.hash), Utils.hexToUint8(this.signature), Utils.hexToUint8(this.account))
   }
 
   /**
