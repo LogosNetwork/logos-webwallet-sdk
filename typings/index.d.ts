@@ -14,7 +14,6 @@ declare module 'logos-webwallet-sdk' {
     public seed: Hexadecimal64Length
 		public readonly accounts: Account[]
 		public readonly account: Account
-		public readonly locked: boolean
 		public readonly balance: string
     public readonly pendingBlocks: Block[]
     public setPassword(password: string): void
@@ -28,6 +27,7 @@ declare module 'logos-webwallet-sdk' {
 		public load(encryptedWallet: string): WalletData
 		private _decrypt(encryptedWallet: string): WalletData | boolean
 		private _generateAccountOptionsFromSeed(index: number): MinimialAccount
+		private _generateAccountOptionsFromPrivateKey(privateKey: Hexadecimal64Length): MinimialAccount
 	}
 
 	export class Account {
@@ -93,7 +93,6 @@ declare module 'logos-webwallet-sdk' {
     currentAccountAddress?: LogosAddress
     accounts?: Map<LogosAddress, Account>
     walletID?: string
-    locked?: boolean
     version?: number
   };
 

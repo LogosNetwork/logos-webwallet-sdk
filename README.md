@@ -3,13 +3,6 @@
 Creates Logos wallets without full nodes
 
 ## Installation
-
-```
-yarn add logos-webwallet-sdk
-```
-
-or
-
 ```
 npm install --save logos-webwallet-sdk
 ```
@@ -21,6 +14,7 @@ npm install --save logos-webwallet-sdk
 ```
 var LogosWallet = require('logos-webwallet-sdk');
 var Wallet = LogosWallet.Wallet;
+var wallet = new Wallet('password');
 ```
 
 ### ES6

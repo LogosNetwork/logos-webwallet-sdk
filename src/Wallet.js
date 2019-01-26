@@ -12,7 +12,6 @@ class Wallet {
     currentAccountAddress: null,
     accounts: {},
     walletID: false,
-    locked: true,
     version: 1
   }) {
     /**
@@ -20,18 +19,10 @@ class Wallet {
      * @type {string}
      * @private
      */
-    this._password = options.password
-
-    /**
-     * Seed used to generate accounts
-     * @type {Hexadecimal64Length} The 32 byte seed hex encoded
-     * @private
-     */
-    if (!options.seed) {
-      this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
-      this.createAccount()
+    if (options.password !== undefined) {
+      this._password = options.password
     } else {
-      this._seed = options.seed
+      options.password = null
     }
 
     /**
@@ -39,45 +30,43 @@ class Wallet {
      * @type {number}
      * @private
      */
-    this._deterministicKeyIndex = options.deterministicKeyIndex
+    if (options.deterministicKeyIndex !== undefined) {
+      this._deterministicKeyIndex = options.deterministicKeyIndex
+    } else {
+      this._deterministicKeyIndex = 0
+    }
 
     /**
      * Current Account address is the public key of the current account
      * @type {LogosAddress}
      * @private
      */
-    this._currentAccountAddress = options.currentAccountAddress
+    if (options.currentAccountAddress !== undefined) {
+      this._currentAccountAddress = options.currentAccountAddress
+    } else {
+      this._currentAccountAddress = null
+    }
 
     /**
      * Array of accounts in this wallet
      * @type {Map<LogosAddress, Account>}
      * @private
      */
-    this._accounts = options.accounts
-
-    /**
-     * Locked this is true if the wallet has not yet been unlocked
-     * @type {boolean}
-     * @private
-     */
-    this._locked = options.locked
-
-    /**
-     * Wallet version of webwallet SDK
-     * @type {number}
-     * @private
-     */
-    this._wallet = options.wallet
+    if (options.accounts !== undefined) {
+      this._accounts = options.accounts
+    } else {
+      this._accounts = {}
+    }
 
     /**
      * Wallet Identifer
      * @type {string}
      * @private
      */
-    if (!options.walletID) {
-      this._walletID = Utils.uint8ToHex(nacl.randomBytes(32))
-    } else {
+    if (options.walletID !== undefined) {
       this._walletID = options.walletID
+    } else {
+      this._walletID = Utils.uint8ToHex(nacl.randomBytes(32))
     }
 
     /**
@@ -88,6 +77,18 @@ class Wallet {
      * @private
      */
     this._iterations = 10000
+
+    /**
+     * Seed used to generate accounts
+     * @type {Hexadecimal64Length} The 32 byte seed hex encoded
+     * @private
+     */
+    if (options.seed !== undefined) {
+      this._seed = options.seed
+    } else {
+      this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
+      this.createAccount()
+    }
   }
 
   /**
@@ -148,15 +149,6 @@ class Wallet {
   }
 
   /**
-   * If the wallet is locked
-   * @type {boolean}
-   * @readonly
-   */
-  get locked () {
-    return this._locked
-  }
-
-  /**
    * The current balance of all the wallets in reason
    * @type {string}
    * @readonly
@@ -173,10 +165,8 @@ class Wallet {
    * Sets a new password
    *
    * @param {string} password - The password you want to use to encrypt the wallet
-   * @throws An exception if the wallet hasn't been unlocked
    */
   setPassword (password) {
-    if (this.locked) throw new Error('Wallet needs to be unlocked first.')
     this._password = password
   }
 
@@ -193,11 +183,9 @@ class Wallet {
 
   /**
    * Return the seed of the wallet
-   * @throws An exception if wallet is locked
    * @type {Hexadecimal64Length}
    */
   get seed () {
-    if (this._locked) throw new Error('Wallet needs to be unlocked first.')
     return this._seed
   }
 
@@ -248,25 +236,20 @@ class Wallet {
    */
   createAccount (options = null) {
     let accountOptions = null
-    if (options === null || !options.address) {
-      if (!options.privateKey) {
-        if (!this.seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
-        if (options.index) {
-          accountOptions = this._generateAccountOptionsFromSeed(options.index)
-        } else {
-          accountOptions = this._generateAccountOptionsFromSeed(this._deterministicKeyIndex)
-          this._deterministicKeyIndex++
-        }
-      } else if (options.privateKey) {
-        if (options.privateKey.length !== 64) throw new Error('Invalid Private Key length. Should be 32 bytes.')
-        if (!/[0-9A-F]{64}/i.test(options.privateKey)) throw new Error('Invalid Hex Private Key.')
-        const publicKey = nacl.sign.keyPair.fromSecretKey(Utils.hexToUint8(options.privateKey)).publicKey
-        const address = Utils.accountFromHexKey(publicKey)
-        accountOptions = {
-          privateKey: options.privateKey,
-          publicKey: publicKey,
-          address: address
-        }
+    if (options === null) { // No options generate from seed
+      if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
+      accountOptions = this._generateAccountOptionsFromSeed(this._deterministicKeyIndex)
+      this._deterministicKeyIndex++
+    } else if (options.address === undefined) {
+      if (options.privateKey !== undefined) {
+        accountOptions = this._generateAccountOptionsFromPrivateKey(options.privateKey)
+      } else if (options.index !== undefined) {
+        if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
+        accountOptions = this._generateAccountOptionsFromSeed(options.index)
+      } else {
+        if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
+        accountOptions = this._generateAccountOptionsFromSeed(this._deterministicKeyIndex)
+        this._deterministicKeyIndex++
       }
     }
     const account = new Account(accountOptions)
@@ -324,7 +307,7 @@ class Wallet {
   encrypt () {
     let encryptedWallet = {}
 
-    encryptedWallet.seed = this.seed
+    encryptedWallet.seed = this._seed
     encryptedWallet.deterministicKeyIndex = this._deterministicKeyIndex
     encryptedWallet.version = this._version
     encryptedWallet.walletID = this._walletID
@@ -431,29 +414,48 @@ class Wallet {
   }
 
   /**
-   * Generates and account based on the determinstic index of the key
+   * Generates an account based on the determinstic index of the key
    *
    * @param {number} - The determinstic seed index
    * @returns {MinimialAccount} The account options
    * @private
    */
   _generateAccountOptionsFromSeed (index) {
-    if (this.seed.length !== 32) throw new Error('Invalid Seed.')
+    if (this._seed.length !== 64) throw new Error('Invalid Seed.')
     const indexBytes = Utils.hexToUint8(Utils.decToHex(index, 4))
 
     const context = blake.blake2bInit(32)
-    blake.blake2bUpdate(context, this.seed)
+    blake.blake2bUpdate(context, Utils.hexToUint8(this._seed))
     blake.blake2bUpdate(context, indexBytes)
 
     const privateKey = blake.blake2bFinal(context)
     const publicKey = nacl.sign.keyPair.fromSecretKey(privateKey).publicKey
-    const address = Utils.accountFromHexKey(publicKey)
+    const address = Utils.accountFromHexKey(Utils.uint8ToHex(publicKey))
 
     return {
       privateKey: privateKey,
       publicKey: publicKey,
       address: address,
       index: index
+    }
+  }
+
+  /**
+   * Generates an account based on the given private key
+   *
+   * @param {Hexadecimal64Length} - The determinstic seed index
+   * @returns {MinimialAccount} The account options
+   * @private
+   */
+  _generateAccountOptionsFromPrivateKey (privateKey) {
+    if (privateKey.length !== 64) throw new Error('Invalid Private Key length. Should be 32 bytes.')
+    if (!/[0-9A-F]{64}/i.test(privateKey)) throw new Error('Invalid Hex Private Key.')
+    const publicKey = nacl.sign.keyPair.fromSecretKey(Utils.hexToUint8(privateKey)).publicKey
+    const address = Utils.accountFromHexKey(publicKey)
+    return {
+      privateKey: privateKey,
+      publicKey: publicKey,
+      address: address
     }
   }
 }
