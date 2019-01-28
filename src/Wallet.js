@@ -463,7 +463,7 @@ class Wallet {
     if (privateKey.length !== 64) throw new Error('Invalid Private Key length. Should be 32 bytes.')
     if (!/[0-9A-F]{64}/i.test(privateKey)) throw new Error('Invalid Hex Private Key.')
     const publicKey = nacl.sign.keyPair.fromSecretKey(Utils.hexToUint8(privateKey)).publicKey
-    const address = Utils.accountFromHexKey(publicKey)
+    const address = Utils.accountFromHexKey(Utils.uint8ToHex(publicKey))
     return {
       privateKey: Utils.uint8ToHex(privateKey),
       publicKey: Utils.uint8ToHex(publicKey),
