@@ -323,6 +323,7 @@ class Wallet {
     encryptedWallet.deterministicKeyIndex = this._deterministicKeyIndex
     encryptedWallet.version = this._version
     encryptedWallet.walletID = this._walletID
+    encryptedWallet.remoteWork = this._remoteWork
 
     encryptedWallet.accounts = []
     Object.keys(this._accounts).forEach(account => {
@@ -347,7 +348,7 @@ class Wallet {
     blake.blake2bUpdate(context, encryptedWallet)
     const checksum = blake.blake2bFinal(context)
 
-    const salt = Buffer.form(nacl.randomBytes(16))
+    const salt = Buffer.from(nacl.randomBytes(16))
     const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha1')
 
     const options = { mode: Utils.AES.CBC, padding: Utils.Iso10126 }
@@ -373,7 +374,6 @@ class Wallet {
     if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
 
     const walletData = JSON.parse(decryptedBytes.toString('utf8'))
-
     this.seed = walletData.seed
     this.walletID = walletData.walletID !== undefined ? walletData.walletID : false
 
@@ -392,7 +392,7 @@ class Wallet {
         })
       }
     }
-
+    this._remoteWork = walletData.remoteWork
     this._deterministicKeyIndex = walletData.deterministicKeyIndex
     this._currentAccountAddress = Object.keys(this._accounts)[0]
 
