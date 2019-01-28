@@ -22,55 +22,87 @@ class Block {
      * @type {Hexadecimal64Length}
      * @private
      */
-    this._signature = options.signature
+    if (options.signature !== undefined) {
+      this._signature = options.signature
+    } else {
+      this._signature = null
+    }
 
     /**
      * Work of the block based on previous hash
      * @type {Hexadecimal16Length}
      * @private
      */
-    this._work = options.work
+    if (options.work !== undefined) {
+      this._work = options.work
+    } else {
+      this._work = null
+    }
 
     /**
      * Amount transfered in this block
      * @type {string}
      */
-    this._amount = options.amount
+    if (options.amount !== undefined) {
+      this._amount = options.amount
+    } else {
+      this._amount = null
+    }
 
     /**
      * Previous block hash
      * @type {Hexadecimal64Length}
      * @private
      */
-    this._previous = options.previous
+    if (options.previous !== undefined) {
+      this._previous = options.previous
+    } else {
+      this._previous = null
+    }
 
     /**
      * Transcation Fee of the block
      * @type {string}
      * @private
      */
-    this._transactionFee = options.transactionFee
+    if (options.transactionFee !== undefined) {
+      this._transactionFee = options.transactionFee
+    } else {
+      this._transactionFee = null
+    }
 
     /**
      * Representative's address of the account
      * @type {LogosAddress}
      * @private
      */
-    this._representative = options.representative
+    if (options.representative !== undefined) {
+      this._representative = options.representative
+    } else {
+      this._representative = null
+    }
 
     /**
      * Destination address of where you are sending the block to
      * @type {LogosAddress}
      * @private
      */
-    this._destination = options.destination
+    if (options.destination !== undefined) {
+      this._destination = options.destination
+    } else {
+      this._destination = null
+    }
 
     /**
      * Account logos address of the block author
      * @type {LogosAddress}
      * @private
      */
-    this._account = options.account
+    if (options.account !== undefined) {
+      this._account = options.account
+    } else {
+      this._account = null
+    }
 
     /**
      * Block version of webwallet SDK

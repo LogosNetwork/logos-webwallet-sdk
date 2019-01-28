@@ -12,6 +12,7 @@ class Wallet {
     currentAccountAddress: null,
     accounts: {},
     walletID: false,
+    remoteWork: true,
     version: 1
   }) {
     /**
@@ -22,7 +23,7 @@ class Wallet {
     if (options.password !== undefined) {
       this._password = options.password
     } else {
-      options.password = null
+      this._password = null
     }
 
     /**
@@ -67,6 +68,17 @@ class Wallet {
       this._walletID = options.walletID
     } else {
       this._walletID = Utils.uint8ToHex(nacl.randomBytes(32))
+    }
+
+    /**
+     * Remote work enabled
+     * @type {boolean}
+     * @private
+     */
+    if (options.remoteWork !== undefined) {
+      this._remoteWork = options.remoteWork
+    } else {
+      this._remoteWork = true
     }
 
     /**

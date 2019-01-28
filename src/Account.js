@@ -19,7 +19,6 @@ class Account {
     receiveChain: [],
     pendingChain: [],
     version: 1,
-    remoteWork: true,
     index: null
   }) {
     /**
@@ -30,43 +29,66 @@ class Account {
      * @type {string}
      * @private
      */
-    this._label = options.label
+    if (options.label !== undefined) {
+      this._label = options.label
+    } else {
+      this._label = null
+    }
 
     /**
-     * Deterministic Key Index used to generate this account
+     * Deterministic Key Index used to generate this account - null means generated explicitly
      *
      * @type {number}
      * @private
      */
-    if (options.index !== null) this._index = options.index
+    if (options.index !== undefined) {
+      this._index = options.index
+    } else {
+      this._index = null
+    }
 
     /**
      * Address of this account
      * @type {LogosAddress}
      * @private
      */
-    this._address = options.address
+    if (options.address !== undefined) {
+      this._address = options.address
+    } else {
+      this._address = null
+    }
 
     /**
      * Public Key of this account
      * @type {Hexadecimal64Length}
      * @private
      */
-    this._publicKey = options.publicKey
+    if (options.publicKey !== undefined) {
+      this._publicKey = options.publicKey
+    } else {
+      this._publicKey = null
+    }
 
     /**
      * Private Key of this account
      * @type {Hexadecimal64Length}
      * @private
      */
-    this._privateKey = options.privateKey
-
+    if (options.privateKey !== undefined) {
+      this._privateKey = options.privateKey
+    } else {
+      this._privateKey = null
+    }
     /**
      * Balance of this account in reason
      * @type {string}
      * @private
      */
-    this._balance = options.balance
+    if (options.balance !== undefined) {
+      this._balance = options.balance
+    } else {
+      this._balance = '0'
+    }
 
     /**
      * Pending Balance of the account in reason
@@ -75,56 +97,77 @@ class Account {
      * @type {string}
      * @private
      */
-    this._pendingBalance = options.pendingBalance
+    if (options.pendingBalance !== undefined) {
+      this._pendingBalance = options.pendingBalance
+    } else {
+      this._pendingBalance = '0'
+    }
 
     /**
      * Representative of the account
      * @type {LogosAddress}
      * @private
      */
-    this._representative = options.representative
+    if (options.representative !== undefined) {
+      this._representative = options.representative
+    } else {
+      this._representative = null
+    }
 
     /**
      * Chain of the account
      * @type {Block[]}
      * @private
      */
-    this._chain = options.chain
+    if (options.chain !== undefined) {
+      this._chain = options.chain
+    } else {
+      this._chain = []
+    }
 
     /**
      * Receive chain of the account
      * @type {Block[]}
      * @private
      */
-    this._receiveChain = options.receiveChain
+    if (options.receiveChain !== undefined) {
+      this._receiveChain = options.receiveChain
+    } else {
+      this._receiveChain = []
+    }
 
     /**
      * Pending chain of the account (local unconfirmed sends)
      * @type {Block[]}
      * @private
      */
-    this._pendingChain = options.pendingChain
+    if (options.pendingChain !== undefined) {
+      this._pendingChain = options.pendingChain
+    } else {
+      this._pendingChain = []
+    }
 
     /**
      * Previous hexadecimal hash of the last confirmed or pending block
      * @type {Hexadecimal64Length}
      * @private
      */
-    this._previous = options.previous
+    if (options.previous !== undefined) {
+      this._previous = options.previous
+    } else {
+      this._previous = null
+    }
 
     /**
      * Account version of webwallet SDK
      * @type {number}
      * @private
      */
-    this._version = options.version
-
-    /**
-     * Remote work enabled
-     * @type {boolean}
-     * @private
-     */
-    this._remoteWork = options.remoteWork
+    if (options.version !== undefined) {
+      this._version = options.version
+    } else {
+      this._version = 1
+    }
   }
 
   /**
@@ -519,9 +562,10 @@ class Account {
    *
    * @param {LogosAddress} to - The account address of who you are sending to
    * @param {string} amount - The amount you wish to send in reason
+   * @param {boolean} remoteWork - Should the work be genereated locally or remote
    * @returns {Block} the block object
    */
-  async createBlock (to, amount = 0) {
+  async createBlock (to, amount = 0, remoteWork = true) {
     let block = new Block({
       signature: null,
       work: null,
@@ -538,7 +582,7 @@ class Account {
     this._previous = block.hash
     this._balance = bigInt(this._balance).minus(bigInt(amount)).toString()
     if (block.work === null) {
-      if (this._remoteWork) {
+      if (remoteWork) {
         // TODO Send request to the remote work cluster
         block.work = EMPTY_WORK
       } else {

@@ -58,7 +58,7 @@ declare module 'logos-webwallet-sdk' {
 		public removePendingBlocks(): void
 		public removePendingBlock(hash: Hexadecimal64Length): boolean
 		public getBlock(hash: Hexadecimal64Length): Block
-		public createBlock(to: LogosAddress, amount: string): Block
+		public createBlock(to: LogosAddress, amount?: string, boolean?: remoteWork): Block
 		public getPendingBlock(hash: Hexadecimal64Length): boolean | Block
 		public confirmBlock(hash: Hexadecimal64Length): void
 	}
@@ -94,6 +94,7 @@ declare module 'logos-webwallet-sdk' {
     accounts?: Map<LogosAddress, Account>
     walletID?: string
     version?: number
+    remoteWork?: boolean
   };
 
   type AccountOptions = {
@@ -109,7 +110,6 @@ declare module 'logos-webwallet-sdk' {
     pendingChain?: Block[]
     previous?: Hexadecimal64Length
     version?: number
-    remoteWork?: boolean
     index?: number
   };
 
