@@ -171,6 +171,14 @@ class Account {
   }
 
   /**
+   * The index of the account
+   * @type {number}
+   */
+  get index () {
+    return this._index
+  }
+
+  /**
    * The label of the account
    * @type {string}
    */
@@ -316,10 +324,6 @@ class Account {
     return this._receiveChain.length
   }
 
-  /**
-   * Add any label you want to the account (e.g. Checking Account)
-   * @param {string} label - The label you want to add to the account
-   */
   set label (label) {
     this._label = label
   }
@@ -601,7 +605,7 @@ class Account {
    * @throws An exception if the block is not found in the pending blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
-   * @returns void
+   * @returns {void}
    */
   confirmBlock (hash) {
     const block = this.getPendingBlock(hash)

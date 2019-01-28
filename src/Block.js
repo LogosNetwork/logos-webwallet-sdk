@@ -154,11 +154,6 @@ class Block {
     }
   }
 
-  /**
-   * Sets the block signature
-   *
-   * @param {Hexadecimal64Length} hex - The hex encoded 64 byte block hash signature
-   */
   set signature (hex) {
     this._signature = hex
   }
@@ -172,11 +167,6 @@ class Block {
     return this._signature
   }
 
-  /**
-   * Sets the block work
-   *
-   * @param {Hexadecimal16Length} hex - The hex encoded 8 byte block hash PoW
-   */
   set work (hex) {
     if (!this._previous) throw new Error('Previous is not set.')
     if (Utils.checkWork(hex, this._previous)) {
@@ -194,11 +184,6 @@ class Block {
     return this._work
   }
 
-  /**
-   * Sets block amount
-   *
-   * @param {string} amount - The amount in reason
-   */
   set amount (amount) {
     if (this._signature) this._signature = null
     this._amount = amount
@@ -212,12 +197,6 @@ class Block {
     return this._amount
   }
 
-  /**
-   * Sets the previous block hash
-   *
-   * @param {Hexadecimal64Length} hex - The hex encoded 64 byte previous block hash
-   * @throws An exception on invalid block hash
-   */
   set previous (hex) {
     if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid previous block hash.')
     if (this._signature) this._signature = null
@@ -232,11 +211,6 @@ class Block {
     return this._previous
   }
 
-  /**
-   * Sets the transaction fee
-   *
-   * @param {string} amount - The amount in reason
-   */
   set transactionFee (val) {
     if (this._signature) this._signature = null
     this._transactionFee = val

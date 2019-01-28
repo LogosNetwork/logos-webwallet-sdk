@@ -327,7 +327,8 @@ class Wallet {
 
     encryptedWallet.accounts = []
     Object.keys(this._accounts).forEach(account => {
-      if (account.index) {
+      account = this._accounts[account]
+      if (account.index !== null) {
         encryptedWallet.accounts.push({
           label: account.label,
           index: account.index
@@ -339,7 +340,6 @@ class Wallet {
         })
       }
     })
-
     encryptedWallet = JSON.stringify(encryptedWallet)
     encryptedWallet = Utils.stringToHex(encryptedWallet)
     encryptedWallet = Buffer.from(encryptedWallet, 'hex')
@@ -370,17 +370,17 @@ class Wallet {
    * @returns {WalletData} wallet data
    */
   load (encryptedWallet) {
+    this._accounts = {}
     const decryptedBytes = this._decrypt(encryptedWallet)
     if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
 
     const walletData = JSON.parse(decryptedBytes.toString('utf8'))
     this.seed = walletData.seed
     this.walletID = walletData.walletID !== undefined ? walletData.walletID : false
-
     for (let i in (walletData.accounts || [])) {
       const accountOptions = walletData.accounts[i]
       // Technically you don't need an if here but it helps with readability
-      if (accountOptions.index) {
+      if (accountOptions.index !== null) {
         this.createAccount({
           index: accountOptions.index,
           label: accountOptions.label
@@ -445,8 +445,8 @@ class Wallet {
     const address = Utils.accountFromHexKey(Utils.uint8ToHex(publicKey))
 
     return {
-      privateKey: privateKey,
-      publicKey: publicKey,
+      privateKey: Utils.uint8ToHex(privateKey),
+      publicKey: Utils.uint8ToHex(publicKey),
       address: address,
       index: index
     }
@@ -465,8 +465,8 @@ class Wallet {
     const publicKey = nacl.sign.keyPair.fromSecretKey(Utils.hexToUint8(privateKey)).publicKey
     const address = Utils.accountFromHexKey(publicKey)
     return {
-      privateKey: privateKey,
-      publicKey: publicKey,
+      privateKey: Utils.uint8ToHex(privateKey),
+      publicKey: Utils.uint8ToHex(publicKey),
       address: address
     }
   }

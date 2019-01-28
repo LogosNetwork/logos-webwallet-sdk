@@ -33,6 +33,7 @@ declare module 'logos-webwallet-sdk' {
 	export class Account {
     constructor(options?: AccountOptions);
     public label: string
+    public readonly index: number
     public readonly previous: Hexadecimal64Length
     public readonly address: LogosAddress
     public readonly publicKey: Hexadecimal64Length
@@ -58,7 +59,7 @@ declare module 'logos-webwallet-sdk' {
 		public removePendingBlocks(): void
 		public removePendingBlock(hash: Hexadecimal64Length): boolean
 		public getBlock(hash: Hexadecimal64Length): Block
-		public createBlock(to: LogosAddress, amount?: string, boolean?: remoteWork): Block
+		public createBlock(to: LogosAddress, amount?: string, remoteWork?: boolean): Block
 		public getPendingBlock(hash: Hexadecimal64Length): boolean | Block
 		public confirmBlock(hash: Hexadecimal64Length): void
 	}
