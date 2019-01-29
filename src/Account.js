@@ -332,19 +332,26 @@ class Account {
    * Return the previous block as hash
    * @type {Hexadecimal64Length}
    * @returns {Hexadecimal64Length} hash of the previous transaction
+   * @readonly
    */
   get previous () {
     if (this._previous !== null) {
       return this._previous
     } else {
       if (this._pendingChain.length > 0) {
-        return this._pendingChain[this.pendingChain.length - 1].hash
+        this._previous = this._pendingChain[this.pendingChain.length - 1].hash
       } else if (this._chain.length > 0) {
-        return this._chain[this._chain.length - 1].hash
+        this._previous = this._chain[this._chain.length - 1].hash
       } else {
-        return null
+        this._previous = null
       }
+      return this._previous
     }
+  }
+
+  // TODO
+  sync (rpc) {
+
   }
 
   /**
@@ -626,6 +633,11 @@ class Account {
     } else {
       throw new Error('Block not found')
     }
+  }
+
+  // TODO
+  addReceiveBlock (block) {
+
   }
 }
 

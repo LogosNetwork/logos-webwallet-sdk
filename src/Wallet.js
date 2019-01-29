@@ -4,6 +4,9 @@ const Account = require('./Account')
 const nacl = require('tweetnacl/nacl')
 const blake = require('blakejs')
 const bigInt = require('big-integer')
+const mqtt = require('mqtt')
+const mqttRegex = require('mqtt-regex')
+
 class Wallet {
   constructor (options = {
     password: null,
@@ -13,6 +16,11 @@ class Wallet {
     accounts: {},
     walletID: false,
     remoteWork: true,
+    mqtt: 'wss:pla.bs:8443',
+    rpc: {
+      host: 'http://100.25.175.142:55000',
+      proxy: 'https://pla.bs'
+    },
     version: 1
   }) {
     /**
@@ -82,6 +90,20 @@ class Wallet {
     }
 
     /**
+     * RPC enabled
+     * @type {RPCOptions}
+     * @private
+     */
+    if (options.rpc !== undefined) {
+      this._rpc = options.rpc
+    } else {
+      this._rpc = {
+        host: 'http://100.25.175.142:55000',
+        proxy: 'https://pla.bs'
+      }
+    }
+
+    /**
      * PBKDF2 Iterations
      * I don't think people need to edit this
      * NIST guidelines recommend 10,000 so lets do that
@@ -89,6 +111,51 @@ class Wallet {
      * @private
      */
     this._iterations = 10000
+
+    /**
+     * MQTT host to listen for data
+     * @type {string | boolean} The mqtt websocket address (false if you don't want this)
+     * @private
+     */
+    if (options.mqtt !== undefined) {
+      this._mqtt = options.mqtt
+    } else {
+      this._mqtt = 'wss:pla.bs:8443'
+    }
+    this._mqttConnected = false
+    if (this._mqtt) {
+      this._mqttClient = mqtt.connect(this._mqtt)
+      this._mqttClient.on('connect', () => {
+        console.log('Webwallet SDK Connected to MQTT')
+        this._mqttConnected = true
+        this.createAccount()
+      })
+      this._mqttClient.on('close', () => {
+        this._mqttConnected = false
+        console.log('Webwallet SDK disconnected from MQTT')
+      })
+      this._mqttClient.on('message', (topic, message) => {
+        const accountMqttRegex = mqttRegex('account/+account').exec
+        message = JSON.parse(message.toString())
+        // TODO Validate the signatures of the blocks to be "trustless"
+        if (accountMqttRegex(topic)) {
+          let account = this._accounts[message.account]
+          if (message.type === 'receive') {
+            try {
+              account.addReceiveBlock(message.hash)
+            } catch (err) {
+              if (this._rpc) account.sync(this._rpc)
+            }
+          } else if (message.type === 'send') {
+            try {
+              account.confirmBlock(message.hash)
+            } catch (err) {
+              if (this._rpc) account.sync(this._rpc)
+            }
+          }
+        }
+      })
+    }
 
     /**
      * Seed used to generate accounts
@@ -99,7 +166,9 @@ class Wallet {
       this._seed = options.seed
     } else {
       this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
-      this.createAccount()
+      if (!this._mqtt) {
+        this.createAccount()
+      }
     }
   }
 
@@ -235,6 +304,7 @@ class Wallet {
    */
   addAccount (account) {
     this._accounts[account.address] = account
+    if (this._mqtt) this._subscribe(`account/${account.address}`)
     return this._accounts[account.address]
   }
 
@@ -266,6 +336,8 @@ class Wallet {
     }
     const account = new Account(accountOptions)
     this._accounts[account.address] = account
+    if (this._rpc) this._accounts[account.address].sync(this._rpc)
+    if (this._mqtt) this._subscribe(`account/${account.address}`)
     this._currentAccountAddress = account.address
     return this._accounts[account.address]
   }
@@ -468,6 +540,30 @@ class Wallet {
       privateKey: Utils.uint8ToHex(privateKey),
       publicKey: Utils.uint8ToHex(publicKey),
       address: address
+    }
+  }
+
+  _subscribe (topic) {
+    if (this._mqttConnected && this._mqttClient) {
+      this._mqttClient.subscribe(topic, (err) => {
+        if (!err) {
+          console.log(`subscribed to ${topic}`)
+        } else {
+          console.log(err)
+        }
+      })
+    }
+  }
+
+  _unsubscribe (topic) {
+    if (this._mqttConnected && this._mqttClient) {
+      this._mqttClient.unsubscribe(topic, (err) => {
+        if (!err) {
+          console.log(`unsubscribed from ${topic}`)
+        } else {
+          console.log(err)
+        }
+      })
     }
   }
 }
