@@ -8,6 +8,7 @@ const STATE_BLOCK_PREAMBLE = '00000000000000000000000000000000000000000000000000
  */
 class Block {
   constructor (options = {
+    hash: null,
     signature: null,
     work: null,
     amount: null,
@@ -105,6 +106,17 @@ class Block {
     }
 
     /**
+     * Hash of the block
+     * @type {LogosAddress}
+     * @private
+     */
+    if (options.hash !== undefined) {
+      this._hash = options.hash
+    } else {
+      this._hash = null
+    }
+
+    /**
      * Block version of webwallet SDK
      * @type {number}
      * @private
@@ -129,7 +141,6 @@ class Block {
       if (!this._transactionFee) throw new Error('Transaction fee is not set.')
       if (!this._account) throw new Error('Account is not set.')
       if (!this._representative) throw new Error('Representative is not set.')
-
       const context = blake.blake2bInit(32, null)
       blake.blake2bUpdate(context, Utils.hexToUint8(STATE_BLOCK_PREAMBLE))
       try {
@@ -138,7 +149,7 @@ class Block {
         throw new Error(`Invalid account ${this._account}`)
       }
       blake.blake2bUpdate(context, Utils.hexToUint8(this._previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this._representative))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.representative))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this._amount, 16)))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this._transactionFee, 16)))
       try {

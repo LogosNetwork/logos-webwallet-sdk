@@ -1,5 +1,6 @@
 const bigInt = require('big-integer')
 const Block = require('./Block.js')
+const Logos = require('@logosnetwork/logos-rpc-client')
 const minimumTransactionFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
@@ -352,9 +353,43 @@ class Account {
     }
   }
 
-  // TODO
-  sync (rpc) {
-
+  /**
+   * Scans the account history using RPC and updates the local chain
+   * @type {Hexadecimal64Length}
+   * @returns {void}
+   * @readonly
+   */
+  async sync (rpcOptions) {
+    this._chain = []
+    this._receiveChain = []
+    const RPC = new Logos({ url: rpcOptions.host, proxyURL: rpcOptions.proxy })
+    let history = await RPC.accounts.history(this._address, -1)
+    for await (const blockInfo of history) {
+      let blockOptions = await RPC.transactions.info(blockInfo.hash)
+      if (blockOptions.type === 'receive') blockOptions = await RPC.transactions.info(blockOptions.link)
+      let block = new Block({
+        signature: blockOptions.signature,
+        work: blockOptions.work,
+        amount: blockOptions.amount,
+        previous: blockOptions.previous,
+        transactionFee: blockOptions.transaction_fee,
+        representative: blockOptions.representative,
+        destination: blockOptions.link_as_account,
+        account: blockOptions.account
+      })
+      if (block.verify()) {
+        if (blockInfo.type === 'receive') {
+          this._receiveChain.unshift(block)
+        } else if (blockInfo.type === 'send') {
+          this._chain.unshift(block)
+        }
+      } else {
+        throw new Error('Invalid Block inside the returned RPC Blocks or the Webwallet has a bug with this account')
+      }
+    }
+    if (this.verifyChain() && this.verifyReceiveChain()) {
+      console.log(`${this._address} is synced and valid`)
+    }
   }
 
   /**
@@ -387,12 +422,12 @@ class Account {
     this._chain.forEach(block => {
       if (block.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
       if (!block.verify()) throw new Error('Invalid block in this chain')
-      last = block.previous
+      last = block.hash
     })
-    this._pendingChain.forEach(block => {
+    this._pendingChain.reverse().forEach(block => {
       if (block.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
       if (!block.verify()) throw new Error('Invalid block in the pending chain')
-      last = block.previous
+      last = block.hash
     })
     return true
   }
@@ -578,6 +613,9 @@ class Account {
    * @returns {Block} the block object
    */
   async createBlock (to, amount = 0, remoteWork = true) {
+    if (bigInt(this._pendingBalance).minus(bigInt(amount)).lesser(0)) {
+      throw new Error('Invalid Block: Not Enough Funds to send that amount')
+    }
     let block = new Block({
       signature: null,
       work: null,
@@ -653,7 +691,7 @@ class Account {
       destination: block.link_as_account,
       account: block.account
     })
-    if (receive.verify) {
+    if (receive.verify()) {
       this._receiveChain.push(receive)
       this.updateBalancesFromChain()
       return receive

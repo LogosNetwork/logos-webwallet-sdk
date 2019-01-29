@@ -116,6 +116,7 @@ declare module 'logos-webwallet-sdk' {
   };
 
   type BlockOptions = {
+    hash?: Hexadecimal64Length
     signature?: Hexadecimal64Length
     work?: Hexadecimal16Length
     amount?: string

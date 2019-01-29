@@ -131,7 +131,9 @@ class Wallet {
       this._mqttClient.on('connect', () => {
         console.log('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
-        this.createAccount()
+        Object.keys(this._accounts).forEach(account => {
+          this._subscribe(`account/${account}`)
+        })
       })
       this._mqttClient.on('close', () => {
         this._mqttConnected = false
