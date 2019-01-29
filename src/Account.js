@@ -5,6 +5,9 @@ const EMPTY_WORK = '0000000000000000'
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
 const officialRepresentative = 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'
 
+/**
+ * The Accounts contain the keys, chains, and balances.
+ */
 class Account {
   constructor (options = {
     label: null,
@@ -361,11 +364,11 @@ class Account {
   updateBalancesFromChain () {
     if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
-    this._chain.forEach(block => {
-      sum = sum.minus(bigInt(block.amount))
-    })
     this._receiveChain.forEach(block => {
       sum = sum.plus(bigInt(block.amount))
+    })
+    this._chain.forEach(block => {
+      sum = sum.minus(bigInt(block.amount))
     })
     this._balance = sum.toString()
     this._pendingChain.forEach(block => {
@@ -382,29 +385,27 @@ class Account {
   verifyChain () {
     let last = GENESIS_HASH
     this._chain.forEach(block => {
-      if (block.previous !== last) throw new Error('Invalid Chain')
+      if (block.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
       if (!block.verify()) throw new Error('Invalid block in this chain')
       last = block.previous
     })
     this._pendingChain.forEach(block => {
-      if (block.previous !== last) throw new Error('Invalid Chain')
-      if (!block.verify()) throw new Error('Invalid block in this chain')
+      if (block.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
+      if (!block.verify()) throw new Error('Invalid block in the pending chain')
       last = block.previous
     })
     return true
   }
 
   /**
-   * Verify the integrity of the recieve chain
+   * Verify the integrity of the receive chain
    *
+   * @throws An exception if there is an invalid block in the receive blockchain
    * @returns {boolean}
    */
-  verifyRecieveChain () {
-    let last = GENESIS_HASH
+  verifyReceiveChain () {
     this._receiveChain.forEach(block => {
-      if (block.previous !== last) throw new Error('Invalid Chain')
       if (!block.verify()) throw new Error('Invalid block in this chain')
-      last = block.previous
     })
     return true
   }
@@ -442,7 +443,7 @@ class Account {
   }
 
   /**
-   * Retreives blocks from the recieve chain
+   * Retreives blocks from the receive chain
    *
    * @param {number} count - Number of blocks you wish to retrieve
    * @param {number} offset - Number of blocks back from the frontier tip you wish to start at
@@ -508,7 +509,7 @@ class Account {
    */
   removePendingBlocks () {
     this._pendingChain = []
-    this._pendingBalance = '0'
+    this._pendingBalance = this._balance
   }
 
   /**
@@ -591,7 +592,7 @@ class Account {
     block.sign(this._privateKey)
 
     this._previous = block.hash
-    this._balance = bigInt(this._balance).minus(bigInt(amount)).toString()
+    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(amount)).toString()
     if (block.work === null) {
       if (remoteWork) {
         // TODO Send request to the remote work cluster
@@ -635,9 +636,30 @@ class Account {
     }
   }
 
-  // TODO
+  /**
+   * Adds a receive block to the local chain
+   *
+   * @param {MQTTBlockOptions} block The mqtt block options
+   * @returns {void}
+   */
   addReceiveBlock (block) {
-
+    let receive = new Block({
+      signature: block.signature,
+      work: block.work,
+      amount: block.amount,
+      previous: block.previous,
+      transactionFee: block.transactionFee,
+      representative: block.representative,
+      destination: block.link_as_account,
+      account: block.account
+    })
+    if (receive.verify) {
+      this._receiveChain.push(receive)
+      this.updateBalancesFromChain()
+      return receive
+    } else {
+      return false
+    }
   }
 }
 

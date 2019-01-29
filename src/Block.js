@@ -1,10 +1,10 @@
 const Utils = require('./Utils')
-const STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006'
 const blake = require('blakejs')
 const nacl = require('tweetnacl/nacl')
+const STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006'
+
 /**
  * The base class for all blocks.
- * We will create different classes for each request type once we get those implemented on core
  */
 class Block {
   constructor (options = {

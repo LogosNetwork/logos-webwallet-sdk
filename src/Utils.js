@@ -1,4 +1,4 @@
-// general functions
+// TODO create this as a class with static methods
 const MAIN_NET_WORK_THRESHOLD = 'ffffffc000000000'
 const TEST_NET_WORK_THRESHOLD = 'ff00000000000000'
 const BLOCK_BIT_LEN = 128

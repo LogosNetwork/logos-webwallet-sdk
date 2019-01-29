@@ -7,6 +7,9 @@ const bigInt = require('big-integer')
 const mqtt = require('mqtt')
 const mqttRegex = require('mqtt-regex')
 
+/**
+ * The main hub for interacting with the Logos Accounts and Blocks.
+ */
 class Wallet {
   constructor (options = {
     password: null,
@@ -139,14 +142,11 @@ class Wallet {
         message = JSON.parse(message.toString())
         // TODO Validate the signatures of the blocks to be "trustless"
         if (accountMqttRegex(topic)) {
-          let account = this._accounts[message.account]
           if (message.type === 'receive') {
-            try {
-              account.addReceiveBlock(message.hash)
-            } catch (err) {
-              if (this._rpc) account.sync(this._rpc)
-            }
+            let account = this._accounts[message.link_as_account]
+            account.addReceiveBlock(message)
           } else if (message.type === 'send') {
+            let account = this._accounts[message.account]
             try {
               account.confirmBlock(message.hash)
             } catch (err) {
@@ -180,11 +180,6 @@ class Wallet {
     return this._walletID
   }
 
-  /**
-   * Sets the wallet id
-   *
-   * @param {string} id - The id of the wallet
-   */
   set walletID (id) {
     this._walletID = id
   }
@@ -219,11 +214,6 @@ class Wallet {
     return this._currentAccountAddress
   }
 
-  /**
-   * Sets the current account address
-   *
-   * @param {LogosAddress} address - The address of the account you want to use
-   */
   set currentAccountAddress (address) {
     if (!this._accounts.hasOwnProperty(address)) throw new Error(`Account ${address} does not exist in this wallet.`)
     this._currentAccountAddress = address
@@ -251,12 +241,6 @@ class Wallet {
     this._password = password
   }
 
-  /**
-   * Sets a seed for the wallet
-   *
-   * @param {Hexadecimal64Length} hexSeed - The 32 byte seed hex encoded
-   * @throws An exception on malformed seed
-   */
   set seed (hexSeed) {
     if (!/[0-9A-F]{64}/i.test(hexSeed)) throw new Error('Invalid Hex Seed.')
     this._seed = hexSeed

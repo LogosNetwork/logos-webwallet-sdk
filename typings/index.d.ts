@@ -61,7 +61,8 @@ declare module 'logos-webwallet-sdk' {
 		public getBlock(hash: Hexadecimal64Length): Block
 		public createBlock(to: LogosAddress, amount?: string, remoteWork?: boolean): Block
 		public getPendingBlock(hash: Hexadecimal64Length): boolean | Block
-		public confirmBlock(hash: Hexadecimal64Length): void
+    public confirmBlock(hash: Hexadecimal64Length): void
+    public addReceiveBlock(block: MQTTBlockOptions): boolean | Block
 	}
 
 	export class Block {
@@ -153,6 +154,22 @@ declare module 'logos-webwallet-sdk' {
     address?: LogosAddress
     index?: number
     label?: string
+  }
+
+  type MQTTBlockOptions = {
+    type: string
+    account: LogosAddress
+    previous: Hexadecimal64Length
+    representative: LogosAddress
+    amount: string
+    transaction_fee: string
+    link: Hexadecimal64Length
+    link_as_account: LogosAddress
+    signature: string
+    work: Hexadecimal16Length
+    timestamp: string
+    hash: Hexadecimal64Length
+    batchBlockHash: Hexadecimal64Length
   }
 
 	type Hexadecimal64Length = string
