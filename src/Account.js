@@ -364,31 +364,35 @@ class Account {
     this._receiveChain = []
     const RPC = new Logos({ url: rpcOptions.host, proxyURL: rpcOptions.proxy })
     let history = await RPC.accounts.history(this._address, -1)
-    for await (const blockInfo of history) {
-      let blockOptions = await RPC.transactions.info(blockInfo.hash)
-      if (blockOptions.type === 'receive') blockOptions = await RPC.transactions.info(blockOptions.link)
-      let block = new Block({
-        signature: blockOptions.signature,
-        work: blockOptions.work,
-        amount: blockOptions.amount,
-        previous: blockOptions.previous,
-        transactionFee: blockOptions.transaction_fee,
-        representative: blockOptions.representative,
-        destination: blockOptions.link_as_account,
-        account: blockOptions.account
-      })
-      if (block.verify()) {
-        if (blockInfo.type === 'receive') {
-          this._receiveChain.unshift(block)
-        } else if (blockInfo.type === 'send') {
-          this._chain.unshift(block)
+    if (history) {
+      for await (const blockInfo of history) {
+        let blockOptions = await RPC.transactions.info(blockInfo.hash)
+        if (blockOptions.type === 'receive') blockOptions = await RPC.transactions.info(blockOptions.link)
+        let block = new Block({
+          signature: blockOptions.signature,
+          work: blockOptions.work,
+          amount: blockOptions.amount,
+          previous: blockOptions.previous,
+          transactionFee: blockOptions.transaction_fee,
+          representative: blockOptions.representative,
+          destination: blockOptions.link_as_account,
+          account: blockOptions.account
+        })
+        if (block.verify()) {
+          if (blockInfo.type === 'receive') {
+            this._receiveChain.unshift(block)
+          } else if (blockInfo.type === 'send') {
+            this._chain.unshift(block)
+          }
+        } else {
+          throw new Error('Invalid Block inside the returned RPC Blocks or the Webwallet has a bug with this account')
         }
-      } else {
-        throw new Error('Invalid Block inside the returned RPC Blocks or the Webwallet has a bug with this account')
       }
-    }
-    if (this.verifyChain() && this.verifyReceiveChain()) {
-      console.log(`${this._address} is synced and valid`)
+      if (this.verifyChain() && this.verifyReceiveChain()) {
+        console.log(`${this._address} is synced and valid`)
+      }
+    } else {
+      console.log(`${this._address} is empty and therefore valid`)
     }
   }
 
