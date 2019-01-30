@@ -407,7 +407,7 @@ class Wallet {
     const checksum = blake.blake2bFinal(context)
 
     const salt = Buffer.from(nacl.randomBytes(16))
-    const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha1')
+    const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha512')
 
     const options = { mode: Utils.AES.CBC, padding: Utils.Iso10126 }
     const encryptedBytes = Utils.AES.encrypt(encryptedWallet, key, salt, options)
@@ -469,7 +469,7 @@ class Wallet {
     const checksum = bytes.slice(0, 32)
     const salt = bytes.slice(32, 48)
     const payload = bytes.slice(48)
-    const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha1')
+    const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha512')
 
     const options = {}
     options.padding = options.padding || Utils.Iso10126
