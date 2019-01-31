@@ -636,6 +636,7 @@ class Account {
    * @param {RPCOptions} rpc - Options to send the public command if null it will not publish the block
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
+   * @throws An exception if the block is rejected by the RPC
    * @returns {Promise<Block>} the block object
    */
   async createBlock (to, amount = 0, remoteWork = true, rpc = {
@@ -657,7 +658,6 @@ class Account {
       account: this._address
     })
     block.sign(this._privateKey)
-
     this._previous = block.hash
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(amount)).minus(minimumTransactionFee).toString()
     if (block.work === null) {
@@ -670,9 +670,15 @@ class Account {
     }
     this._pendingChain.push(block)
     if (rpc) {
-      await block.publish(rpc)
+      let response = await block.publish(rpc)
+      if (response.hash) {
+        return block
+      } else {
+        throw new Error('Invalid Block: Rejected by Logos Node')
+      }
+    } else {
+      return block
     }
-    return block
   }
 
   /**

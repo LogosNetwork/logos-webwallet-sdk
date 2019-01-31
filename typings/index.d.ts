@@ -82,8 +82,9 @@ declare module 'logos-webwallet-sdk' {
     public setRepresentative(account: LogosAddress): void
     public setDestination(account: LogosAddress): void
     public setAccount(account: LogosAddress): void
-		public sign(privateKey: Hexadecimal64Length): void
-		public verify(): boolean
+		public sign(privateKey: Hexadecimal64Length): boolean
+    public verify(): boolean
+    public publish(options: RPCOptions): Promise<Hexadecimal64Length>
 		public toJSON(pretty?: boolean): BlockJSON
 	}
 //#endregion

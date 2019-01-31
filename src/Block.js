@@ -1,6 +1,7 @@
 const Utils = require('./Utils')
 const blake = require('blakejs')
 const nacl = require('tweetnacl/nacl')
+const Logos = require('@logosnetwork/logos-rpc-client')
 const STATE_BLOCK_PREAMBLE = '0000000000000000000000000000000000000000000000000000000000000006'
 
 /**
@@ -158,9 +159,7 @@ class Block {
         throw new Error(`Invalid desintation ${this._destination}`)
       }
       let hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-
       this._hash = hash
-
       return hash
     }
   }
@@ -180,7 +179,8 @@ class Block {
 
   set work (hex) {
     if (!this._previous) throw new Error('Previous is not set.')
-    if (Utils.checkWork(hex, this._previous, true)) {
+    // TODO remove the empty work for main net
+    if (Utils.checkWork(hex, this._previous, true) || hex === '0000000000000000') {
       this._work = hex
     } else {
       throw new Error('Invalid Work for this Block')
@@ -309,17 +309,18 @@ class Block {
   /**
    * Creates a signature for the block.
    * @param {Hexadecimal64Length} privateKey - private key in hex
-   * @returns {void}
+   * @returns {boolean} if the signature is valid
    */
   sign (privateKey) {
     privateKey = Utils.hexToUint8(privateKey)
     if (privateKey.length !== 32) throw new Error('Invalid Private Key length. Should be 32 bytes.')
-    this.signature = Utils.uint8ToHex(nacl.sign.detached(Utils.hexToUint8(this.hash), privateKey))
+    let hash = Utils.hexToUint8(this.hash)
+    this.signature = Utils.uint8ToHex(nacl.sign.detached(hash, privateKey))
+    return this.verify()
   }
 
   /**
    * Verifies the blocks integrity
-   * @param {string} privateKey - private key in hex
    * @returns {boolean}
    */
   verify () {
@@ -327,6 +328,17 @@ class Block {
     if (!this.signature) throw new Error('Signature is not set.')
     if (!this._account) throw new Error('Account is not set.')
     return nacl.sign.detached.verify(Utils.hexToUint8(this.hash), Utils.hexToUint8(this.signature), Utils.hexToUint8(this.account))
+  }
+
+  /**
+   * Publishes the block
+   * @param {RPCOptions} options - rpc options
+   * @returns {Promise<Hexadecimal64Length>} hash of transcation
+   */
+  async publish (options) {
+    const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
+    let hash = await RPC.transactions.publish(this.toJSON())
+    return hash
   }
 
   /**
@@ -339,9 +351,9 @@ class Block {
     obj.type = 'state'
     obj.previous = this._previous
     obj.link = this.destination
-    obj.representative = this.representative
-    obj.transactionFee = this._transactionFee
-    obj.account = this.account
+    obj.representative = this._representative
+    obj.transaction_fee = this._transactionFee
+    obj.account = this._account
     obj.amount = this.amount
     obj.work = this._work
     obj.signature = this._signature
