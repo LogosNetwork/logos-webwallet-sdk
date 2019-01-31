@@ -1,3 +1,4 @@
+const Utils = require('./Utils')
 const bigInt = require('big-integer')
 const Block = require('./Block.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
@@ -262,7 +263,7 @@ class Account {
       // look for a state, change or open block on the chain
       this._pendingChain.forEach(block => {
         if (block.representative) {
-          rep = block.representative
+          rep = Utils.accountFromHexKey(block.representative)
           this._representative = rep
         }
       })
@@ -270,7 +271,7 @@ class Account {
       if (!rep) {
         this._chain.forEach(block => {
           if (block.representative) {
-            rep = block.representative
+            rep = Utils.accountFromHexKey(block.representative)
             this._representative = rep
           }
         })
@@ -621,7 +622,7 @@ class Account {
    */
   getPendingBlock (hash) {
     for (let n = this._pendingChain.length - 1; n >= 0; n--) {
-      const blk = this._receiveChain[n]
+      const blk = this._pendingChain[n]
       if (blk.hash === hash) return blk
     }
     return false
@@ -633,7 +634,7 @@ class Account {
    * @param {LogosAddress} to - The account address of who you are sending to
    * @param {string} amount - The amount you wish to send in reason
    * @param {boolean} remoteWork - Should the work be genereated locally or remote
-   * @param {RPCOptions} rpc - Options to send the public command if null it will not publish the block
+   * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the block
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
    * @throws An exception if the block is rejected by the RPC
@@ -670,11 +671,16 @@ class Account {
     }
     this._pendingChain.push(block)
     if (rpc) {
-      let response = await block.publish(rpc)
-      if (response.hash) {
-        return block
+      // If this is the only block in the pending chain then publish it
+      if (this._pendingChain.length === 1) {
+        let response = await block.publish(rpc)
+        if (response.hash) {
+          return block
+        } else {
+          throw new Error('Invalid Block: Rejected by Logos Node')
+        }
       } else {
-        throw new Error('Invalid Block: Rejected by Logos Node')
+        return block
       }
     } else {
       return block
@@ -685,12 +691,16 @@ class Account {
    * Confirms the block in the local chain
    *
    * @param {Hexadecimal64Length} hash The block hash
+   * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the block
    * @throws An exception if the block is not found in the pending blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  confirmBlock (hash) {
+  confirmBlock (hash, rpc = {
+    host: 'http://100.25.175.142:55000',
+    proxy: 'https://pla.bs'
+  }) {
     const block = this.getPendingBlock(hash)
     if (block) {
       if (block.previous === this._chain[this._chain.length - 1].hash) {
@@ -701,6 +711,10 @@ class Account {
           this._chain.push(block)
           this.removePendingBlock(hash)
           this.updateBalancesFromChain()
+          // Publish the next block in the pending as the previous block has been confirmed
+          if (rpc && this._pendingChain.length > 0) {
+            this._pendingChain[0].publish(rpc)
+          }
         }
       } else {
         console.log(`Block Previous :${block.previous}\n Local Previous: ${this._chain[this._chain.length - 1].hash}`)

@@ -150,7 +150,7 @@ class Wallet {
           } else if (message.type === 'send') {
             let account = this._accounts[message.account]
             try {
-              account.confirmBlock(message.hash)
+              account.confirmBlock(message.hash, this._rpc)
             } catch (err) {
               if (this._rpc) {
                 this._accounts[account.address].sync(this._rpc)
@@ -294,7 +294,7 @@ class Wallet {
    */
   addAccount (account) {
     this._accounts[account.address] = account
-    if (this._mqtt) this._subscribe(`account/${account.address}`)
+    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
     return this._accounts[account.address]
   }
 
@@ -325,13 +325,13 @@ class Wallet {
       }
     }
     const account = new Account(accountOptions)
+    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
     this._accounts[account.address] = account
     if (this._rpc) {
       await this._accounts[account.address].sync(this._rpc)
     } else {
       this._accounts[account.address].synced = true
     }
-    if (this._mqtt) this._subscribe(`account/${account.address}`)
     this._currentAccountAddress = account.address
     return this._accounts[account.address]
   }
@@ -365,16 +365,16 @@ class Wallet {
   /**
    * Adds block to account chain
    *
-   * @param {LogosAddress} account logos address
+   * @param {LogosAddress} address logos address
    * @param {Hexadecimal64Length} hash The block hash
    * @throws An exception if the block is not found in the ready blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  confirmBlock (account, hash) {
-    this.currentAccountAddress(account)
-    account.confirmBlock(hash)
+  confirmBlock (address, hash) {
+    this.currentAccountAddress(address)
+    this.account.confirmBlock(hash)
   }
 
   /**
