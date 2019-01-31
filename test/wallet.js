@@ -4,43 +4,47 @@ const Wallet = LogosWallet.Wallet
 
 describe('Wallet', () => {
   describe('Create Wallet', () => {
-    it('creates the wallet', () => {
+    it('creates the wallet', async () => {
       let wallet = new Wallet({
         password: 'password',
         seed: '6F9BD621FDED3C2FB3A2DA8B75C4B6B4ADFE3DF8809B74F8EFF44DDC1120CACA',
-        mqtt: false
+        mqtt: false,
+        rpc: false
       })
-      wallet.createAccount()
+      await wallet.createAccount()
       expect(wallet.currentAccountAddress).to.equal('lgs_16qe43ioiirkgq1pbm7esb96qqwk3wjihf9ey7broncwa7doy85c4xkapkob')
     })
-    it('creates second account deterministically', () => {
+    it('creates second account deterministically', async () => {
       let wallet = new Wallet({
         password: 'password',
         seed: '6F9BD621FDED3C2FB3A2DA8B75C4B6B4ADFE3DF8809B74F8EFF44DDC1120CACA',
-        mqtt: false
+        mqtt: false,
+        rpc: false
       })
-      wallet.createAccount()
-      wallet.createAccount()
+      await wallet.createAccount()
+      await wallet.createAccount()
       expect(wallet.currentAccountAddress).to.equal('lgs_1wfecwmyqqoo3sjredpn336jwfjh9jqsi6qz6jj7y1kpwijq4pue4jkg6mjz')
     })
-    it('creates a wallet from private key', () => {
+    it('creates a wallet from private key', async () => {
       let wallet = new Wallet({
         password: 'password',
         seed: '6F9BD621FDED3C2FB3A2DA8B75C4B6B4ADFE3DF8809B74F8EFF44DDC1120CACA',
-        mqtt: false
+        mqtt: false,
+        rpc: false
       })
-      wallet.createAccount({
+      await wallet.createAccount({
         privateKey: '50F6320A0BF3CAFE656A9FEF0941621B3DDB0031CCA536C9F9F285D856D32412'
       })
       expect(wallet.currentAccountAddress).to.equal('lgs_3kq6qw4npptycwpsh1k1utxr1jx39wemcxpdfbxyh8y9tih5bn88i1pthhbe')
     })
-    it('creates 10th account deterministically', () => {
+    it('creates 10th account deterministically', async () => {
       let wallet = new Wallet({
         password: 'password',
         seed: '6F9BD621FDED3C2FB3A2DA8B75C4B6B4ADFE3DF8809B74F8EFF44DDC1120CACA',
-        mqtt: false
+        mqtt: false,
+        rpc: false
       })
-      wallet.createAccount({
+      await wallet.createAccount({
         index: 10
       })
       expect(wallet.currentAccountAddress).to.equal('lgs_3tq554dtqwqynmyzqejhkch75brfuzxykcqb4hjkx8snghzjm9pc65bw7swq')
@@ -50,7 +54,8 @@ describe('Wallet', () => {
     let wallet = new Wallet({
       password: 'password',
       seed: '6F9BD621FDED3C2FB3A2DA8B75C4B6B4ADFE3DF8809B74F8EFF44DDC1120CACA',
-      mqtt: false
+      mqtt: false,
+      rpc: false
     })
     wallet.createAccount()
     let encryptedWallet = null
@@ -58,12 +63,13 @@ describe('Wallet', () => {
       encryptedWallet = wallet.encrypt()
       expect(encryptedWallet).to.have.a.lengthOf(576)
     })
-    it('decrypts the wallet', () => {
+    it('decrypts the wallet', async () => {
       let loadWallet = new Wallet({
         password: 'password',
-        mqtt: false
+        mqtt: false,
+        rpc: false
       })
-      loadWallet.load(encryptedWallet)
+      await loadWallet.load(encryptedWallet)
       expect(wallet.currentAccountAddress).to.equal(loadWallet.currentAccountAddress)
       expect(wallet.seed).to.equal(loadWallet.seed)
     })
@@ -72,7 +78,8 @@ describe('Wallet', () => {
     let wallet = new Wallet({
       password: 'password',
       seed: '6F9BD621FDED3C2FB3A2DA8B75C4B6B4ADFE3DF8809B74F8EFF44DDC1120CACA',
-      mqtt: false
+      mqtt: false,
+      rpc: false
     })
     wallet.createAccount()
     wallet.createAccount()

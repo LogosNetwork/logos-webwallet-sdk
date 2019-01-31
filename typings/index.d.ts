@@ -24,7 +24,7 @@ declare module 'logos-webwallet-sdk' {
 		public getBlock(hash: Hexadecimal64Length): Block | boolean
 		public confirmBlock(account: LogosAddress, hash: Hexadecimal64Length): void
 		public encrypt(): string
-		public load(encryptedWallet: string): WalletData
+		public load(encryptedWallet: string): Promise<WalletData>
 		private _decrypt(encryptedWallet: string): WalletData | boolean
 		private _generateAccountOptionsFromSeed(index: number): MinimialAccount
 		private _generateAccountOptionsFromPrivateKey(privateKey: Hexadecimal64Length): MinimialAccount

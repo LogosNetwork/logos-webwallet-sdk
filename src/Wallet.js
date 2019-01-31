@@ -433,9 +433,9 @@ class Wallet {
    * Constructs the wallet from an encrypted base64 encoded wallet
    *
    * @param {string} - encrypted wallet
-   * @returns {WalletData} wallet data
+   * @returns {Promise<WalletData>} wallet data
    */
-  load (encryptedWallet) {
+  async load (encryptedWallet) {
     this._accounts = {}
     const decryptedBytes = this._decrypt(encryptedWallet)
     if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
@@ -447,12 +447,12 @@ class Wallet {
       const accountOptions = walletData.accounts[i]
       // Technically you don't need an if here but it helps with readability
       if (accountOptions.index !== null) {
-        this.createAccount({
+        await this.createAccount({
           index: accountOptions.index,
           label: accountOptions.label
         })
       } else if (accountOptions.privateKey) {
-        this.createAccount({
+        await this.createAccount({
           label: accountOptions.label,
           privateKey: accountOptions.privateKey
         })
