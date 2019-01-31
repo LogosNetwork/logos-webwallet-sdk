@@ -372,48 +372,70 @@ class Account {
   /**
    * Scans the account history using RPC and updates the local chain
    * @param {RPCOptions} options host and proxy used to sync the chain to (this data will be validated)
-   * @returns {void}
+   * @returns {Promise<Account>}
    */
-  async sync (options) {
-    this._synced = false
-    this._chain = []
-    this._receiveChain = []
-    const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
-    let history = await RPC.accounts.history(this._address, -1)
-    if (history) {
-      for await (const blockInfo of history) {
-        let blockOptions = await RPC.transactions.info(blockInfo.hash)
-        if (blockOptions.type === 'receive') blockOptions = await RPC.transactions.info(blockOptions.link)
-        let block = new Block({
-          signature: blockOptions.signature,
-          work: blockOptions.work,
-          amount: blockOptions.amount,
-          previous: blockOptions.previous,
-          transactionFee: blockOptions.transaction_fee,
-          representative: blockOptions.representative,
-          destination: blockOptions.link_as_account,
-          account: blockOptions.account
-        })
-        if (block.verify()) {
-          if (blockInfo.type === 'receive') {
-            this._receiveChain.unshift(block)
-          } else if (blockInfo.type === 'send') {
-            this._chain.unshift(block)
+  sync (options) {
+    return new Promise((resolve, reject) => {
+      let start = Date.now()
+      this._synced = false
+      this._chain = []
+      this._receiveChain = []
+      const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
+      RPC.accounts.history(this._address, -1).then((history) => {
+        if (history) {
+          let totalBlocks = history.length
+          let sendChain = new Map()
+          let pulledBlocks = 0
+          const addBlock = (blockOptions, blockInfo) => {
+            let block = new Block({
+              signature: blockOptions.signature,
+              work: blockOptions.work,
+              amount: blockOptions.amount,
+              previous: blockOptions.previous,
+              transactionFee: blockOptions.transaction_fee,
+              representative: blockOptions.representative,
+              destination: blockOptions.link_as_account,
+              account: blockOptions.account
+            })
+            if (block.verify()) {
+              if (blockInfo.type === 'receive') {
+                this._receiveChain.unshift(block)
+              } else {
+                sendChain.set(blockInfo.hash, block)
+              }
+            } else {
+              throw new Error('Invalid Block inside the returned RPC Blocks or the Webwallet has a bug with this account')
+            }
+            pulledBlocks++
+            if (pulledBlocks === totalBlocks) {
+              this._chain = Array.from(sendChain.values())
+              this.updateBalancesFromChain()
+              if (this.verifyChain() && this.verifyReceiveChain()) {
+                this._synced = true
+                console.log(`${this._address} is synced and valid took ${Date.now() - start}ms to sync`)
+                resolve(this)
+              }
+            }
+          }
+          for (const blockInfo of history) {
+            if (blockInfo.type === 'send') sendChain.set(blockInfo.hash, null)
+            RPC.transactions.info(blockInfo.hash).then((blockOptions) => {
+              if (blockOptions.type === 'receive') {
+                RPC.transactions.info(blockOptions.link).then((blockOptions) => {
+                  addBlock(blockOptions, blockInfo)
+                })
+              } else {
+                addBlock(blockOptions, blockInfo)
+              }
+            })
           }
         } else {
-          throw new Error('Invalid Block inside the returned RPC Blocks or the Webwallet has a bug with this account')
+          this._synced = true
+          console.log(`${this._address} is empty and therefore valid`)
+          return this
         }
-      }
-      this.updateBalancesFromChain()
-      if (this.verifyChain() && this.verifyReceiveChain()) {
-        this._synced = true
-        console.log(`${this._address} is synced and valid`)
-      }
-    } else {
-      this._synced = true
-      console.log(`${this._address} is empty and therefore valid`)
-    }
-    return this
+      })
+    })
   }
 
   /**
@@ -443,7 +465,7 @@ class Account {
    */
   verifyChain () {
     let last = GENESIS_HASH
-    this._chain.forEach(block => {
+    this._chain.reverse().forEach(block => {
       if (block.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
       if (!block.verify()) throw new Error('Invalid block in this chain')
       last = block.hash
@@ -729,7 +751,7 @@ class Account {
    * Adds a receive block to the local chain
    *
    * @param {MQTTBlockOptions} block The mqtt block options
-   * @returns {void}
+   * @returns {Block | boolean} block if it is valid
    */
   addReceiveBlock (block) {
     let receive = new Block({
@@ -737,7 +759,7 @@ class Account {
       work: block.work,
       amount: block.amount,
       previous: block.previous,
-      transactionFee: block.transactionFee,
+      transactionFee: block.transaction_fee,
       representative: block.representative,
       destination: block.link_as_account,
       account: block.account
