@@ -152,7 +152,11 @@ class Wallet {
             try {
               account.confirmBlock(message.hash)
             } catch (err) {
-              if (this._rpc) account.sync(this._rpc)
+              if (this._rpc) {
+                this._accounts[account.address].sync(this._rpc)
+              } else {
+                this._accounts[account.address].synced = true
+              }
             }
           }
         }
@@ -300,9 +304,9 @@ class Wallet {
    * You are allowed to create an account using your seed, precalculated account options, or a privateKey
    *
    * @param {AccountOptions} options - the options to populate the account. If you send just private key it will generate the account from that privateKey. If you just send index it will genereate the account from that determinstic seed index.
-   * @returns {Account}
+   * @returns {Promise<Account>}
    */
-  createAccount (options = null) {
+  async createAccount (options = null) {
     let accountOptions = null
     if (options === null) { // No options generate from seed
       if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
@@ -322,7 +326,11 @@ class Wallet {
     }
     const account = new Account(accountOptions)
     this._accounts[account.address] = account
-    if (this._rpc) this._accounts[account.address].sync(this._rpc)
+    if (this._rpc) {
+      await this._accounts[account.address].sync(this._rpc)
+    } else {
+      this._accounts[account.address].synced = true
+    }
     if (this._mqtt) this._subscribe(`account/${account.address}`)
     this._currentAccountAddress = account.address
     return this._accounts[account.address]

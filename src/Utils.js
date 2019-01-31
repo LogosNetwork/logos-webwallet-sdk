@@ -273,10 +273,10 @@ function equalArrays (array1, array2) {
 }
 
 function getRandomValues (buf) {
-  if (window.crypto && window.crypto.getRandomValues) {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
     return window.crypto.getRandomValues(buf)
   }
-  if (typeof window.msCrypto === 'object' && typeof window.msCrypto.getRandomValues === 'function') {
+  if (typeof window !== 'undefined' && typeof window.msCrypto === 'object' && typeof window.msCrypto.getRandomValues === 'function') {
     return window.msCrypto.getRandomValues(buf)
   }
   if (crypto.randomBytes) {
@@ -310,12 +310,8 @@ function generator256 (hash, testNet) {
   let random = randomUint()
   for (let r = 0; r < 256; r++) {
     random[7] = (random[7] + r) % 256 // pseudo random part
-    let context = blake.blake2bInit(8, null)
-    blake.blake2bUpdate(context, random)
-    blake.blake2bUpdate(context, hash)
-    let work = blake.blake2bFinal(context).reverse()
-    let check = checkWork(uint8ToHex(work), hash, testNet)
-    if (check === true) return random.reverse()
+    let check = checkWork(uint8ToHex(random), hash, testNet)
+    if (check === true) return uint8ToHex(random)
   }
   return false
 }
@@ -332,11 +328,14 @@ const checkWork = (work, previousHash, testNet) => {
   return false
 }
 
-const generateWork = (hash, testNet) => {
+const generateWork = (hash, testNet = true) => {
   return new Promise((resolve, reject) => {
     for (let i = 0; i < 4096; i++) {
       let validWork = generator256(hash, testNet)
-      if (validWork) resolve(validWork)
+      if (validWork) {
+        resolve(validWork)
+        break
+      }
     }
   })
 }

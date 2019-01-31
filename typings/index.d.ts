@@ -19,7 +19,7 @@ declare module 'logos-webwallet-sdk' {
     public setPassword(password: string): void
 		public createSeed(overwrite?: boolean): Hexadecimal64Length
 		public addAccount(account: Account): Account
-		public createAccount(options?: AccountOptions): Account
+		public createAccount(options?: AccountOptions): Promise<Account>
 		public recalculateWalletBalancesFromChain(): void
 		public getBlock(hash: Hexadecimal64Length): Block | boolean
 		public confirmBlock(account: LogosAddress, hash: Hexadecimal64Length): void
@@ -33,6 +33,7 @@ declare module 'logos-webwallet-sdk' {
 	export class Account {
     constructor(options?: AccountOptions);
     public label: string
+    public synced: boolean
     public readonly index: number
     public readonly previous: Hexadecimal64Length
     public readonly address: LogosAddress
@@ -47,6 +48,7 @@ declare module 'logos-webwallet-sdk' {
     public readonly blockCount: number
     public readonly pendingBlockCount: number
     public readonly recieveCount: number
+    public sync(options: RPCOptions): Promise<Account>
 		public updateBalancesFromChain(): void
 		public verifyChain(): boolean
 		public verifyRecieveChain(): boolean
@@ -59,7 +61,7 @@ declare module 'logos-webwallet-sdk' {
 		public removePendingBlocks(): void
 		public removePendingBlock(hash: Hexadecimal64Length): boolean
 		public getBlock(hash: Hexadecimal64Length): Block
-		public createBlock(to: LogosAddress, amount?: string, remoteWork?: boolean): Block
+		public createBlock(to: LogosAddress, amount?: string, remoteWork?: boolean, rpc?: RPCOptions): Promise<Block>
 		public getPendingBlock(hash: Hexadecimal64Length): boolean | Block
     public confirmBlock(hash: Hexadecimal64Length): void
     public addReceiveBlock(block: MQTTBlockOptions): boolean | Block
@@ -97,6 +99,7 @@ declare module 'logos-webwallet-sdk' {
     walletID?: string
     version?: number
     remoteWork?: boolean
+    rpc?: RPCOptions
   };
 
   type AccountOptions = {
@@ -171,6 +174,11 @@ declare module 'logos-webwallet-sdk' {
     timestamp: string
     hash: Hexadecimal64Length
     batchBlockHash: Hexadecimal64Length
+  }
+
+  type RPCOptions = {
+    host: string
+    proxy?: string
   }
 
 	type Hexadecimal64Length = string

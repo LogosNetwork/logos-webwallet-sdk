@@ -180,7 +180,7 @@ class Block {
 
   set work (hex) {
     if (!this._previous) throw new Error('Previous is not set.')
-    if (Utils.checkWork(hex, this._previous)) {
+    if (Utils.checkWork(hex, this._previous, true)) {
       this._work = hex
     } else {
       throw new Error('Invalid Work for this Block')
@@ -312,8 +312,9 @@ class Block {
    * @returns {void}
    */
   sign (privateKey) {
-    if (privateKey.length !== 32) throw new Error('Invalid Secret Key length. Should be 32 bytes.')
-    this.signature = Utils.uint8ToHex(nacl.sign.detached(this.hash, privateKey))
+    privateKey = Utils.hexToUint8(privateKey)
+    if (privateKey.length !== 32) throw new Error('Invalid Private Key length. Should be 32 bytes.')
+    this.signature = Utils.uint8ToHex(nacl.sign.detached(Utils.hexToUint8(this.hash), privateKey))
   }
 
   /**

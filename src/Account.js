@@ -172,11 +172,22 @@ class Account {
     } else {
       this._version = 1
     }
+
+    this._synced = false
+  }
+
+  /**
+   * If the account has been synced with the RPC or if RPC is disabled this is true
+   * @type {boolean}
+   */
+  get synced () {
+    return this._synced
   }
 
   /**
    * The index of the account
    * @type {number}
+   * @readonly
    */
   get index () {
     return this._index
@@ -332,6 +343,10 @@ class Account {
     this._label = label
   }
 
+  set synced (val) {
+    this._synced = val
+  }
+
   /**
    * Return the previous block as hash
    * @type {Hexadecimal64Length}
@@ -347,7 +362,7 @@ class Account {
       } else if (this._chain.length > 0) {
         this._previous = this._chain[this._chain.length - 1].hash
       } else {
-        this._previous = null
+        this._previous = GENESIS_HASH
       }
       return this._previous
     }
@@ -355,14 +370,14 @@ class Account {
 
   /**
    * Scans the account history using RPC and updates the local chain
-   * @type {Hexadecimal64Length}
+   * @param {RPCOptions} options host and proxy used to sync the chain to (this data will be validated)
    * @returns {void}
-   * @readonly
    */
-  async sync (rpcOptions) {
+  async sync (options) {
+    this._synced = false
     this._chain = []
     this._receiveChain = []
-    const RPC = new Logos({ url: rpcOptions.host, proxyURL: rpcOptions.proxy })
+    const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
     let history = await RPC.accounts.history(this._address, -1)
     if (history) {
       for await (const blockInfo of history) {
@@ -388,12 +403,16 @@ class Account {
           throw new Error('Invalid Block inside the returned RPC Blocks or the Webwallet has a bug with this account')
         }
       }
+      this.updateBalancesFromChain()
       if (this.verifyChain() && this.verifyReceiveChain()) {
+        this._synced = true
         console.log(`${this._address} is synced and valid`)
       }
     } else {
+      this._synced = true
       console.log(`${this._address} is empty and therefore valid`)
     }
+    return this
   }
 
   /**
@@ -614,11 +633,18 @@ class Account {
    * @param {LogosAddress} to - The account address of who you are sending to
    * @param {string} amount - The amount you wish to send in reason
    * @param {boolean} remoteWork - Should the work be genereated locally or remote
-   * @returns {Block} the block object
+   * @param {RPCOptions} rpc - Options to send the public command if null it will not publish the block
+   * @throws An exception if the account has not been synced
+   * @throws An exception if the pending balance is less than the required amount to do a send
+   * @returns {Promise<Block>} the block object
    */
-  async createBlock (to, amount = 0, remoteWork = true) {
-    if (bigInt(this._pendingBalance).minus(bigInt(amount)).lesser(0)) {
-      throw new Error('Invalid Block: Not Enough Funds to send that amount')
+  async createBlock (to, amount = 0, remoteWork = true, rpc = {
+    host: 'http://100.25.175.142:55000',
+    proxy: 'https://pla.bs'
+  }) {
+    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    if (bigInt(this._pendingBalance).minus(bigInt(amount)).minus(minimumTransactionFee).lesser(0)) {
+      throw new Error('Invalid Block: Not Enough Funds including fee to send that amount')
     }
     let block = new Block({
       signature: null,
@@ -630,21 +656,22 @@ class Account {
       destination: to,
       account: this._address
     })
-
     block.sign(this._privateKey)
 
     this._previous = block.hash
-    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(amount)).toString()
+    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(amount)).minus(minimumTransactionFee).toString()
     if (block.work === null) {
       if (remoteWork) {
         // TODO Send request to the remote work cluster
         block.work = EMPTY_WORK
       } else {
-        await block.createWork(true)
+        block.work = await block.createWork(true)
       }
     }
     this._pendingChain.push(block)
-
+    if (rpc) {
+      await block.publish(rpc)
+    }
     return block
   }
 
