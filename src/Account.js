@@ -376,58 +376,57 @@ class Account {
    */
   sync (options) {
     return new Promise((resolve, reject) => {
-      let start = Date.now()
       this._synced = false
       this._chain = []
       this._receiveChain = []
       const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
-      RPC.accounts.history(this._address, -1).then((history) => {
+      RPC.accounts.history(this._address, -1, true).then((history) => {
         if (history) {
           let totalBlocks = history.length
-          let sendChain = new Map()
           let pulledBlocks = 0
-          const addBlock = (blockOptions, blockInfo) => {
+          const addBlock = (blockInfo) => {
             let block = new Block({
-              signature: blockOptions.signature,
-              work: blockOptions.work,
-              amount: blockOptions.amount,
-              previous: blockOptions.previous,
-              transactionFee: blockOptions.transaction_fee,
-              representative: blockOptions.representative,
-              destination: blockOptions.link_as_account,
-              account: blockOptions.account
+              signature: blockInfo.signature,
+              work: blockInfo.work,
+              amount: blockInfo.amount,
+              previous: blockInfo.previous,
+              representative: blockInfo.representative,
+              destination: Utils.accountFromHexKey(blockInfo.link)
             })
-            if (block.verify()) {
-              if (blockInfo.type === 'receive') {
-                this._receiveChain.unshift(block)
-              } else {
-                sendChain.set(blockInfo.hash, block)
-              }
+            if (blockInfo.type === 'send') {
+              block.setAccount(this._address)
             } else {
-              throw new Error('Invalid Block inside the returned RPC Blocks or the Webwallet has a bug with this account')
+              block.setAccount(blockInfo.account)
+            }
+            if (blockInfo.transaction_fee) {
+              block.transactionFee = blockInfo.transaction_fee
+            } else {
+              block.transactionFee = minimumTransactionFee
+            }
+            if (blockInfo.type === 'receive') {
+              this._receiveChain.push(block)
+            } else {
+              this._chain.push(block)
             }
             pulledBlocks++
             if (pulledBlocks === totalBlocks) {
-              this._chain = Array.from(sendChain.values())
               this.updateBalancesFromChain()
               if (this.verifyChain() && this.verifyReceiveChain()) {
                 this._synced = true
-                console.log(`${this._address} is synced and valid took ${Date.now() - start}ms to sync`)
+                // console.log(`${this._address} is synced and valid`)
                 resolve(this)
               }
             }
           }
           for (const blockInfo of history) {
-            if (blockInfo.type === 'send') sendChain.set(blockInfo.hash, null)
-            RPC.transactions.info(blockInfo.hash).then((blockOptions) => {
-              if (blockOptions.type === 'receive') {
-                RPC.transactions.info(blockOptions.link).then((blockOptions) => {
-                  addBlock(blockOptions, blockInfo)
-                })
-              } else {
-                addBlock(blockOptions, blockInfo)
-              }
-            })
+            if (blockInfo.type === 'send') {
+              addBlock(blockInfo)
+            } else {
+              RPC.transactions.info(blockInfo.link).then((blockOptions) => {
+                blockOptions.type = 'receive'
+                addBlock(blockOptions)
+              })
+            }
           }
         } else {
           this._synced = true

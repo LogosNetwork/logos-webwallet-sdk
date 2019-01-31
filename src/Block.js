@@ -196,7 +196,7 @@ class Block {
   }
 
   set amount (amount) {
-    if (this._signature) this._signature = null
+    this._hash = null
     this._amount = amount
   }
 
@@ -210,7 +210,7 @@ class Block {
 
   set previous (hex) {
     if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid previous block hash.')
-    if (this._signature) this._signature = null
+    this._hash = null
     this._previous = hex
   }
 
@@ -223,7 +223,7 @@ class Block {
   }
 
   set transactionFee (val) {
-    if (this._signature) this._signature = null
+    this._hash = null
     this._transactionFee = val
   }
 
@@ -242,7 +242,7 @@ class Block {
    * @returns {void}
    */
   setRepresentative (account) {
-    if (this._signature) this._signature = null
+    this._hash = null
     this._representative = account
   }
 
@@ -262,7 +262,7 @@ class Block {
    * @returns {void}
    */
   setDestination (account) {
-    if (this._signature) this._signature = null
+    this._hash = null
     this._destination = account
   }
   /**
@@ -281,7 +281,7 @@ class Block {
    * @returns {void}
    */
   setAccount (account) {
-    if (this._signature) this._signature = null
+    this._hash = null
     this._account = account
   }
 
