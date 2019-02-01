@@ -12,6 +12,8 @@ declare module 'logos-webwallet-sdk' {
     public walletID: string
     public currentAccountAddress: LogosAddress
     public seed: Hexadecimal64Length
+    public rpc: RPCOptions
+    public mqtt: string
 		public readonly accounts: Account[]
 		public readonly account: Account
 		public readonly balance: string
@@ -63,7 +65,7 @@ declare module 'logos-webwallet-sdk' {
 		public getBlock(hash: Hexadecimal64Length): Block
 		public createBlock(to: LogosAddress, amount?: string, remoteWork?: boolean, rpc?: RPCOptions): Promise<Block>
 		public getPendingBlock(hash: Hexadecimal64Length): boolean | Block
-    public confirmBlock(hash: Hexadecimal64Length): void
+    public confirmBlock(hash: Hexadecimal64Length, rpc: RPCOptions | boolean): void
     public addReceiveBlock(block: MQTTBlockOptions): boolean | Block
 	}
 
@@ -138,7 +140,7 @@ declare module 'logos-webwallet-sdk' {
   //   previous: Hexadecimal64Length
   //   link: Hexadecimal64Length
   //   representative: Hexadecimal64Length
-  //   transactionFee: string | number
+  //   transaction_fee: string | number
   //   signature: Hexadecimal64Length
   //   account: Hexadecimal64Length
   //   amount: string
@@ -178,7 +180,8 @@ declare module 'logos-webwallet-sdk' {
   }
 
   type RPCOptions = {
-    host: string
+    host: string,
+    delegates: string[],
     proxy?: string
   }
 

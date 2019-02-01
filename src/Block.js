@@ -336,7 +336,13 @@ class Block {
    * @returns {Promise<Hexadecimal64Length>} hash of transcation
    */
   async publish (options) {
-    const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
+    let delegateId = null
+    if (this._previous !== '0000000000000000000000000000000000000000000000000000000000000000') {
+      delegateId = parseInt(this._previous.slice(-2), 16) % 32
+    } else {
+      delegateId = parseInt(this.account.slice(-2), 16) % 32
+    }
+    const RPC = new Logos({ url: options.delegates[delegateId], proxyURL: options.proxy })
     let hash = await RPC.transactions.publish(this.toJSON())
     return hash
   }

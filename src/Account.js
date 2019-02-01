@@ -413,7 +413,6 @@ class Account {
               this.updateBalancesFromChain()
               if (this.verifyChain() && this.verifyReceiveChain()) {
                 this._synced = true
-                // console.log(`${this._address} is synced and valid`)
                 resolve(this)
               }
             }
@@ -431,7 +430,7 @@ class Account {
         } else {
           this._synced = true
           console.log(`${this._address} is empty and therefore valid`)
-          return this
+          resolve(this)
         }
       })
     })
@@ -465,14 +464,18 @@ class Account {
   verifyChain () {
     let last = GENESIS_HASH
     this._chain.reverse().forEach(block => {
-      if (block.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
-      if (!block.verify()) throw new Error('Invalid block in this chain')
-      last = block.hash
+      if (block) {
+        if (block.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
+        if (!block.verify()) throw new Error('Invalid block in this chain')
+        last = block.hash
+      }
     })
     this._pendingChain.reverse().forEach(block => {
-      if (block.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
-      if (!block.verify()) throw new Error('Invalid block in the pending chain')
-      last = block.hash
+      if (block) {
+        if (block.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
+        if (!block.verify()) throw new Error('Invalid block in the pending chain')
+        last = block.hash
+      }
     })
     return true
   }
@@ -661,10 +664,7 @@ class Account {
    * @throws An exception if the block is rejected by the RPC
    * @returns {Promise<Block>} the block object
    */
-  async createBlock (to, amount = 0, remoteWork = true, rpc = {
-    host: 'http://100.25.175.142:55000',
-    proxy: 'https://pla.bs'
-  }) {
+  async createBlock (to, amount = 0, remoteWork = true, rpc) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     if (bigInt(this._pendingBalance).minus(bigInt(amount)).minus(minimumTransactionFee).lesser(0)) {
       throw new Error('Invalid Block: Not Enough Funds including fee to send that amount')
@@ -718,10 +718,7 @@ class Account {
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  confirmBlock (hash, rpc = {
-    host: 'http://100.25.175.142:55000',
-    proxy: 'https://pla.bs'
-  }) {
+  confirmBlock (hash, rpc) {
     const block = this.getPendingBlock(hash)
     if (block) {
       if (block.previous === this._chain[this._chain.length - 1].hash) {

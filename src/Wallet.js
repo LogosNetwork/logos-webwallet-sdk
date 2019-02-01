@@ -22,7 +22,41 @@ class Wallet {
     mqtt: 'wss:pla.bs:8443',
     rpc: {
       host: 'http://100.25.175.142:55000',
-      proxy: 'https://pla.bs'
+      proxy: 'https://pla.bs',
+      delegates: [
+        'http://100.25.175.142:55000',
+        'http://174.129.135.230:55000',
+        'http://18.208.239.123:55000',
+        'http://18.211.1.90:55000',
+        'http://18.233.175.15:55000',
+        'http://18.233.235.87:55000',
+        'http://3.81.242.200:55000',
+        'http://3.82.164.171:55000',
+        'http://34.227.209.242:55000',
+        'http://34.237.166.184:55000',
+        'http://34.239.238.121:55000',
+        'http://35.170.167.20:55000',
+        'http://50.17.125.174:55000',
+        'http://52.203.151.67:55000',
+        'http://52.23.71.123:55000',
+        'http://52.6.18.99:55000',
+        'http://52.6.230.153:55000',
+        'http://52.86.212.70:55000',
+        'http://54.145.211.218:55000',
+        'http://54.145.253.93:55000',
+        'http://54.147.201.7:55000',
+        'http://54.147.253.43:55000',
+        'http://54.163.88.0:55000',
+        'http://54.166.158.6:55000',
+        'http://54.197.141.197:55000',
+        'http://54.205.169.103:55000',
+        'http://54.236.190.13:55000',
+        'http://54.242.31.23:55000',
+        'http://54.80.152.235:55000',
+        'http://54.84.116.105:55000',
+        'http://54.85.141.93:55000',
+        'http://54.91.99.2:55000'
+      ]
     },
     version: 1
   }) {
@@ -102,7 +136,41 @@ class Wallet {
     } else {
       this._rpc = {
         host: 'http://100.25.175.142:55000',
-        proxy: 'https://pla.bs'
+        proxy: 'https://pla.bs',
+        delegates: [
+          'http://100.25.175.142:55000',
+          'http://174.129.135.230:55000',
+          'http://18.208.239.123:55000',
+          'http://18.211.1.90:55000',
+          'http://18.233.175.15:55000',
+          'http://18.233.235.87:55000',
+          'http://3.81.242.200:55000',
+          'http://3.82.164.171:55000',
+          'http://34.227.209.242:55000',
+          'http://34.237.166.184:55000',
+          'http://34.239.238.121:55000',
+          'http://35.170.167.20:55000',
+          'http://50.17.125.174:55000',
+          'http://52.203.151.67:55000',
+          'http://52.23.71.123:55000',
+          'http://52.6.18.99:55000',
+          'http://52.6.230.153:55000',
+          'http://52.86.212.70:55000',
+          'http://54.145.211.218:55000',
+          'http://54.145.253.93:55000',
+          'http://54.147.201.7:55000',
+          'http://54.147.253.43:55000',
+          'http://54.163.88.0:55000',
+          'http://54.166.158.6:55000',
+          'http://54.197.141.197:55000',
+          'http://54.205.169.103:55000',
+          'http://54.236.190.13:55000',
+          'http://54.242.31.23:55000',
+          'http://54.80.152.235:55000',
+          'http://54.84.116.105:55000',
+          'http://54.85.141.93:55000',
+          'http://54.91.99.2:55000'
+        ]
       }
     }
 
@@ -126,43 +194,7 @@ class Wallet {
       this._mqtt = 'wss:pla.bs:8443'
     }
     this._mqttConnected = false
-    if (this._mqtt) {
-      this._mqttClient = mqtt.connect(this._mqtt)
-      this._mqttClient.on('connect', () => {
-        console.log('Webwallet SDK Connected to MQTT')
-        this._mqttConnected = true
-        Object.keys(this._accounts).forEach(account => {
-          this._subscribe(`account/${account}`)
-        })
-      })
-      this._mqttClient.on('close', () => {
-        this._mqttConnected = false
-        console.log('Webwallet SDK disconnected from MQTT')
-      })
-      this._mqttClient.on('message', (topic, message) => {
-        const accountMqttRegex = mqttRegex('account/+account').exec
-        message = JSON.parse(message.toString())
-        if (accountMqttRegex(topic)) {
-          if (message.type === 'receive') {
-            let account = this._accounts[message.link_as_account]
-            account.addReceiveBlock(message)
-          } else if (message.type === 'send') {
-            let account = this._accounts[message.account]
-            try {
-              account.confirmBlock(message.hash, this._rpc)
-            } catch (err) {
-              if (this._rpc) {
-                console.log('send block not found in our pending chain resyncing entire wallet')
-                this._accounts[account.address].sync(this._rpc)
-              } else {
-                console.log(err)
-                this._accounts[account.address].synced = false
-              }
-            }
-          }
-        }
-      })
-    }
+    this._mqttConnect()
 
     /**
      * Seed used to generate accounts
@@ -237,6 +269,32 @@ class Wallet {
       totalBalance.add(bigInt(this._accounts[account].balance))
     })
     return totalBalance.toString()
+  }
+
+  /**
+   * The mqtt host for listening to confirmations from Logos consensus
+   * @type {string}
+   */
+  get mqtt () {
+    return this._mqtt
+  }
+
+  set mqtt (val) {
+    this._mqttDisconnect()
+    this._mqtt = val
+    this._mqttConnect()
+  }
+
+  /**
+   * The rpc options for connecting to the RPC
+   * @type {RPCOptions | boolean}
+   */
+  get rpc () {
+    return this._rpc
+  }
+
+  set rpc (val) {
+    this._rpc = val
   }
 
   /**
@@ -557,6 +615,50 @@ class Wallet {
           console.log(`unsubscribed from ${topic}`)
         } else {
           console.log(err)
+        }
+      })
+    }
+  }
+
+  _mqttDisconnect () {
+    this._mqttClient.end()
+  }
+
+  _mqttConnect () {
+    if (this._mqtt) {
+      this._mqttClient = mqtt.connect(this._mqtt)
+      this._mqttClient.on('connect', () => {
+        console.log('Webwallet SDK Connected to MQTT')
+        this._mqttConnected = true
+        Object.keys(this._accounts).forEach(account => {
+          this._subscribe(`account/${account}`)
+        })
+      })
+      this._mqttClient.on('close', () => {
+        this._mqttConnected = false
+        console.log('Webwallet SDK disconnected from MQTT')
+      })
+      this._mqttClient.on('message', (topic, message) => {
+        const accountMqttRegex = mqttRegex('account/+account').exec
+        message = JSON.parse(message.toString())
+        if (accountMqttRegex(topic)) {
+          if (message.type === 'receive') {
+            let account = this._accounts[message.link_as_account]
+            account.addReceiveBlock(message)
+          } else if (message.type === 'send') {
+            let account = this._accounts[message.account]
+            try {
+              account.confirmBlock(message.hash, this._rpc)
+            } catch (err) {
+              if (this._rpc) {
+                console.log('send block not found in our pending chain resyncing entire wallet')
+                this._accounts[account.address].sync(this._rpc)
+              } else {
+                console.log(err)
+                this._accounts[account.address].synced = false
+              }
+            }
+          }
         }
       })
     }
