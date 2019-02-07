@@ -29,6 +29,14 @@
     "prepublishOnly": "npm run test && NODE_ENV=production npm run build:browser"
   },
   "author": "Tyler Storm <tyler@prometheanlabs.io>",
+  "contributors": [
+    "Tyler Storm <tyler@pla.bs> (https://logos.network)",
+    "Chris Cohoat <chris@cohoat.pizza> (https://cohoat.pizza/)",
+    "Jaime Herrero",
+    "Mart Roosmaa <mart@roosmaa.net>",
+    "Gray Olson <gray@grayolson.com> (https://www.grayolson.me/)",
+    "Ilya Apasov"
+  ],
   "license": "MIT",
   "unpkg": "./webpack/logoswallet.min.js",
   "devDependencies": {

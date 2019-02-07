@@ -8,7 +8,6 @@
 //   let account = await wallet.createAccount({
 //     index: 0
 //   })
-//   console.log(account)
 //   await account.createBlock('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo', '1000000000000000000000000000000', true, wallet.rpc)
 // }
 
