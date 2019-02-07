@@ -90,7 +90,7 @@ export class Account {
 }
 
 export class Block {
-	constructor(options?: BlockOptions);
+    constructor(options?: BlockOptions);
     public signature: Hexadecimal64Length
     public readonly hash: Hexadecimal64Length
     public work: Hexadecimal16Length
