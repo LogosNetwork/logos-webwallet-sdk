@@ -83,16 +83,15 @@ class Send extends Transaction {
     const context = blake.blake2bInit(32, null)
     blake.blake2bUpdate(context, Utils.hexToUint8(this.account))
     blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.sequence, 4)))
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
     blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.transactions.length, 2)))
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.transactions.length, 2))))
     for (let transaction of this.transactions) {
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.target)))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
     }
     blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.transactionFee, 16)))
-    let hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-    return hash
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**

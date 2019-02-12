@@ -402,38 +402,14 @@ class Account {
       this._receiveChain = []
       const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
       RPC.accounts.history(this._address, -1, true).then((history) => {
-        console.log(history)
         if (history) {
-          let totalBlocks = history.length
-          let pulledBlocks = 0
-          const addBlock = (blockInfo) => {
-            let block = new Send({
-              account: blockInfo.account,
-              signature: blockInfo.signature,
-              work: blockInfo.work,
-              sequence: blockInfo.sequence,
-              previous: blockInfo.previous,
-              transactionFee: blockInfo.transaction_fee
-            })
-            if (blockInfo.transactions) {
-              block.transactions = blockInfo.transactions
-            }
-            if (blockInfo.account === this._address) {
-              this._chain.push(block)
-            } else {
-              this._receiveChain.push(block)
-            }
-            pulledBlocks++
-            if (pulledBlocks === totalBlocks) {
-              this.updateBalancesFromChain()
-              if (this.verifyChain() && this.verifyReceiveChain()) {
-                this._synced = true
-                resolve(this)
-              }
-            }
-          }
           for (const blockInfo of history) {
-            addBlock(blockInfo)
+            this.addBlock(blockInfo)
+          }
+          this.updateBalancesFromChain()
+          if (this.verifyChain() && this.verifyReceiveChain()) {
+            this._synced = true
+            resolve(this)
           }
         } else {
           this._synced = true
@@ -459,13 +435,58 @@ class Account {
       }
     })
     this._chain.forEach(block => {
-      sum = sum.minus(bigInt(block.totalAmount))
+      // Ignore genesis sending to himself (lol)
+      if (block.hash !== '87769D2FDDAB0E8C85B2D3EEBD8527CF8FC958AECFE9BEC372130A914C2697E6') {
+        sum = sum.minus(bigInt(block.totalAmount))
+      }
     })
     this._balance = sum.toString()
     this._pendingChain.forEach(block => {
       sum = sum.minus(bigInt(block.totalAmount))
     })
     this._pendingBalance = sum.toString()
+  }
+
+  /**
+   * Adds a block to the appropriate chain
+   *
+   * @param {BlockOptions} blockInfo - Block information from the RPC or MQTT
+   * @returns {void}
+   */
+  addBlock (blockInfo) {
+    if (blockInfo.transaction_type === 'send') {
+      let block = new Send({
+        account: blockInfo.account,
+        signature: blockInfo.signature,
+        work: blockInfo.work,
+        sequence: blockInfo.sequence,
+        previous: blockInfo.previous,
+        transactionFee: blockInfo.transaction_fee
+      })
+      if (blockInfo.transactions) {
+        block.transactions = blockInfo.transactions
+      }
+      // If this block was created by us AND
+      // we do not currently have that block THEN
+      // add the block to confirmed chain
+      if (blockInfo.account === this._address &&
+        !this.getChainBlock(blockInfo.hash)) {
+        this._chain.push(block)
+      }
+      // If the block is a send AND
+      // has transactions pointed to us AND
+      // we do not currently have that block THEN
+      // add the block to the receive chain
+      if (blockInfo.transactions && blockInfo.transactions.length > 0) {
+        for (let trans of blockInfo.transactions) {
+          if (trans.target === this._address &&
+            !this.getRecieveBlock(blockInfo.hash)) {
+            this._receiveChain.push(block)
+          }
+        }
+      }
+    }
+    // TODO HANDLE OTHER BLOCKS
   }
 
   /**
@@ -651,6 +672,20 @@ class Account {
   }
 
   /**
+   * Finds the block object of the specified block hash in the confirmed chain
+   *
+   * @param {Hexadecimal64Length} hash - The hash of the block we are looking for
+   * @returns {Block} false if no block object of the specified hash was found
+   */
+  getChainBlock (hash) {
+    for (let j = this._chain.length - 1; j >= 0; j--) {
+      const blk = this._chain[j]
+      if (blk.hash === hash) return blk
+    }
+    return false
+  }
+
+  /**
    * Finds the block object of the specified block hash in the pending chain
    *
    * @param {Hexadecimal64Length} hash - The hash of the block we are looking for
@@ -659,6 +694,20 @@ class Account {
   getPendingBlock (hash) {
     for (let n = this._pendingChain.length - 1; n >= 0; n--) {
       const blk = this._pendingChain[n]
+      if (blk.hash === hash) return blk
+    }
+    return false
+  }
+
+  /**
+   * Finds the block object of the specified block hash in the recieve chain
+   *
+   * @param {Hexadecimal64Length} hash - The hash of the block we are looking for
+   * @returns {Block} false if no block object of the specified hash was found
+   */
+  getRecieveBlock (hash) {
+    for (let n = this._receiveChain.length - 1; n >= 0; n--) {
+      const blk = this._receiveChain[n]
       if (blk.hash === hash) return blk
     }
     return false

@@ -587,7 +587,7 @@ class Wallet {
     const publicKey = nacl.sign.keyPair.fromSecretKey(Utils.hexToUint8(privateKey)).publicKey
     const address = Utils.accountFromHexKey(Utils.uint8ToHex(publicKey))
     return {
-      privateKey: Utils.uint8ToHex(privateKey),
+      privateKey: privateKey,
       publicKey: Utils.uint8ToHex(publicKey),
       address: address
     }
