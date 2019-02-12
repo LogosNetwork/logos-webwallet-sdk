@@ -122,15 +122,22 @@ declare module 'logos-webwallet-sdk' {
   };
 
   type BlockOptions = {
-    hash?: Hexadecimal64Length
+    account?: LogosAddress
+    previous?: Hexadecimal64Length
+    sequence?: string
+    transactionFee?: string
     signature?: Hexadecimal64Length
     work?: Hexadecimal16Length
-    amount?: string
-    previous?: Hexadecimal64Length
-    transactionFee?: string
-    representative?: LogosAddress
-    destination?: LogosAddress
+  };
+
+  type SendOptions = {
     account?: LogosAddress
+    previous?: Hexadecimal64Length
+    sequence?: string
+    transactionFee?: string
+    signature?: Hexadecimal64Length
+    work?: Hexadecimal16Length
+    transactions?: SendTransaction[]
   };
 
   type BlockJSON = string
@@ -153,6 +160,11 @@ declare module 'logos-webwallet-sdk' {
     version?: number
     walletID?: string | boolean
     accounts?: MinimialAccount[]
+  }
+
+  type SendTransaction = {
+    target: LogosAddress
+    amount: string
   }
 
   type MinimialAccount = {

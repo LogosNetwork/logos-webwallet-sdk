@@ -205,9 +205,6 @@ class Wallet {
       this._seed = options.seed
     } else {
       this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
-      if (!this._mqtt) {
-        this.createAccount()
-      }
     }
   }
 

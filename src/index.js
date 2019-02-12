@@ -1,6 +1,6 @@
 module.exports = {
   Wallet: require('./Wallet'),
-  Block: require('./Block'),
+  SendRequest: require('./Transactions/Send'),
   Account: require('./Account'),
   LogosUtils: require('./Utils')
 }

@@ -1,6 +1,6 @@
 const Utils = require('./Utils')
 const bigInt = require('big-integer')
-const Block = require('./Block.js')
+const Send = require('./Transactions/Send.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 const minimumTransactionFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
@@ -370,6 +370,27 @@ class Account {
   }
 
   /**
+   * Return the sequence value
+   * @type {number}
+   * @returns {number} sequence of the previous transaction
+   * @readonly
+   */
+  get sequence () {
+    if (this._sequence !== null) {
+      return this._sequence
+    } else {
+      if (this._pendingChain.length > 0) {
+        this._sequence = this._pendingChain[this.pendingChain.length - 1].sequence
+      } else if (this._chain.length > 0) {
+        this._sequence = this._chain[this._chain.length - 1].sequence
+      } else {
+        this._sequence = '0'
+      }
+      return parseInt(this._sequence)
+    }
+  }
+
+  /**
    * Scans the account history using RPC and updates the local chain
    * @param {RPCOptions} options host and proxy used to sync the chain to (this data will be validated)
    * @returns {Promise<Account>}
@@ -381,32 +402,26 @@ class Account {
       this._receiveChain = []
       const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
       RPC.accounts.history(this._address, -1, true).then((history) => {
+        console.log(history)
         if (history) {
           let totalBlocks = history.length
           let pulledBlocks = 0
           const addBlock = (blockInfo) => {
-            let block = new Block({
+            let block = new Send({
+              account: blockInfo.account,
               signature: blockInfo.signature,
               work: blockInfo.work,
-              amount: blockInfo.amount,
+              sequence: blockInfo.sequence,
               previous: blockInfo.previous,
-              representative: blockInfo.representative,
-              destination: Utils.accountFromHexKey(blockInfo.link)
+              transactionFee: blockInfo.transaction_fee
             })
-            if (blockInfo.type === 'send') {
-              block.setAccount(this._address)
-            } else {
-              block.setAccount(blockInfo.account)
+            if (blockInfo.transactions) {
+              block.transactions = blockInfo.transactions
             }
-            if (blockInfo.transaction_fee) {
-              block.transactionFee = blockInfo.transaction_fee
-            } else {
-              block.transactionFee = minimumTransactionFee
-            }
-            if (blockInfo.type === 'receive') {
-              this._receiveChain.push(block)
-            } else {
+            if (blockInfo.account === this._address) {
               this._chain.push(block)
+            } else {
+              this._receiveChain.push(block)
             }
             pulledBlocks++
             if (pulledBlocks === totalBlocks) {
@@ -418,14 +433,7 @@ class Account {
             }
           }
           for (const blockInfo of history) {
-            if (blockInfo.type === 'send') {
-              addBlock(blockInfo)
-            } else {
-              RPC.transactions.info(blockInfo.link).then((blockOptions) => {
-                blockOptions.type = 'receive'
-                addBlock(blockOptions)
-              })
-            }
+            addBlock(blockInfo)
           }
         } else {
           this._synced = true
@@ -444,14 +452,18 @@ class Account {
     if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
     this._receiveChain.forEach(block => {
-      sum = sum.plus(bigInt(block.amount))
+      for (let transaction of block.transactions) {
+        if (transaction.target === this._address) {
+          sum = sum.plus(bigInt(transaction.amount))
+        }
+      }
     })
     this._chain.forEach(block => {
-      sum = sum.minus(bigInt(block.amount))
+      sum = sum.minus(bigInt(block.totalAmount))
     })
     this._balance = sum.toString()
     this._pendingChain.forEach(block => {
-      sum = sum.minus(bigInt(block.amount))
+      sum = sum.minus(bigInt(block.totalAmount))
     })
     this._pendingBalance = sum.toString()
   }
@@ -655,8 +667,7 @@ class Account {
   /**
    * Creates a block from the specified information
    *
-   * @param {LogosAddress} to - The account address of who you are sending to
-   * @param {string} amount - The amount you wish to send in reason
+   * @param {SendTransaction[]} transactions - The account targets and amounts you wish to send them
    * @param {boolean} remoteWork - Should the work be genereated locally or remote
    * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the block
    * @throws An exception if the account has not been synced
@@ -664,24 +675,24 @@ class Account {
    * @throws An exception if the block is rejected by the RPC
    * @returns {Promise<Block>} the block object
    */
-  async createBlock (to, amount = 0, remoteWork = true, rpc) {
+  async createSend (transactions, remoteWork = true, rpc) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
-    if (bigInt(this._pendingBalance).minus(bigInt(amount)).minus(minimumTransactionFee).lesser(0)) {
-      throw new Error('Invalid Block: Not Enough Funds including fee to send that amount')
-    }
-    let block = new Block({
+    let block = new Send({
       signature: null,
       work: null,
-      amount: amount.toString(),
       previous: this.previous,
       transactionFee: minimumTransactionFee,
-      representative: this.representative,
-      destination: to,
+      transactions: transactions,
+      sequence: this.sequence + 1,
       account: this._address
     })
+    if (bigInt(this._pendingBalance).minus(bigInt(block.totalAmount)).minus(minimumTransactionFee).lesser(0)) {
+      throw new Error('Invalid Block: Not Enough Funds including fee to send that amount')
+    }
     block.sign(this._privateKey)
     this._previous = block.hash
-    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(amount)).minus(minimumTransactionFee).toString()
+    this._sequence = block.sequence
+    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(block.totalAmount)).minus(minimumTransactionFee).toString()
     if (block.work === null) {
       if (remoteWork) {
         // TODO Send request to the remote work cluster
@@ -722,7 +733,7 @@ class Account {
     const block = this.getPendingBlock(hash)
     if (block) {
       if (block.previous === this._chain[this._chain.length - 1].hash) {
-        if (bigInt(this._balance).minus(block.transactionFee).lesser(block.amount)) {
+        if (bigInt(this._balance).minus(block.transactionFee).lesser(block.totalAmount)) {
           throw new Error('Insufficient funds to confirm this block there must be an issue in our local chain or someone is sending us bad blocks')
         } else {
           // Confirm the block add it to the local confirmed chain and remove from pending.
@@ -750,14 +761,13 @@ class Account {
    * @returns {Block | boolean} block if it is valid
    */
   addReceiveBlock (block) {
-    let receive = new Block({
+    let receive = new Send({
       signature: block.signature,
       work: block.work,
-      amount: block.amount,
+      transactions: block.transactions,
+      sequence: block.sequence,
       previous: block.previous,
       transactionFee: block.transaction_fee,
-      representative: block.representative,
-      destination: block.link_as_account,
       account: block.account
     })
     if (receive.verify()) {

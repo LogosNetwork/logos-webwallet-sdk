@@ -111,17 +111,22 @@ describe('Wallet', () => {
     const Wallet = LogosWallet.Wallet
     let wallet = new Wallet({
       password: 'password',
-      seed: '6F9BD621FDED3C2FB3A2DA8B75C4B6B4ADFE3DF8809B74F8EFF44DDC1120CACA',
       mqtt: false
     })
     it('Creates Wallets | Sends Two Transactions', async function () {
       this.timeout(600000)
       await wallet.createAccount({
-        index: 1
+        privateKey: '34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4'
       })
-      expect(wallet.account.address).to.equal('lgs_1wfecwmyqqoo3sjredpn336jwfjh9jqsi6qz6jj7y1kpwijq4pue4jkg6mjz')
-      await wallet.account.createBlock('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo', '1000000000000000000000000000000', true)
-      await wallet.account.createBlock('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo', '1000000000000000000000000000000', true)
+      expect(wallet.account.address).to.equal('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo')
+      await wallet.account.createSend([{
+        target: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+        amount: '1000000000000000000000000000000'
+      }], true)
+      await wallet.account.createSend([{
+        target: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+        amount: '1000000000000000000000000000000'
+      }], true)
       expect(wallet.account.pendingChain).to.have.a.lengthOf(2)
     })
   })
