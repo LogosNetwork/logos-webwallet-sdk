@@ -155,7 +155,7 @@ class Send extends Transaction {
   toJSON (pretty = false) {
     const obj = {}
     obj.previous = this.previous
-    obj.sequence = this.sequence
+    obj.sequence = this.sequence.toString()
     obj.transaction_type = 'send'
     obj.account = this._account
     obj.transaction_fee = this.transactionFee

@@ -22,28 +22,34 @@
 // console.log(Utils.uint8ToHex(keys.secretKey))
 // console.log('------------------------------')
 
-// const Utils = require('../src/Utils')
 // let create = async () => {
 //   const LogosWallet = require('../')
 //   const Wallet = LogosWallet.Wallet
 //   let wallet = new Wallet({
 //     password: 'password'
 //   })
-//   let account = await wallet.createAccount({
+//   await wallet.createAccount({
 //     privateKey: '6D1B166DDEA7BEC8AA2F8B914E539CF93739C38B622E3F36BC2FB3FB7FDDE6DD'
 //   })
-//   console.log(account.privateKey)
-//   console.log(account.address)
-//   console.log(Utils.keyFromAccount(account.address))
-//   console.log(account.balance)
+//   console.log(wallet.account.pendingBalance)
+//   await wallet.account.createSend([{
+//     target: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+//     amount: '1000000000000000000000000000000'
+//   }], true, wallet.rpc)
+//   console.log(wallet.account.pendingBalance)
+//   await wallet.account.createSend([{
+//     target: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+//     amount: '2000000000000000000000000000000'
+//   }], true, wallet.rpc)
+//   console.log(wallet.account.pendingBalance)
 // }
 // create()
 
 // const Utils = require('../src/Utils')
 // const nacl = require('tweetnacl/nacl')
-// let hash = '92997BBEE52E67FC2A73A2D276292D5BD68368F3DBE40B0122397E3BEE5F11AF'
-// let signature = '919AE8A455FA7AAD1183280DC8100A3EEE8032EC34726FC080B03A48DADC994D7656FC0A62C44D1159D5B4483619833E3AC4981B052B6CA0E8DDF8B5BC90070F'
-// let publicKey = Utils.keyFromAccount('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo')
+// let hash = 'AB1D7496D49B37D058770647E208211038538A5FB15ADA11F0E434824BC7E526'
+// let signature = 'F9449BD3D71460E9536015DAB56FFE6C1A734670FD9D0DC7E95D03D5978A796045DDD58DB2AC05DAB665358AD312B72C49182F9E79A9AF7B36B1014179D65005'
+// let publicKey = Utils.keyFromAccount('lgs_3doxa7dnodj97thewjxycxhdrki4g9pdk9e5wzg7techfke8tphk935poer8')
 // console.log(hash)
 // console.log(signature)
 // console.log(publicKey)
