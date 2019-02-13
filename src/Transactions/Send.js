@@ -77,8 +77,8 @@ class Send extends Transaction {
   get hash () {
     if (!this.previous) throw new Error('Previous is not set.')
     if (!this.transactions) throw new Error('Transactions are not set.')
-    if (!this.sequence) throw new Error('Sequence is not set.')
-    if (!this.transactionFee) throw new Error('Transaction fee is not set.')
+    if (this.sequence === null) throw new Error('Sequence is not set.')
+    if (this.transactionFee === null) throw new Error('Transaction fee is not set.')
     if (!this.account) throw new Error('Account is not set.')
     const context = blake.blake2bInit(32, null)
     blake.blake2bUpdate(context, Utils.hexToUint8(this.account))

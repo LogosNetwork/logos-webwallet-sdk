@@ -17,6 +17,7 @@ class Account {
     publicKey: null,
     privateKey: null,
     previous: null,
+    sequence: null,
     balance: '0',
     pendingBalance: '0',
     representative: null,
@@ -161,6 +162,17 @@ class Account {
       this._previous = options.previous
     } else {
       this._previous = null
+    }
+
+    /**
+     * Sequence number of the last confirmed or pending block
+     * @type {number}
+     * @private
+     */
+    if (options.sequence !== undefined) {
+      this._sequence = options.sequence
+    } else {
+      this._sequence = null
     }
 
     /**
@@ -384,7 +396,7 @@ class Account {
       } else if (this._chain.length > 0) {
         this._sequence = this._chain[this._chain.length - 1].sequence
       } else {
-        this._sequence = '0'
+        this._sequence = -1
       }
       return parseInt(this._sequence)
     }

@@ -148,7 +148,7 @@ class Transaction {
 
   /**
    * Return the the sequence of the block in the publishers account
-   * @type {string}
+   * @type {number}
    */
   get sequence () {
     return this._sequence
