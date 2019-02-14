@@ -419,6 +419,8 @@ class Account {
             this.addBlock(blockInfo)
           }
           this.updateBalancesFromChain()
+          this._sequence = null
+          this._previous = null
           if (this.verifyChain() && this.verifyReceiveChain()) {
             this._synced = true
             resolve(this)
@@ -770,6 +772,7 @@ class Account {
         if (response.hash) {
           return block
         } else {
+          console.log(response)
           throw new Error('Invalid Block: Rejected by Logos Node')
         }
       } else {
@@ -804,7 +807,15 @@ class Account {
             this.updateBalancesFromChain()
             // Publish the next block in the pending as the previous block has been confirmed
             if (rpc && this._pendingChain.length > 0) {
-              this._pendingChain[0].publish(rpc)
+              if (this._pendingChain.length > 1 &&
+                this._pendingChain[0].type === 'send' &&
+                this._pendingChain[0].transactions.length < 8) {
+                // Combine if there are two of more pending transactions and the
+                // Next transaction is a send with less than 8 transactions
+                this.combineBlocks(rpc)
+              } else {
+                this._pendingChain[0].publish(rpc)
+              }
             }
           }
         }
@@ -828,6 +839,43 @@ class Account {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Batchs send blocks
+   *
+   * @param {RPCOptions} rpc - Options to send the publish command if null or false it will not publish the block
+   * @returns {void}
+   */
+  async combineBlocks (rpc) {
+    let aggregate = 0
+    let transactionsToCombine = [[]]
+    let blocksToCombine = []
+    let otherBlocks = []
+    for (let block of this._pendingChain) {
+      if (block.type === 'send') {
+        blocksToCombine.push(block)
+        for (let transaction of block.transactions) {
+          if (transactionsToCombine[aggregate].length < 8) {
+            transactionsToCombine[aggregate].push(transaction)
+          } else {
+            aggregate++
+            transactionsToCombine[aggregate] = [transaction]
+          }
+        }
+      } else {
+        // TODO HANDLE OTHER BLOCK TYPES
+        otherBlocks.push(block)
+      }
+    }
+    this.removePendingBlocks()
+    this._previous = null
+    this._sequence = null
+    const promises = transactionsToCombine.map(transactions => this.createSend(transactions, true, false))
+    await Promise.all(promises)
+    if (rpc && this._pendingChain.length > 0) {
+      this._pendingChain[0].publish(rpc)
     }
   }
 

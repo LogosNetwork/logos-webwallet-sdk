@@ -29,21 +29,14 @@
 //     password: 'password'
 //   })
 //   await wallet.createAccount({
-//     privateKey: '6089209ABF731E0D7BBE988A01C221A1536D79C2FE18A0A82182FA5F1C1E701C'
+//     privateKey: '2FDBAAC5FD1186BEA697BD6A175B71E6169C754F07168F012DEF7B93E2CC0DDC'
 //   })
-//   await wallet.createAccount({
-//     privateKey: 'C5708A888DFF45D05B70E278EF2D38EF79D0147A22C4423EAA6E4287F56D0739'
-//   })
-//   wallet.currentAccountAddress = 'lgs_14abbo1hciz5b8wwdw6z63hbacm8c8rxj98ftoidngh4g65dkpzpq1ncd7ie'
-//   await wallet.account.createSend([{
-//     target: 'lgs_3h6kncamqirsjggrrxkidwsebgy9hubtnpxwtwzsen44ykamdp83o7boi33h',
-//     amount: '1000000000000000000000000000000'
-//   }], true, wallet.rpc)
-//   wallet.currentAccountAddress = 'lgs_3h6kncamqirsjggrrxkidwsebgy9hubtnpxwtwzsen44ykamdp83o7boi33h'
-//   await wallet.account.createSend([{
-//     target: 'lgs_14abbo1hciz5b8wwdw6z63hbacm8c8rxj98ftoidngh4g65dkpzpq1ncd7ie',
-//     amount: '1000000000000000000000000000000'
-//   }], true, wallet.rpc)
+//   for (let i = 0; i < 100; i++) {
+//     await wallet.account.createSend([{
+//       target: 'lgs_3pujx9ijix7zrf3eop9x8m46fw4eywjz7okydobznbneab7ci9dzeb9qe683',
+//       amount: '1000000000000000000000000000000'
+//     }], true, wallet.rpc)
+//   }
 // }
 // create()
 
