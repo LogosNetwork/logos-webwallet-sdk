@@ -142,7 +142,7 @@ class Send extends Transaction {
     } else {
       delegateId = parseInt(this.account.slice(-2), 16) % 32
     }
-    const RPC = new Logos({ url: options.delegates[delegateId], proxyURL: options.proxy })
+    const RPC = new Logos({ url: `http://${options.delegates[delegateId]}:55000`, proxyURL: options.proxy })
     let hash = await RPC.transactions.publish(this.toJSON())
     return hash
   }

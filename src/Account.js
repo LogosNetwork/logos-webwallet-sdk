@@ -412,7 +412,7 @@ class Account {
       this._synced = false
       this._chain = []
       this._receiveChain = []
-      const RPC = new Logos({ url: options.host, proxyURL: options.proxy })
+      const RPC = new Logos({ url: `http://${options.delegates[0]}:55000`, proxyURL: options.proxy })
       RPC.accounts.history(this._address, -1, true).then((history) => {
         if (history) {
           for (const blockInfo of history) {
