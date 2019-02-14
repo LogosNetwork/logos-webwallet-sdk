@@ -570,22 +570,16 @@ class Wallet {
       this._mqttClient.on('message', (topic, message) => {
         const accountMqttRegex = mqttRegex('account/+account').exec
         message = JSON.parse(message.toString())
-        if (accountMqttRegex(topic)) {
-          if (message.type === 'receive') {
-            let account = this._accounts[message.link_as_account]
-            account.addReceiveBlock(message)
-          } else if (message.type === 'send') {
-            let account = this._accounts[message.account]
-            try {
-              account.confirmBlock(message.hash, this._rpc)
-            } catch (err) {
-              if (this._rpc) {
-                console.log('send block not found in our pending chain resyncing entire wallet')
-                this._accounts[account.address].sync(this._rpc)
-              } else {
-                console.log(err)
-                this._accounts[account.address].synced = false
-              }
+        let params = accountMqttRegex(topic)
+        if (params) {
+          let account = this._accounts[params.account]
+          try {
+            account.processBlock(message, this._rpc)
+          } catch (err) {
+            if (this._rpc) {
+              this._accounts[account.address].sync(this._rpc)
+            } else {
+              this._accounts[account.address].synced = false
             }
           }
         }

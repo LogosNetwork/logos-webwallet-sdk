@@ -449,12 +449,12 @@ class Account {
     this._chain.forEach(block => {
       // Ignore genesis sending to himself (lol)
       if (block.hash !== '87769D2FDDAB0E8C85B2D3EEBD8527CF8FC958AECFE9BEC372130A914C2697E6') {
-        sum = sum.minus(bigInt(block.totalAmount))
+        sum = sum.minus(bigInt(block.totalAmount)).minus(bigInt(block.transactionFee))
       }
     })
     this._balance = sum.toString()
     this._pendingChain.forEach(block => {
-      sum = sum.minus(bigInt(block.totalAmount))
+      sum = sum.minus(bigInt(block.totalAmount)).minus(bigInt(block.transactionFee))
     })
     this._pendingBalance = sum.toString()
   }
@@ -783,35 +783,51 @@ class Account {
   /**
    * Confirms the block in the local chain
    *
-   * @param {Hexadecimal64Length} hash The block hash
+   * @param {MQTTBlockOptions} blockInfo The block from MQTT
    * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the block
    * @throws An exception if the block is not found in the pending blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  confirmBlock (hash, rpc) {
-    const block = this.getPendingBlock(hash)
-    if (block) {
-      if (block.previous === this._chain[this._chain.length - 1].hash) {
-        if (bigInt(this._balance).minus(block.transactionFee).lesser(block.totalAmount)) {
-          throw new Error('Insufficient funds to confirm this block there must be an issue in our local chain or someone is sending us bad blocks')
-        } else {
-          // Confirm the block add it to the local confirmed chain and remove from pending.
-          this._chain.push(block)
-          this.removePendingBlock(hash)
-          this.updateBalancesFromChain()
-          // Publish the next block in the pending as the previous block has been confirmed
-          if (rpc && this._pendingChain.length > 0) {
-            this._pendingChain[0].publish(rpc)
+  processBlock (blockInfo, rpc) {
+    if (blockInfo.transaction_type === 'send') {
+      if (blockInfo.account === this._address) {
+        let block = this.getPendingBlock(blockInfo.hash)
+        if (block) {
+          if (bigInt(this._balance).minus(block.transactionFee).lesser(block.totalAmount)) {
+            throw new Error('Insufficient funds to confirm this block there must be an issue in our local chain or someone is sending us bad blocks')
+          } else {
+            // Confirm the block add it to the local confirmed chain and remove from pending.
+            this._chain.push(block)
+            this.removePendingBlock(blockInfo.hash)
+            this.updateBalancesFromChain()
+            // Publish the next block in the pending as the previous block has been confirmed
+            if (rpc && this._pendingChain.length > 0) {
+              this._pendingChain[0].publish(rpc)
+            }
           }
         }
-      } else {
-        console.log(`Block Previous :${block.previous}\n Local Previous: ${this._chain[this._chain.length - 1].hash}`)
-        throw new Error('Previous block does not match actual previous block')
       }
-    } else {
-      throw new Error('Block not found')
+      if (blockInfo.transactions && blockInfo.transactions.length > 0) {
+        for (let trans of blockInfo.transactions) {
+          if (trans.target === this._address) {
+            let block = new Send({
+              account: blockInfo.account,
+              signature: blockInfo.signature,
+              work: blockInfo.work,
+              sequence: blockInfo.sequence,
+              transactions: blockInfo.transactions,
+              previous: blockInfo.previous,
+              transactionFee: blockInfo.transaction_fee
+            })
+            if (!block.verify()) throw new Error('Invalid Recieve Block!')
+            this._receiveChain.push(block)
+            this.updateBalancesFromChain()
+            break
+          }
+        }
+      }
     }
   }
 

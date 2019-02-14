@@ -29,19 +29,21 @@
 //     password: 'password'
 //   })
 //   await wallet.createAccount({
-//     privateKey: '6D1B166DDEA7BEC8AA2F8B914E539CF93739C38B622E3F36BC2FB3FB7FDDE6DD'
+//     privateKey: '6089209ABF731E0D7BBE988A01C221A1536D79C2FE18A0A82182FA5F1C1E701C'
 //   })
-//   console.log(wallet.account.pendingBalance)
+//   await wallet.createAccount({
+//     privateKey: 'C5708A888DFF45D05B70E278EF2D38EF79D0147A22C4423EAA6E4287F56D0739'
+//   })
+//   wallet.currentAccountAddress = 'lgs_14abbo1hciz5b8wwdw6z63hbacm8c8rxj98ftoidngh4g65dkpzpq1ncd7ie'
 //   await wallet.account.createSend([{
-//     target: 'lgs_3q9a53g4uznbpbhsz3nryezg6gq71ois4o5ym4fk6zej5wbggtd1bso5gcpg',
+//     target: 'lgs_3h6kncamqirsjggrrxkidwsebgy9hubtnpxwtwzsen44ykamdp83o7boi33h',
 //     amount: '1000000000000000000000000000000'
 //   }], true, wallet.rpc)
-//   console.log(wallet.account.pendingBalance)
+//   wallet.currentAccountAddress = 'lgs_3h6kncamqirsjggrrxkidwsebgy9hubtnpxwtwzsen44ykamdp83o7boi33h'
 //   await wallet.account.createSend([{
-//     target: 'lgs_3q9a53g4uznbpbhsz3nryezg6gq71ois4o5ym4fk6zej5wbggtd1bso5gcpg',
-//     amount: '2000000000000000000000000000000'
+//     target: 'lgs_14abbo1hciz5b8wwdw6z63hbacm8c8rxj98ftoidngh4g65dkpzpq1ncd7ie',
+//     amount: '1000000000000000000000000000000'
 //   }], true, wallet.rpc)
-//   console.log(wallet.account.pendingBalance)
 // }
 // create()
 
