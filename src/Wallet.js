@@ -19,6 +19,7 @@ class Wallet {
     accounts: {},
     walletID: false,
     remoteWork: true,
+    autoBatchSends: true,
     mqtt: 'wss:pla.bs:8443',
     rpc: {
       proxy: 'https://pla.bs',
@@ -92,6 +93,16 @@ class Wallet {
       this._remoteWork = true
     }
 
+    /**
+     * Auto Send Batching
+     * @type {boolean}
+     * @private
+     */
+    if (options.autoBatchSends !== undefined) {
+      this._autoBatchSends = options.autoBatchSends
+    } else {
+      this.autoBatchSends = true
+    }
     /**
      * RPC enabled
      * @type {RPCOptions}
@@ -574,7 +585,7 @@ class Wallet {
         if (params) {
           let account = this._accounts[params.account]
           try {
-            account.processBlock(message, this._rpc)
+            account.processBlock(message, this._autoBatchSends, this._rpc)
           } catch (err) {
             if (this._rpc) {
               this._accounts[account.address].sync(this._rpc)

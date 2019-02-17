@@ -787,13 +787,14 @@ class Account {
    * Confirms the block in the local chain
    *
    * @param {MQTTBlockOptions} blockInfo The block from MQTT
+   * @param {MQTTBlockOptions} blockInfo The block from MQTT
    * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the block
    * @throws An exception if the block is not found in the pending blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  processBlock (blockInfo, rpc) {
+  processBlock (blockInfo, autoBatchSends, rpc) {
     if (blockInfo.transaction_type === 'send') {
       if (blockInfo.account === this._address) {
         let block = this.getPendingBlock(blockInfo.hash)
@@ -812,7 +813,13 @@ class Account {
                 this._pendingChain[0].transactions.length < 8) {
                 // Combine if there are two of more pending transactions and the
                 // Next transaction is a send with less than 8 transactions
-                this.combineBlocks(rpc)
+                if (autoBatchSends) {
+                  this.combineBlocks(rpc)
+                } else {
+                  if (rpc && this._pendingChain.length > 0) {
+                    this._pendingChain[0].publish(rpc)
+                  }
+                }
               } else {
                 this._pendingChain[0].publish(rpc)
               }
