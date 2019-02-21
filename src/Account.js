@@ -447,6 +447,7 @@ class Account {
           } else {
             if (info && info.balance) {
               this._balance = info.balance
+              this._pendingBalance = info.balance
             }
             this._sequence = null
             this._previous = null
