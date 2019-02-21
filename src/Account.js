@@ -407,30 +407,55 @@ class Account {
    * @param {RPCOptions} options host and proxy used to sync the chain to (this data will be validated)
    * @returns {Promise<Account>}
    */
-  sync (options) {
+  sync (options, fullSync) {
     return new Promise((resolve, reject) => {
       this._synced = false
       this._chain = []
       this._receiveChain = []
       const RPC = new Logos({ url: `http://${options.delegates[0]}:55000`, proxyURL: options.proxy })
-      RPC.accounts.history(this._address, -1, true).then((history) => {
-        if (history) {
-          for (const blockInfo of history) {
-            this.addBlock(blockInfo)
-          }
-          this.updateBalancesFromChain()
-          this._sequence = null
-          this._previous = null
-          if (this.verifyChain() && this.verifyReceiveChain()) {
+      if (fullSync) {
+        RPC.accounts.history(this._address, -1, true).then((history) => {
+          if (history) {
+            for (const blockInfo of history) {
+              this.addBlock(blockInfo)
+            }
+            this.updateBalancesFromChain()
+            this._sequence = null
+            this._previous = null
+            if (this.verifyChain() && this.verifyReceiveChain()) {
+              this._synced = true
+              resolve(this)
+            }
+          } else {
             this._synced = true
+            console.log(`${this._address} is empty and therefore valid`)
             resolve(this)
           }
-        } else {
-          this._synced = true
-          console.log(`${this._address} is empty and therefore valid`)
-          resolve(this)
-        }
-      })
+        })
+      } else {
+        RPC.accounts.info(this._address).then(info => {
+          if (info && info.frontier && info.frontier !== GENESIS_HASH) {
+            RPC.transactions.info(info.frontier).then(val => {
+              this.addBlock(val)
+              this._balance = info.balance
+              this._pendingBalance = info.balance
+              this._sequence = null
+              this._previous = null
+              this._synced = true
+              resolve(this)
+            })
+          } else {
+            if (info && info.balance) {
+              this._balance = info.balance
+              this._sequence = null
+              this._previous = null
+              this._synced = true
+              console.log(`${this._address} is empty and therefore valid`)
+              resolve(this)
+            }
+          }
+        })
+      }
     })
   }
 
@@ -787,14 +812,14 @@ class Account {
    * Confirms the block in the local chain
    *
    * @param {MQTTBlockOptions} blockInfo The block from MQTT
-   * @param {MQTTBlockOptions} blockInfo The block from MQTT
+   * @param {boolean} batchSends proccess transactions and batches them togeather
    * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the block
    * @throws An exception if the block is not found in the pending blocks array
    * @throws An exception if the previous block does not match the last chain block
    * @throws An exception if the block amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  processBlock (blockInfo, autoBatchSends, rpc) {
+  processBlock (blockInfo, batchSends, rpc) {
     if (blockInfo.transaction_type === 'send') {
       if (blockInfo.account === this._address) {
         let block = this.getPendingBlock(blockInfo.hash)
@@ -813,7 +838,7 @@ class Account {
                 this._pendingChain[0].transactions.length < 8) {
                 // Combine if there are two of more pending transactions and the
                 // Next transaction is a send with less than 8 transactions
-                if (autoBatchSends) {
+                if (batchSends) {
                   this.combineBlocks(rpc)
                 } else {
                   if (rpc && this._pendingChain.length > 0) {

@@ -26,17 +26,17 @@
 //   const LogosWallet = require('../')
 //   const Wallet = LogosWallet.Wallet
 //   let wallet = new Wallet({
-//     password: 'password'
+//     password: 'password',
+//     fullSync: false
 //   })
-//   await wallet.createAccount({
-//     privateKey: '2FDBAAC5FD1186BEA697BD6A175B71E6169C754F07168F012DEF7B93E2CC0DDC'
+//   let account = await wallet.createAccount({
+//     privateKey: '17727DCBB37CC3AE507EE6271D05303C8B230B141DBD1BB2D1CCBF12878A1A60'
 //   })
-//   for (let i = 0; i < 100; i++) {
-//     await wallet.account.createSend([{
-//       target: 'lgs_3pujx9ijix7zrf3eop9x8m46fw4eywjz7okydobznbneab7ci9dzeb9qe683',
-//       amount: '1000000000000000000000000000000'
-//     }], true, wallet.rpc)
-//   }
+//   await wallet.account.createSend([{
+//     target: 'lgs_33awacy9xbr91hkndbqmr591bnhc7dyzn6985x7kc3mx1uao4rmi86gzctwy',
+//     amount: '1000000000000000000000000000000'
+//   }], true, wallet.rpc)
+//   console.log(account.pendingBalance)
 // }
 // create()
 

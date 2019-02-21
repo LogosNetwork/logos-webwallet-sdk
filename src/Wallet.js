@@ -19,7 +19,8 @@ class Wallet {
     accounts: {},
     walletID: false,
     remoteWork: true,
-    autoBatchSends: true,
+    batchSends: true,
+    fullSync: true,
     mqtt: 'wss:pla.bs:8443',
     rpc: {
       proxy: 'https://pla.bs',
@@ -94,15 +95,27 @@ class Wallet {
     }
 
     /**
-     * Auto Send Batching
+     * Batch Sends - When lots of blocks are pending auto batch them togeather for speed
      * @type {boolean}
      * @private
      */
-    if (options.autoBatchSends !== undefined) {
-      this._autoBatchSends = options.autoBatchSends
+    if (options.batchSends !== undefined) {
+      this._batchSends = options.batchSends
     } else {
-      this.autoBatchSends = true
+      this._batchSends = true
     }
+
+    /**
+     * Full Sync - Should we fully sync and validate the full block chain or just sync the block
+     * @type {boolean}
+     * @private
+     */
+    if (options.fullSync !== undefined) {
+      this._fullSync = options.fullSync
+    } else {
+      this._fullSync = true
+    }
+
     /**
      * RPC enabled
      * @type {RPCOptions}
@@ -161,6 +174,30 @@ class Wallet {
 
   set walletID (id) {
     this._walletID = id
+  }
+
+  /**
+   * Should the webwallet SDK batch transactions
+   * @type {boolean}
+   */
+  get batchSends () {
+    return this._batchSends
+  }
+
+  set batchSends (val) {
+    this._batchSends = val
+  }
+
+  /**
+   * Full Sync the entire blockchain or prune version only
+   * @type {boolean}
+   */
+  get fullSync () {
+    return this._fullSync
+  }
+
+  set fullSync (val) {
+    this._fullSync = val
   }
 
   /**
@@ -327,7 +364,7 @@ class Wallet {
     if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
     this._accounts[account.address] = account
     if (this._rpc) {
-      await this._accounts[account.address].sync(this._rpc)
+      await this._accounts[account.address].sync(this._rpc, this._fullSync)
     } else {
       this._accounts[account.address].synced = true
     }
@@ -585,10 +622,10 @@ class Wallet {
         if (params) {
           let account = this._accounts[params.account]
           try {
-            account.processBlock(message, this._autoBatchSends, this._rpc)
+            account.processBlock(message, this._batchSends, this._rpc)
           } catch (err) {
             if (this._rpc) {
-              this._accounts[account.address].sync(this._rpc)
+              this._accounts[account.address].sync(this._rpc, this._fullSync)
             } else {
               this._accounts[account.address].synced = false
             }
