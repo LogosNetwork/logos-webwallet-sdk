@@ -4,6 +4,15 @@ const Wallet = LogosWallet.Wallet
 
 describe('Wallet', () => {
   describe('Create Wallet', () => {
+    it('creates a wallet and seed', () => {
+      let wallet = new Wallet({
+        password: 'password',
+        mqtt: false,
+        rpc: false
+      })
+      wallet.createAccount()
+      expect(wallet.accounts).to.have.a.lengthOf(1)
+    })
     it('creates the wallet', () => {
       let wallet = new Wallet({
         password: 'password',

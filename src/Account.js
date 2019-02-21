@@ -447,12 +447,12 @@ class Account {
           } else {
             if (info && info.balance) {
               this._balance = info.balance
-              this._sequence = null
-              this._previous = null
-              this._synced = true
-              console.log(`${this._address} is empty and therefore valid`)
-              resolve(this)
             }
+            this._sequence = null
+            this._previous = null
+            this._synced = true
+            console.log(`${this._address} is empty and therefore valid`)
+            resolve(this)
           }
         })
       }

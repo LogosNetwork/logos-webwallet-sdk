@@ -29,14 +29,9 @@
 //     password: 'password',
 //     fullSync: false
 //   })
-//   let account = await wallet.createAccount({
-//     privateKey: '17727DCBB37CC3AE507EE6271D05303C8B230B141DBD1BB2D1CCBF12878A1A60'
-//   })
-//   await wallet.account.createSend([{
-//     target: 'lgs_33awacy9xbr91hkndbqmr591bnhc7dyzn6985x7kc3mx1uao4rmi86gzctwy',
-//     amount: '1000000000000000000000000000000'
-//   }], true, wallet.rpc)
-//   console.log(account.pendingBalance)
+//   let account = await wallet.createAccount()
+//   console.log('hello world')
+//   console.log(account)
 // }
 // create()
 
