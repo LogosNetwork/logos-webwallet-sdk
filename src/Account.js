@@ -24,6 +24,7 @@ class Account {
     chain: [],
     receiveChain: [],
     pendingChain: [],
+    fullSync: true,
     version: 1,
     index: null
   }) {
@@ -184,6 +185,17 @@ class Account {
       this._version = options.version
     } else {
       this._version = 1
+    }
+
+    /**
+     * Full Sync - Should we fully sync and validate the full block chain or just sync the block
+     * @type {boolean}
+     * @private
+     */
+    if (options.fullSync !== undefined) {
+      this._fullSync = options.fullSync
+    } else {
+      this._fullSync = true
     }
 
     this._synced = false
@@ -407,13 +419,13 @@ class Account {
    * @param {RPCOptions} options host and proxy used to sync the chain to (this data will be validated)
    * @returns {Promise<Account>}
    */
-  sync (options, fullSync) {
+  sync (options) {
     return new Promise((resolve, reject) => {
       this._synced = false
       this._chain = []
       this._receiveChain = []
       const RPC = new Logos({ url: `http://${options.delegates[0]}:55000`, proxyURL: options.proxy })
-      if (fullSync) {
+      if (this._fullSync) {
         RPC.accounts.history(this._address, -1, true).then((history) => {
           if (history) {
             for (const blockInfo of history) {
@@ -831,7 +843,11 @@ class Account {
             // Confirm the block add it to the local confirmed chain and remove from pending.
             this._chain.push(block)
             this.removePendingBlock(blockInfo.hash)
-            this.updateBalancesFromChain()
+            if (this._fullSync) {
+              this.updateBalancesFromChain()
+            } else {
+              this._balance = bigInt(this._balance).minus(block.transactionFee).minus(block.totalAmount)
+            }
             // Publish the next block in the pending as the previous block has been confirmed
             if (rpc && this._pendingChain.length > 0) {
               if (this._pendingChain.length > 1 &&
@@ -867,7 +883,20 @@ class Account {
             })
             if (!block.verify()) throw new Error('Invalid Recieve Block!')
             this._receiveChain.push(block)
-            this.updateBalancesFromChain()
+            if (this._fullSync) {
+              this.updateBalancesFromChain()
+            } else {
+              let sum = bigInt(0)
+              for (let transaction of block.transactions) {
+                if (transaction.target === this._address) {
+                  sum = sum.plus(bigInt(transaction.amount))
+                }
+              }
+              let newBalance = bigInt(this._balance).plus(sum)
+              let newPendingBalance = bigInt(this._pendingBalance).plus(sum)
+              this._balance = newBalance
+              this._pendingBalance = newPendingBalance
+            }
             break
           }
         }
@@ -930,7 +959,18 @@ class Account {
     })
     if (receive.verify()) {
       this._receiveChain.push(receive)
-      this.updateBalancesFromChain()
+      if (this._fullSync) {
+        this.updateBalancesFromChain()
+      } else {
+        let sum = bigInt(0)
+        for (let transaction of block.transactions) {
+          if (transaction.target === this._address) {
+            sum = sum.plus(bigInt(transaction.amount))
+          }
+        }
+        this._balance = bigInt(this._balance).plus(sum)
+        this._pendingBalance = bigInt(this._pendingBalance).plus(sum)
+      }
       return receive
     } else {
       return false

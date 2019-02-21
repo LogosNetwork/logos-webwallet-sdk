@@ -360,11 +360,12 @@ class Wallet {
         this._deterministicKeyIndex++
       }
     }
+    accountOptions.fullSync = this._fullSync
     const account = new Account(accountOptions)
     if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
     this._accounts[account.address] = account
     if (this._rpc) {
-      await this._accounts[account.address].sync(this._rpc, this._fullSync)
+      await this._accounts[account.address].sync(this._rpc)
     } else {
       this._accounts[account.address].synced = true
     }
