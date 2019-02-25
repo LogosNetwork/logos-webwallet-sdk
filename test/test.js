@@ -27,11 +27,13 @@
 //   const Wallet = LogosWallet.Wallet
 //   let wallet = new Wallet({
 //     password: 'password',
-//     fullSync: false
+//     fullSync: true
 //   })
-//   let account = await wallet.createAccount()
-//   console.log('hello world')
-//   console.log(account)
+//   let start = Date.now()
+//   await wallet.createAccount({
+//     privateKey: '17727DCBB37CC3AE507EE6271D05303C8B230B141DBD1BB2D1CCBF12878A1A60'
+//   })
+//   console.log(`Finished Syncing in ${Date.now() - start}ms`)
 // }
 // create()
 

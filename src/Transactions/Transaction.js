@@ -79,6 +79,17 @@ class Transaction {
     }
 
     /**
+     * Hash of the block in the chain
+     * @type {Hexadecimal64Length}
+     * @private
+     */
+    if (options.hash !== undefined) {
+      this._hash = options.hash
+    } else {
+      this._hash = null
+    }
+
+    /**
      * Block version of webwallet SDK
      * @type {number}
      * @private
@@ -119,6 +130,7 @@ class Transaction {
 
   set previous (hex) {
     if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid previous block hash.')
+    this._hash = null
     this._previous = hex
   }
 
@@ -131,6 +143,7 @@ class Transaction {
   }
 
   set transactionFee (val) {
+    this._hash = null
     this._transactionFee = val
   }
 
@@ -143,6 +156,7 @@ class Transaction {
   }
 
   set sequence (val) {
+    this._hash = null
     this._sequence = val
   }
 
@@ -152,6 +166,18 @@ class Transaction {
    */
   get sequence () {
     return this._sequence
+  }
+
+  set hash (val) {
+    this._hash = val
+  }
+
+  /**
+   * Return the hash of the transaction
+   * @type {Hexadecimal64Length}
+   */
+  get hash () {
+    return this._hash
   }
 
   /**

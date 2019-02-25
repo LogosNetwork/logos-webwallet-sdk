@@ -34,6 +34,7 @@ class Send extends Transaction {
   }
 
   set transactions (transactions) {
+    super.hash = null
     this._transactions = transactions
   }
 
@@ -67,6 +68,10 @@ class Send extends Transaction {
     return 'send'
   }
 
+  set hash (hash) {
+    super.hash = hash
+  }
+
   /**
    * Returns calculated hash or Builds the block and calculates the hash
    *
@@ -75,23 +80,28 @@ class Send extends Transaction {
    * @readonly
    */
   get hash () {
-    if (!this.previous) throw new Error('Previous is not set.')
-    if (!this.transactions) throw new Error('Transactions are not set.')
-    if (this.sequence === null) throw new Error('Sequence is not set.')
-    if (this.transactionFee === null) throw new Error('Transaction fee is not set.')
-    if (!this.account) throw new Error('Account is not set.')
-    const context = blake.blake2bInit(32, null)
-    blake.blake2bUpdate(context, Utils.hexToUint8(this.account))
-    blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.transactions.length, 2))))
-    for (let transaction of this.transactions) {
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.target)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
+    if (super.hash) {
+      return super.hash
+    } else {
+      if (!this.previous) throw new Error('Previous is not set.')
+      if (!this.transactions) throw new Error('Transactions are not set.')
+      if (this.sequence === null) throw new Error('Sequence is not set.')
+      if (this.transactionFee === null) throw new Error('Transaction fee is not set.')
+      if (!this.account) throw new Error('Account is not set.')
+      const context = blake.blake2bInit(32, null)
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.account))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.transactions.length, 2))))
+      for (let transaction of this.transactions) {
+        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.target)))
+        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
+      }
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.transactionFee, 16)))
+      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
+      return super.hash
     }
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.transactionFee, 16)))
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -102,6 +112,7 @@ class Send extends Transaction {
   addTransaction (transaction) {
     if (this.transactions.length === 8) throw new Error('Can only fit 8 transactions per send block!')
     if (!transaction.target || !transaction.amount) throw new Error('Send target and amount')
+    super.hash = null
     this.transactions.push(transaction)
     return this.transactions
   }
