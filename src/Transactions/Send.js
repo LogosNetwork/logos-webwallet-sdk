@@ -87,15 +87,15 @@ class Send extends Transaction {
       if (!this.transactions) throw new Error('Transactions are not set.')
       if (this.sequence === null) throw new Error('Sequence is not set.')
       if (this.transactionFee === null) throw new Error('Transaction fee is not set.')
-      if (!this.account) throw new Error('Account is not set.')
+      if (!this.origin) throw new Error('Origin account is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.account))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.transactions.length, 2))))
       for (let transaction of this.transactions) {
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.target)))
+        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
         blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
       }
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.transactionFee, 16)))
@@ -111,7 +111,7 @@ class Send extends Transaction {
    */
   addTransaction (transaction) {
     if (this.transactions.length === 8) throw new Error('Can only fit 8 transactions per send block!')
-    if (!transaction.target || !transaction.amount) throw new Error('Send target and amount')
+    if (!transaction.destination || !transaction.amount) throw new Error('Send destination and amount')
     super.hash = null
     this.transactions.push(transaction)
     return this.transactions
@@ -137,8 +137,8 @@ class Send extends Transaction {
   verify () {
     if (!this.hash) throw new Error('Hash is not set.')
     if (!this.signature) throw new Error('Signature is not set.')
-    if (!this.account) throw new Error('Account is not set.')
-    return nacl.sign.detached.verify(Utils.hexToUint8(this.hash), Utils.hexToUint8(this.signature), Utils.hexToUint8(this.account))
+    if (!this.origin) throw new Error('Origin account is not set.')
+    return nacl.sign.detached.verify(Utils.hexToUint8(this.hash), Utils.hexToUint8(this.signature), Utils.hexToUint8(this.origin))
   }
 
   /**
@@ -151,7 +151,7 @@ class Send extends Transaction {
     if (this.previous !== '0000000000000000000000000000000000000000000000000000000000000000') {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32
     } else {
-      delegateId = parseInt(this.account.slice(-2), 16) % 32
+      delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
     const RPC = new Logos({ url: `http://${options.delegates[delegateId]}:55000`, proxyURL: options.proxy })
     let hash = await RPC.transactions.publish(this.toJSON())
@@ -168,7 +168,7 @@ class Send extends Transaction {
     obj.previous = this.previous
     obj.sequence = this.sequence.toString()
     obj.transaction_type = 'send'
-    obj.account = this._account
+    obj.origin = this._origin
     obj.transaction_fee = this.transactionFee
     obj.transactions = this.transactions
     obj.number_transactions = this.transactions.length

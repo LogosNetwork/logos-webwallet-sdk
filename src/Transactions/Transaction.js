@@ -5,7 +5,7 @@ const Utils = require('../Utils')
  */
 class Transaction {
   constructor (options = {
-    account: null,
+    origin: null,
     previous: null,
     sequence: null,
     transactionFee: null,
@@ -57,14 +57,14 @@ class Transaction {
     }
 
     /**
-     * Account logos address of the block author
+     * Logos account address of the block origin account
      * @type {LogosAddress}
      * @private
      */
-    if (options.account !== undefined) {
-      this._account = options.account
+    if (options.origin !== undefined) {
+      this._origin = options.origin
     } else {
-      this._account = null
+      this._origin = null
     }
 
     /**
@@ -181,22 +181,22 @@ class Transaction {
   }
 
   /**
-   * Sets the account
+   * Sets the origin account
    *
-   * @param {LogosAddress} account - The Logos account that creates the block
+   * @param {LogosAddress} origin - The Logos account that creates the block
    * @returns {void}
    */
-  setAccount (account) {
-    this._account = account
+  setOrigin (origin) {
+    this._origin = origin
   }
 
   /**
-   * The account public key
+   * The origin account public key
    * @type {Hexadecimal64Length}
    * @readonly
    */
-  get account () {
-    return Utils.keyFromAccount(this._account)
+  get origin () {
+    return Utils.keyFromAccount(this._origin)
   }
 
   /**

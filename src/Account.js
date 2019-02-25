@@ -481,7 +481,7 @@ class Account {
     let sum = bigInt(0)
     this._receiveChain.forEach(block => {
       for (let transaction of block.transactions) {
-        if (transaction.target === this._address) {
+        if (transaction.destination === this._address) {
           sum = sum.plus(bigInt(transaction.amount))
         }
       }
@@ -508,7 +508,7 @@ class Account {
   addBlock (blockInfo) {
     if (blockInfo.transaction_type === 'send') {
       let block = new Send({
-        account: blockInfo.account,
+        origin: blockInfo.origin,
         signature: blockInfo.signature,
         work: blockInfo.work,
         sequence: blockInfo.sequence,
@@ -521,7 +521,7 @@ class Account {
       // If this block was created by us AND
       // we do not currently have that block THEN
       // add the block to confirmed chain
-      if (blockInfo.account === this._address &&
+      if (blockInfo.origin === this._address &&
         !this.getChainBlock(blockInfo.hash)) {
         this._chain.push(block)
       }
@@ -531,7 +531,7 @@ class Account {
       // add the block to the receive chain
       if (blockInfo.transactions && blockInfo.transactions.length > 0) {
         for (let trans of blockInfo.transactions) {
-          if (trans.target === this._address &&
+          if (trans.destination === this._address &&
             !this.getRecieveBlock(blockInfo.hash)) {
             this._receiveChain.push(block)
           }
@@ -768,7 +768,7 @@ class Account {
   /**
    * Creates a block from the specified information
    *
-   * @param {SendTransaction[]} transactions - The account targets and amounts you wish to send them
+   * @param {SendTransaction[]} transactions - The account destinations and amounts you wish to send them
    * @param {boolean} remoteWork - Should the work be genereated locally or remote
    * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the block
    * @throws An exception if the account has not been synced
@@ -785,7 +785,7 @@ class Account {
       transactionFee: minimumTransactionFee,
       transactions: transactions,
       sequence: this.sequence + 1,
-      account: this._address
+      origin: this._address
     })
     if (bigInt(this._pendingBalance).minus(bigInt(block.totalAmount)).minus(minimumTransactionFee).lesser(0)) {
       throw new Error('Invalid Block: Not Enough Funds including fee to send that amount')
@@ -834,7 +834,7 @@ class Account {
    */
   processBlock (blockInfo, batchSends, rpc) {
     if (blockInfo.transaction_type === 'send') {
-      if (blockInfo.account === this._address) {
+      if (blockInfo.origin === this._address) {
         let block = this.getPendingBlock(blockInfo.hash)
         if (block) {
           if (bigInt(this._balance).minus(block.transactionFee).lesser(block.totalAmount)) {
@@ -871,9 +871,9 @@ class Account {
       }
       if (blockInfo.transactions && blockInfo.transactions.length > 0) {
         for (let trans of blockInfo.transactions) {
-          if (trans.target === this._address) {
+          if (trans.destination === this._address) {
             let block = new Send({
-              account: blockInfo.account,
+              origin: blockInfo.origin,
               signature: blockInfo.signature,
               work: blockInfo.work,
               sequence: blockInfo.sequence,
@@ -888,7 +888,7 @@ class Account {
             } else {
               let sum = bigInt(0)
               for (let transaction of block.transactions) {
-                if (transaction.target === this._address) {
+                if (transaction.destination === this._address) {
                   sum = sum.plus(bigInt(transaction.amount))
                 }
               }
@@ -955,7 +955,7 @@ class Account {
       sequence: block.sequence,
       previous: block.previous,
       transactionFee: block.transaction_fee,
-      account: block.account
+      origin: block.origin
     })
     if (receive.verify()) {
       this._receiveChain.push(receive)
@@ -964,7 +964,7 @@ class Account {
       } else {
         let sum = bigInt(0)
         for (let transaction of block.transactions) {
-          if (transaction.target === this._address) {
+          if (transaction.destination === this._address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
