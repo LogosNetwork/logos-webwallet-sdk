@@ -1,14 +1,14 @@
 const Utils = require('../Utils')
-const Transaction = require('./Transaction')
+const Request = require('./Request')
 const blake = require('blakejs')
 const nacl = require('tweetnacl/nacl')
 const Logos = require('@logosnetwork/logos-rpc-client')
 const bigInt = require('big-integer')
 
 /**
- * The Send class for Send Transactions.
+ * The Send class for Send Requests.
  */
-class Send extends Transaction {
+class Send extends Request {
   constructor (options = {
     transactions: []
   }) {
@@ -26,7 +26,7 @@ class Send extends Transaction {
     }
 
     /**
-     * Block version of webwallet SDK
+     * Request version of webwallet SDK
      * @type {number}
      * @private
      */
@@ -39,7 +39,7 @@ class Send extends Transaction {
   }
 
   /**
-   * Return the previous block as hash
+   * Return the previous request as hash
    * @type {SendTransaction}
    */
   get transactions () {
@@ -47,7 +47,7 @@ class Send extends Transaction {
   }
 
   /**
-   * Return the total amount contained in this transaction
+   * Returns the total amount contained in this request
    * @type {string}
    * @readonly
    */
@@ -60,7 +60,7 @@ class Send extends Transaction {
   }
 
   /**
-   * Return the total amount contained in this transaction
+   * Returns the type of this request
    * @type {string}
    * @readonly
    */
@@ -73,7 +73,7 @@ class Send extends Transaction {
   }
 
   /**
-   * Returns calculated hash or Builds the block and calculates the hash
+   * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
    * @type {Hexadecimal64Length}
@@ -86,19 +86,18 @@ class Send extends Transaction {
       if (!this.previous) throw new Error('Previous is not set.')
       if (!this.transactions) throw new Error('Transactions are not set.')
       if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (this.transactionFee === null) throw new Error('Transaction fee is not set.')
+      if (this.fee === null) throw new Error('Transaction fee is not set.')
       if (!this.origin) throw new Error('Origin account is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.transactions.length, 2))))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
       for (let transaction of this.transactions) {
         blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
         blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
       }
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.transactionFee, 16)))
       super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
       return super.hash
     }
@@ -106,11 +105,11 @@ class Send extends Transaction {
 
   /**
    * Adds a tranction to the Send
-   * @param {SendTransaction} transaction - transaction you want to add to this send block
+   * @param {SendTransaction} transaction - transaction you want to add to this send request
    * @returns {SendTransaction[]} list of all transactions
    */
   addTransaction (transaction) {
-    if (this.transactions.length === 8) throw new Error('Can only fit 8 transactions per send block!')
+    if (this.transactions.length === 8) throw new Error('Can only fit 8 transactions per send request!')
     if (!transaction.destination || !transaction.amount) throw new Error('Send destination and amount')
     super.hash = null
     this.transactions.push(transaction)
@@ -118,7 +117,7 @@ class Send extends Transaction {
   }
 
   /**
-   * Creates a signature for the block.
+   * Creates a signature for the request
    * @param {Hexadecimal64Length} privateKey - private key in hex
    * @returns {boolean} if the signature is valid
    */
@@ -131,7 +130,7 @@ class Send extends Transaction {
   }
 
   /**
-   * Verifies the blocks integrity
+   * Verifies the request's integrity
    * @returns {boolean}
    */
   verify () {
@@ -142,7 +141,7 @@ class Send extends Transaction {
   }
 
   /**
-   * Publishes the block
+   * Publishes the request
    * @param {RPCOptions} options - rpc options
    * @returns {Promise<Hexadecimal64Length>} hash of transcation
    */
@@ -159,20 +158,21 @@ class Send extends Transaction {
   }
 
   /**
-   * Returns the block JSON ready for broadcast to the Logos Network
+   * Returns the request JSON ready for broadcast to the Logos Network
    * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {BlockJSON} JSON block
+   * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
     const obj = {}
     obj.previous = this.previous
     obj.sequence = this.sequence.toString()
-    obj.transaction_type = 'send'
+    obj.type = 'send'
     obj.origin = this._origin
-    obj.transaction_fee = this.transactionFee
+    obj.fee = this.fee
     obj.transactions = this.transactions
     obj.number_transactions = this.transactions.length
     obj.hash = this.hash
+    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.work = this.work
     obj.signature = this.signature
     if (pretty) return JSON.stringify(obj, null, 2)

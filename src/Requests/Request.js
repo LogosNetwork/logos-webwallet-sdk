@@ -1,19 +1,19 @@
 const Utils = require('../Utils')
 
 /**
- * The base class for all Transactions.
+ * The base class for all Requests.
  */
-class Transaction {
+class Request {
   constructor (options = {
     origin: null,
     previous: null,
     sequence: null,
-    transactionFee: null,
+    fee: null,
     signature: null,
     work: null
   }) {
     /**
-     * Signature of the block
+     * Signature of the request
      * @type {Hexadecimal64Length}
      * @private
      */
@@ -24,7 +24,7 @@ class Transaction {
     }
 
     /**
-     * Work of the block based on previous hash
+     * Work of the request based on previous hash
      * @type {Hexadecimal16Length}
      * @private
      */
@@ -35,7 +35,7 @@ class Transaction {
     }
 
     /**
-     * Previous block hash
+     * Previous request hash
      * @type {Hexadecimal64Length}
      * @private
      */
@@ -46,18 +46,18 @@ class Transaction {
     }
 
     /**
-     * Transcation Fee of the block
+     * Fee of the request
      * @type {string}
      * @private
      */
-    if (options.transactionFee !== undefined) {
-      this._transactionFee = options.transactionFee
+    if (options.fee !== undefined) {
+      this._fee = options.fee
     } else {
-      this._transactionFee = null
+      this._fee = null
     }
 
     /**
-     * Logos account address of the block origin account
+     * Logos account address of the request origin account
      * @type {LogosAddress}
      * @private
      */
@@ -68,7 +68,7 @@ class Transaction {
     }
 
     /**
-     * Sequence of the block in the chain
+     * Sequence of the request in the chain
      * @type {string}
      * @private
      */
@@ -79,7 +79,7 @@ class Transaction {
     }
 
     /**
-     * Hash of the block in the chain
+     * Hash of the request in the chain
      * @type {Hexadecimal64Length}
      * @private
      */
@@ -90,7 +90,7 @@ class Transaction {
     }
 
     /**
-     * Block version of webwallet SDK
+     * Request version of webwallet SDK
      * @type {number}
      * @private
      */
@@ -102,7 +102,7 @@ class Transaction {
   }
 
   /**
-   * Return the signature of the block
+   * Return the signature of the request
    * @type {Hexadecimal64Length}
    * @readonly
    */
@@ -116,12 +116,12 @@ class Transaction {
     if (Utils.checkWork(hex, this._previous, true) || hex === '0000000000000000') {
       this._work = hex
     } else {
-      throw new Error('Invalid Work for this Block')
+      throw new Error('Invalid Work for this Request')
     }
   }
 
   /**
-   * Return the work of the block
+   * Return the work of the request
    * @type {Hexadecimal16Length}
    */
   get work () {
@@ -129,30 +129,30 @@ class Transaction {
   }
 
   set previous (hex) {
-    if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid previous block hash.')
+    if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid previous request hash.')
     this._hash = null
     this._previous = hex
   }
 
   /**
-   * Return the previous block as hash
+   * Return the previous request as hash
    * @type {Hexadecimal64Length}
    */
   get previous () {
     return this._previous
   }
 
-  set transactionFee (val) {
+  set fee (val) {
     this._hash = null
-    this._transactionFee = val
+    this._fee = val
   }
 
   /**
-   * Return the string amount of the transaction fee in reason
+   * Return the string amount of the fee in reason
    * @type {string}
    */
-  get transactionFee () {
-    return this._transactionFee
+  get fee () {
+    return this._fee
   }
 
   set sequence (val) {
@@ -161,7 +161,7 @@ class Transaction {
   }
 
   /**
-   * Return the the sequence of the block in the publishers account
+   * Return the the sequence of the request in the origin account
    * @type {number}
    */
   get sequence () {
@@ -173,7 +173,7 @@ class Transaction {
   }
 
   /**
-   * Return the hash of the transaction
+   * Return the hash of the request
    * @type {Hexadecimal64Length}
    */
   get hash () {
@@ -183,7 +183,7 @@ class Transaction {
   /**
    * Sets the origin account
    *
-   * @param {LogosAddress} origin - The Logos account that creates the block
+   * @param {LogosAddress} origin - The Logos account that created the request
    * @returns {void}
    */
   setOrigin (origin) {
@@ -200,7 +200,7 @@ class Transaction {
   }
 
   /**
-   * Creates a work for the block.
+   * Creates a work for the request.
    * @param {boolean} [testNet] generate PoW for test net instead of real network
    * @returns {Hexadecimal16Length}
    */
@@ -212,4 +212,4 @@ class Transaction {
   }
 }
 
-module.exports = Transaction
+module.exports = Request

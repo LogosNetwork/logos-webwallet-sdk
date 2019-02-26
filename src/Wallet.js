@@ -8,7 +8,7 @@ const mqtt = require('mqtt')
 const mqttRegex = require('mqtt-regex')
 
 /**
- * The main hub for interacting with the Logos Accounts and Blocks.
+ * The main hub for interacting with the Logos Accounts and Requests.
  */
 class Wallet {
   constructor (options = {
@@ -95,7 +95,7 @@ class Wallet {
     }
 
     /**
-     * Batch Sends - When lots of blocks are pending auto batch them togeather for speed
+     * Batch Sends - When lots of requests are pending auto batch them togeather for speed
      * @type {boolean}
      * @private
      */
@@ -106,7 +106,7 @@ class Wallet {
     }
 
     /**
-     * Full Sync - Should we fully sync and validate the full block chain or just sync the block
+     * Full Sync - Should we fully sync and validate the full request chain or just sync the request
      * @type {boolean}
      * @private
      */
@@ -177,7 +177,7 @@ class Wallet {
   }
 
   /**
-   * Should the webwallet SDK batch transactions
+   * Should the webwallet SDK batch requests
    * @type {boolean}
    */
   get batchSends () {
@@ -189,7 +189,7 @@ class Wallet {
   }
 
   /**
-   * Full Sync the entire blockchain or prune version only
+   * Full Sync the entire requestchain or prune version only
    * @type {boolean}
    */
   get fullSync () {
@@ -297,16 +297,16 @@ class Wallet {
   }
 
   /**
-   * Return all the blocks that are pending in every account associated to this wallet
-   * @type {Block[]}
+   * Return all the requests that are pending in every account associated to this wallet
+   * @type {Request[]}
    * @readonly
    */
-  get pendingBlocks () {
-    let pendingBlocks = []
+  get pendingRequests () {
+    let pendingRequests = []
     Object.keys(this._accounts).forEach(account => {
-      pendingBlocks.concat(account.pendingChain)
+      pendingRequests.concat(account.pendingChain)
     })
-    return pendingBlocks
+    return pendingRequests
   }
 
   /**
@@ -384,34 +384,34 @@ class Wallet {
   }
 
   /**
-   * Finds the block object of the specified hash of one of our accounts
+   * Finds the request object of the specified hash of one of our accounts
    *
-   * @param {Hexadecimal64Length} hash - The hash of the block we are looking for the object of
-   * @returns {Block | boolean} false if no block object of the specified hash was found
+   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for the object of
+   * @returns {Request | boolean} false if no request object of the specified hash was found
    */
-  getBlock (hash) {
+  getRequest (hash) {
     Object.keys(this._accounts).forEach(account => {
-      let block = account.getBlock(hash)
-      if (block !== false) {
-        return block
+      let request = account.getRequest(hash)
+      if (request !== false) {
+        return request
       }
     })
     return false
   }
 
   /**
-   * Adds block to account chain
+   * Adds request to account chain
    *
    * @param {LogosAddress} address logos address
-   * @param {Hexadecimal64Length} hash The block hash
-   * @throws An exception if the block is not found in the ready blocks array
-   * @throws An exception if the previous block does not match the last chain block
-   * @throws An exception if the block amount is greater than your balance minus the transaction fee
+   * @param {Hexadecimal64Length} hash The request hash
+   * @throws An exception if the request is not found in the ready requests array
+   * @throws An exception if the previous request does not match the last chain request
+   * @throws An exception if the request amount is greater than your balance minus the fee
    * @returns {void}
    */
-  confirmBlock (address, hash) {
+  confirmRequest (address, hash) {
     this.currentAccountAddress(address)
-    this.account.confirmBlock(hash)
+    this.account.confirmRequest(hash)
   }
 
   /**
@@ -506,7 +506,7 @@ class Wallet {
    * Decrypts the wallet data
    *
    * @param {string} - encrypted wallet
-   * @returns {WalletData | boolean} The block data or returns false if it is unable to decrypt the data
+   * @returns {WalletData | boolean} The request data or returns false if it is unable to decrypt the data
    * @private
    */
   _decrypt (encryptedWallet) {
@@ -623,7 +623,7 @@ class Wallet {
         if (params) {
           let account = this._accounts[params.account]
           try {
-            account.processBlock(message, this._batchSends, this._rpc)
+            account.processRequest(message, this._batchSends, this._rpc)
           } catch (err) {
             if (this._rpc) {
               this._accounts[account.address].sync(this._rpc, this._fullSync)
