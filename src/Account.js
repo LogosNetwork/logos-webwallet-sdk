@@ -742,8 +742,8 @@ class Account {
    */
   getPendingRequest (hash) {
     for (let n = this._pendingChain.length - 1; n >= 0; n--) {
-      const blk = this._pendingChain[n]
-      if (blk.hash === hash) return blk
+      const request = this._pendingChain[n]
+      if (request.hash === hash) return request
     }
     return false
   }
@@ -910,11 +910,9 @@ class Account {
   async combineRequests (rpc) {
     let aggregate = 0
     let transactionsToCombine = [[]]
-    let requestsToCombine = []
     let otherRequests = []
     for (let request of this._pendingChain) {
       if (request.type === 'send') {
-        requestsToCombine.push(request)
         for (let transaction of request.transactions) {
           if (transactionsToCombine[aggregate].length < 8) {
             transactionsToCombine[aggregate].push(transaction)

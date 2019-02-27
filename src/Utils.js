@@ -370,6 +370,14 @@ const keyFromAccount = (account) => {
   throw new Error('Invalid Logos account.')
 }
 
+const byteCount = (s) => {
+  return (new TextEncoder('utf-8').encode(s)).length
+}
+
+const isAlphanumeric = (s) => {
+  return /^[a-z0-9]+$/i.test(s)
+}
+
 module.exports = {
   Iso10126: Iso10126,
   AES: AES,
@@ -385,5 +393,7 @@ module.exports = {
   checkWork: checkWork,
   generateWork: generateWork,
   keyFromAccount: keyFromAccount,
-  changeEndianness: changeEndianness
+  changeEndianness: changeEndianness,
+  byteCount: byteCount,
+  isAlphanumeric: isAlphanumeric
 }
