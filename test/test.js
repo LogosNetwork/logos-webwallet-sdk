@@ -29,11 +29,13 @@
 //     password: 'password',
 //     fullSync: true
 //   })
-//   let start = Date.now()
-//   await wallet.createAccount({
-//     privateKey: '17727DCBB37CC3AE507EE6271D05303C8B230B141DBD1BB2D1CCBF12878A1A60'
+//   let account = await wallet.createAccount({
+//     privateKey: 'DC6B2DBC55816073728CEB97E500E4B67B375E82954394A0E8A76D0BA66AB17A'
 //   })
-//   console.log(`Finished Syncing in ${Date.now() - start}ms`)
+//   account.createTokenIssuance({
+//     name: 'MyCoin',
+//     symbol: 'MYC'
+//   })
 // }
 // create()
 

@@ -1,6 +1,7 @@
 const Utils = require('./Utils')
 const bigInt = require('big-integer')
 const Send = require('./Requests/Send.js')
+const IssueToken = require('./Requests/IssueToken.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 const minimumFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
@@ -24,7 +25,13 @@ class Account {
     chain: [],
     receiveChain: [],
     pendingChain: [],
+    remoteWork: true,
+    batchSends: true,
     fullSync: true,
+    rpc: {
+      proxy: 'https://pla.bs',
+      delegates: ['18.207.173.104', '18.212.168.244', '184.72.193.105', '3.82.139.139', '3.82.174.74', '3.83.133.56', '3.83.177.235', '3.83.48.201', '3.84.252.232', '3.85.107.246', '3.85.107.66', '3.86.206.176', '3.86.216.114', '3.86.252.2', '3.86.92.241', '3.90.67.103', '3.91.182.200', '3.94.109.110', '34.238.44.217', '35.173.193.62', '35.174.105.169', '35.174.115.82', '52.207.236.143', '52.90.107.227', '54.145.135.97', '54.147.125.226', '54.152.196.134', '54.165.245.15', '54.173.200.41', '54.210.248.115', '54.84.163.144', '54.89.253.51']
+    },
     version: 1,
     index: null
   }) {
@@ -188,6 +195,28 @@ class Account {
     }
 
     /**
+     * Remote work enabled
+     * @type {boolean}
+     * @private
+     */
+    if (options.remoteWork !== undefined) {
+      this._remoteWork = options.remoteWork
+    } else {
+      this._remoteWork = true
+    }
+
+    /**
+     * Batch Sends - When lots of requests are pending auto batch them togeather for speed
+     * @type {boolean}
+     * @private
+     */
+    if (options.batchSends !== undefined) {
+      this._batchSends = options.batchSends
+    } else {
+      this._batchSends = true
+    }
+
+    /**
      * Full Sync - Should we fully sync and validate the full request chain or just sync the request
      * @type {boolean}
      * @private
@@ -196,6 +225,20 @@ class Account {
       this._fullSync = options.fullSync
     } else {
       this._fullSync = true
+    }
+
+    /**
+     * RPC enabled
+     * @type {RPCOptions}
+     * @private
+     */
+    if (options.rpc !== undefined) {
+      this._rpc = options.rpc
+    } else {
+      this._rpc = {
+        proxy: 'https://pla.bs',
+        delegates: ['18.207.173.104', '18.212.168.244', '184.72.193.105', '3.82.139.139', '3.82.174.74', '3.83.133.56', '3.83.177.235', '3.83.48.201', '3.84.252.232', '3.85.107.246', '3.85.107.66', '3.86.206.176', '3.86.216.114', '3.86.252.2', '3.86.92.241', '3.90.67.103', '3.91.182.200', '3.94.109.110', '34.238.44.217', '35.173.193.62', '35.174.105.169', '35.174.115.82', '52.207.236.143', '52.90.107.227', '54.145.135.97', '54.147.125.226', '54.152.196.134', '54.165.245.15', '54.173.200.41', '54.210.248.115', '54.84.163.144', '54.89.253.51']
+      }
     }
 
     this._synced = false
@@ -416,15 +459,14 @@ class Account {
 
   /**
    * Scans the account history using RPC and updates the local chain
-   * @param {RPCOptions} options host and proxy used to sync the chain to (this data will be validated)
    * @returns {Promise<Account>}
    */
-  sync (options) {
+  sync () {
     return new Promise((resolve, reject) => {
       this._synced = false
       this._chain = []
       this._receiveChain = []
-      const RPC = new Logos({ url: `http://${options.delegates[0]}:55000`, proxyURL: options.proxy })
+      const RPC = new Logos({ url: `http://${this._rpc.delegates[0]}:55000`, proxyURL: this._rpc.proxy })
       if (this._fullSync) {
         RPC.accounts.history(this._address, -1, true).then((history) => {
           if (history) {
@@ -765,15 +807,91 @@ class Account {
   /**
    * Creates a request from the specified information
    *
-   * @param {SendTransaction[]} transactions - The account destinations and amounts you wish to send them
-   * @param {boolean} remoteWork - Should the work be genereated locally or remote
-   * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the request
+   * @param {TokenOptions} options - The options for the token creation
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
    * @throws An exception if the request is rejected by the RPC
    * @returns {Promise<Request>} the request object
    */
-  async createSend (transactions, remoteWork = true, rpc) {
+  async createTokenIssuance (options) {
+    if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
+    if (!options.symbol) throw new Error('You must pass symbol as a part of the TokenOptions')
+    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    let request = new IssueToken({
+      signature: null,
+      work: null,
+      previous: this.previous,
+      fee: minimumFee,
+      sequence: this.sequence + 1,
+      origin: this._address,
+      name: options.name,
+      symbol: options.symbol
+    })
+    if (options.feeType) {
+      request.feeType = options.feeType
+    }
+    if (options.feeRate) {
+      request.feeRate = options.feeRate
+    }
+    if (options.totalSupply) {
+      request.totalSupply = options.totalSupply
+    }
+    if (options.settings) {
+      request.settings = options.settings
+    }
+    if (options.controllers) {
+      request.controllers = options.controllers
+    }
+    if (options.issuerInfo) {
+      request.issuerInfo = options.issuerInfo
+    }
+    if (bigInt(this._pendingBalance).minus(minimumFee).lesser(0)) {
+      throw new Error('Invalid Request: Not Enough Funds to afford the fee to issue token')
+    }
+    request.sign(this._privateKey)
+    this._previous = request.hash
+    this._sequence = request.sequence
+    this._pendingBalance = bigInt(this._pendingBalance).minus(minimumFee).toString()
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    this._pendingChain.push(request)
+    if (this._rpc) {
+      if (this._pendingChain.length === 1) {
+        console.log(request.toJSON(true))
+        try {
+          let response = await request.publish(this._rpc)
+          console.log(response)
+          if (response.hash) {
+            return request
+          } else {
+            throw new Error('Invalid Request: Rejected by Logos Node')
+          }
+        } catch (error) {
+          console.log(error)
+        }
+      } else {
+        return request
+      }
+    } else {
+      return request
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {SendTransaction[]} transactions - The account destinations and amounts you wish to send them
+   * @throws An exception if the account has not been synced
+   * @throws An exception if the pending balance is less than the required amount to do a send
+   * @throws An exception if the request is rejected by the RPC
+   * @returns {Promise<Request>} the request object
+   */
+  async createSend (transactions) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     let request = new Send({
       signature: null,
@@ -792,18 +910,16 @@ class Account {
     this._sequence = request.sequence
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(minimumFee).toString()
     if (request.work === null) {
-      if (remoteWork) {
-        // TODO Send request to the remote work cluster
+      if (this._remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     this._pendingChain.push(request)
-    if (rpc) {
-      // If this is the only request in the pending chain then publish it
+    if (this._rpc) {
       if (this._pendingChain.length === 1) {
-        let response = await request.publish(rpc)
+        let response = await request.publish(this._rpc)
         if (response.hash) {
           return request
         } else {
@@ -817,19 +933,16 @@ class Account {
       return request
     }
   }
-
   /**
    * Confirms the request in the local chain
    *
    * @param {MQTTRequestOptions} requestInfo The request from MQTT
-   * @param {boolean} batchSends proccess transactions and batches them togeather
-   * @param {RPCOptions} rpc - Options to send the publish command if null it will not publish the request
    * @throws An exception if the request is not found in the pending requests array
    * @throws An exception if the previous request does not match the last chain request
    * @throws An exception if the request amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  processRequest (requestInfo, batchSends, rpc) {
+  processRequest (requestInfo) {
     if (requestInfo.type === 'send') {
       if (requestInfo.origin === this._address) {
         let request = this.getPendingRequest(requestInfo.hash)
@@ -846,21 +959,21 @@ class Account {
               this._balance = bigInt(this._balance).minus(request.fee).minus(request.totalAmount)
             }
             // Publish the next request in the pending as the previous request has been confirmed
-            if (rpc && this._pendingChain.length > 0) {
+            if (this._rpc && this._pendingChain.length > 0) {
               if (this._pendingChain.length > 1 &&
                 this._pendingChain[0].type === 'send' &&
                 this._pendingChain[0].transactions.length < 8) {
                 // Combine if there are two of more pending transactions and the
                 // Next transaction is a send with less than 8 transactions
-                if (batchSends) {
-                  this.combineRequests(rpc)
+                if (this._batchSends) {
+                  this.combineRequests(this._rpc)
                 } else {
-                  if (rpc && this._pendingChain.length > 0) {
-                    this._pendingChain[0].publish(rpc)
+                  if (this._rpc && this._pendingChain.length > 0) {
+                    this._pendingChain[0].publish(this._rpc)
                   }
                 }
               } else {
-                this._pendingChain[0].publish(rpc)
+                this._pendingChain[0].publish(this._rpc)
               }
             }
           }
@@ -904,10 +1017,9 @@ class Account {
   /**
    * Batchs send requests
    *
-   * @param {RPCOptions} rpc - Options to send the publish command if null or false it will not publish the request
    * @returns {void}
    */
-  async combineRequests (rpc) {
+  async combineRequests () {
     let aggregate = 0
     let transactionsToCombine = [[]]
     let otherRequests = []
@@ -931,8 +1043,8 @@ class Account {
     this._sequence = null
     const promises = transactionsToCombine.map(transactions => this.createSend(transactions, true, false))
     await Promise.all(promises)
-    if (rpc && this._pendingChain.length > 0) {
-      this._pendingChain[0].publish(rpc)
+    if (this._rpc && this._pendingChain.length > 0) {
+      this._pendingChain[0].publish(this._rpc)
     }
   }
 
