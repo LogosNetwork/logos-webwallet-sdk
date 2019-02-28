@@ -371,7 +371,7 @@ const keyFromAccount = (account) => {
 }
 
 const byteCount = (s) => {
-  return (new TextEncoder('utf-8').encode(s)).length
+  return encodeURI(s).split(/%(?:u[0-9A-F]{2})?[0-9A-F]{2}|./).length - 1
 }
 
 const isAlphanumeric = (s) => {

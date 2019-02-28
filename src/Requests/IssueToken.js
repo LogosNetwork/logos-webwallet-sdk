@@ -17,8 +17,8 @@ class IssueToken extends Request {
     feeType: 'flat',
     feeRate: '0',
     settings: {
-      add: false,
-      modify_add: false,
+      issuance: false,
+      modify_issuance: false,
       revoke: false,
       modify_revoke: false,
       freeze: false,
@@ -30,8 +30,8 @@ class IssueToken extends Request {
     },
     controllers: [{
       account: null,
-      change_add: false,
-      change_modify_add: false,
+      change_issuance: false,
+      change_modify_issuance: false,
       change_revoke: false,
       change_modify_revoke: false,
       change_freeze: false,
@@ -40,8 +40,16 @@ class IssueToken extends Request {
       change_modify_adjust_fee: false,
       change_whitelist: false,
       change_modify_whitelisting: false,
-      promote_controller: false,
-      update_issuer_info: false
+      issuance: false,
+      revoke: false,
+      freeze: false,
+      adjust_fee: false,
+      whitelist: false,
+      update_issuer_info: false,
+      update_controller: false,
+      burn: false,
+      distribute: false,
+      withdraw_fee: false
     }],
     issuerInfo: ''
   }) {
@@ -122,8 +130,8 @@ class IssueToken extends Request {
       this._settings = options.settings
     } else {
       this._settings = {
-        add: false,
-        modify_add: false,
+        issuance: false,
+        modify_issuance: false,
         revoke: false,
         modify_revoke: false,
         freeze: false,
@@ -145,18 +153,26 @@ class IssueToken extends Request {
     } else {
       this._controllers = [{
         account: Utils.accountFromHexKey(this.origin),
-        change_add: true,
-        change_modify_add: true,
-        change_revoke: true,
-        change_modify_revoke: true,
-        change_freeze: true,
-        change_modify_freeze: true,
-        change_adjust_fee: true,
-        change_modify_adjust_fee: true,
-        change_whitelist: true,
-        change_modify_whitelisting: true,
-        promote_controller: true,
-        update_issuer_info: true
+        change_issuance: false,
+        change_modify_issuance: false,
+        change_revoke: false,
+        change_modify_revoke: false,
+        change_freeze: false,
+        change_modify_freeze: false,
+        change_adjust_fee: false,
+        change_modify_adjust_fee: false,
+        change_whitelist: false,
+        change_modify_whitelist: false,
+        issuance: false,
+        revoke: false,
+        freeze: false,
+        adjust_fee: false,
+        whitelist: false,
+        update_issuer_info: false,
+        update_controller: false,
+        burn: false,
+        distribute: false,
+        withdraw_fee: false
       }]
     }
 
@@ -288,8 +304,8 @@ class IssueToken extends Request {
   }
 
   set settings (val) {
-    if (typeof val.add === 'undefined') throw new Error('add should be passed in token settings')
-    if (typeof val.modify_add === 'undefined') throw new Error('modify_add should be passed in token settings')
+    if (typeof val.issuance === 'undefined') throw new Error('issuance should be passed in token settings')
+    if (typeof val.modify_issuance === 'undefined') throw new Error('modify_issuance should be passed in token settings')
     if (typeof val.revoke === 'undefined') throw new Error('revoke should be passed in token settings')
     if (typeof val.modify_revoke === 'undefined') throw new Error('modify_revoke should be passed in token settings')
     if (typeof val.freeze === 'undefined') throw new Error('freeze should be passed in token settings')
@@ -335,7 +351,7 @@ class IssueToken extends Request {
    * @readonly
    */
   get type () {
-    return 'issue'
+    return 'issuance'
   }
 
   /**
@@ -346,8 +362,8 @@ class IssueToken extends Request {
   addController (controller) {
     if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
     if (!controller.account) throw new Error('Controller must have account')
-    if (typeof controller.change_add === 'undefined') throw new Error('change_add should be passed: Change add allows the controller account to add additional tokens')
-    if (typeof controller.change_modify_add === 'undefined') throw new Error('change_modify_add should be passed: Change modify add allows the controller account to modify if the token is allowed to have additional tokens added')
+    if (typeof controller.change_issuance === 'undefined') throw new Error('change_issuance should be passed: Change issuance allows the controller account to add additional tokens')
+    if (typeof controller.change_modify_issuance === 'undefined') throw new Error('change_modify_issuance should be passed: Change modify issuance allows the controller account to modify if the token is allowed to have additional tokens added')
     if (typeof controller.change_revoke === 'undefined') throw new Error('change_revoke should be passed: Change revoke allows the controller account to revoke tokens')
     if (typeof controller.change_modify_revoke === 'undefined') throw new Error('change_modify_revoke should be passed: Change modify revoke allows the controller account to modify if tokens can be revoked')
     if (typeof controller.change_freeze === 'undefined') throw new Error('change_freeze should be passed: Change Freeze allows the controller account to add or delete accounts from the freeze list')
@@ -356,8 +372,16 @@ class IssueToken extends Request {
     if (typeof controller.change_modify_adjust_fee === 'undefined') throw new Error('change_modify_adjust_fee should be passed: Change modify fee allows the controller account to modify if the token fees can be adjusted')
     if (typeof controller.change_whitelist === 'undefined') throw new Error('change_whitelist should be passed: Change whitelist allows the controller account to add additional tokens')
     if (typeof controller.change_modify_whitelisting === 'undefined') throw new Error('change_modify_whitelisting should be passed: Change modify whitelist allows the controller account to modify if this token has whitelisting')
-    if (typeof controller.promote_controller === 'undefined') throw new Error('promote_controller should be passed: Promote controller allows the controller account to add additional controller accounts')
+    if (typeof controller.issuance === 'undefined') throw new Error('issuance should be passed')
+    if (typeof controller.revoke === 'undefined') throw new Error('revoke should be passed')
+    if (typeof controller.freeze === 'undefined') throw new Error('freeze should be passed')
+    if (typeof controller.adjust_fee === 'undefined') throw new Error('adjust_fee should be passed')
+    if (typeof controller.whitelist === 'undefined') throw new Error('whitelist should be passed')
     if (typeof controller.update_issuer_info === 'undefined') throw new Error('update_issuer_info should be passed: Update issuer info allows the controller account to change the token information')
+    if (typeof controller.update_controller === 'undefined') throw new Error('update_controller should be passed ')
+    if (typeof controller.burn === 'undefined') throw new Error('burn should be passed')
+    if (typeof controller.distribute === 'undefined') throw new Error('distribute should be passed')
+    if (typeof controller.withdraw_fee === 'undefined') throw new Error('withdraw_fee should be passed')
     super.hash = null
     this._controllers.push(controller)
     return this._controllers
@@ -428,24 +452,39 @@ class IssueToken extends Request {
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
 
       // TokenID
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.tokenID))
+      let tokenID = Utils.hexToUint8(this.tokenID)
+      blake.blake2bUpdate(context, tokenID)
 
       // Token Issuance Properties
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(Utils.hexToDec(Utils.stringToHex(this.symbol)), 8)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(Utils.hexToDec(Utils.stringToHex(this.name)), 32)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.totalSupply, 16)))
-      if (this.feeType === 'percentage') {
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
-      } else {
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(1, 1)))
-      }
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.feeRate, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(parseInt(this.getObjectBits(this.settings), 2), 2)))
+      let symbol = Utils.hexToUint8(Utils.stringToHex(this.symbol))
+      blake.blake2bUpdate(context, symbol)
+
+      let name = Utils.hexToUint8(Utils.stringToHex(this.name))
+      blake.blake2bUpdate(context, name)
+
+      let totalSupply = Utils.hexToUint8(Utils.decToHex(this.totalSupply, 16))
+      blake.blake2bUpdate(context, totalSupply)
+
+      let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
+      blake.blake2bUpdate(context, feeType)
+
+      let feeRate = Utils.hexToUint8(Utils.decToHex(this.feeRate, 16))
+      blake.blake2bUpdate(context, feeRate)
+
+      let settings = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.settings), 2), 8)))
+      blake.blake2bUpdate(context, settings)
+
       for (let controller of this.controllers) {
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(controller.account)))
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(parseInt(this.getObjectBits(controller), 2), 3)))
+        let account = Utils.hexToUint8(Utils.keyFromAccount(controller.account))
+        blake.blake2bUpdate(context, account)
+
+        let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(controller), 2), 8)))
+        blake.blake2bUpdate(context, privileges)
       }
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(Utils.hexToDec(Utils.stringToHex(this.issuerInfo)), 512)))
+
+      let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
+      blake.blake2bUpdate(context, issuerInfo)
+
       super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
       return super.hash
     }
@@ -499,7 +538,7 @@ class IssueToken extends Request {
    */
   toJSON (pretty = false) {
     const obj = {}
-    obj.type = 'issue'
+    obj.type = this.type
     obj.previous = this.previous
     obj.origin = this._origin
     obj.fee = this.fee

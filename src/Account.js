@@ -862,10 +862,8 @@ class Account {
     this._pendingChain.push(request)
     if (this._rpc) {
       if (this._pendingChain.length === 1) {
-        console.log(request.toJSON(true))
         try {
           let response = await request.publish(this._rpc)
-          console.log(response)
           if (response.hash) {
             return request
           } else {

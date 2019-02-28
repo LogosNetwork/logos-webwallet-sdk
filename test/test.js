@@ -30,11 +30,12 @@
 //     fullSync: true
 //   })
 //   let account = await wallet.createAccount({
-//     privateKey: 'DC6B2DBC55816073728CEB97E500E4B67B375E82954394A0E8A76D0BA66AB17A'
+//     privateKey: '09CB89F5DCEF8DC3DEC8A930A7F131F820F0BC3210B1CEC8DDC2754BFE9D3B40'
 //   })
 //   account.createTokenIssuance({
-//     name: 'MyCoin',
-//     symbol: 'MYC'
+//     name: 'TylerCoin',
+//     symbol: 'Winner',
+//     issuerInfo: 'Hello World'
 //   })
 // }
 // create()
