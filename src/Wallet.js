@@ -368,7 +368,7 @@ class Wallet {
     if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
     this._accounts[account.address] = account
     if (this._rpc) {
-      await this._accounts[account.address].sync(this._rpc)
+      await this._accounts[account.address].sync()
     } else {
       this._accounts[account.address].synced = true
     }
@@ -625,15 +625,7 @@ class Wallet {
         let params = accountMqttRegex(topic)
         if (params) {
           let account = this._accounts[params.account]
-          try {
-            account.processRequest(message, this._batchSends, this._rpc)
-          } catch (err) {
-            if (this._rpc) {
-              this._accounts[account.address].sync(this._rpc, this._fullSync)
-            } else {
-              this._accounts[account.address].synced = false
-            }
-          }
+          account.processRequest(message)
         }
       })
     }

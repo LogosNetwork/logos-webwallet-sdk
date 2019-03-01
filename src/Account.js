@@ -1,7 +1,8 @@
 const Utils = require('./Utils')
 const bigInt = require('big-integer')
 const Send = require('./Requests/Send.js')
-const IssueToken = require('./Requests/IssueToken.js')
+const Issuance = require('./Requests/Issuance.js')
+const Distribute = require('./Requests/Distribute.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 const minimumFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
@@ -519,21 +520,74 @@ class Account {
    * @returns {void}
    */
   updateBalancesFromChain () {
+    // TODO Token Sends / 'Receives'
     if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
     this._receiveChain.forEach(request => {
+      if (request.type === 'send') {
+        for (let transaction of request.transactions) {
+          if (transaction.destination === this._address) {
+            sum = sum.plus(bigInt(transaction.amount))
+          }
+        }
+      }
+    })
+    this._chain.forEach(request => {
+      if (request.type === 'send') {
+        sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
+      } else {
+        sum = sum.minus(bigInt(request.fee))
+      }
+    })
+    this._balance = sum.toString()
+    this._pendingChain.forEach(pendingRequest => {
+      if (pendingRequest.type === 'send') {
+        sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
+        for (let transaction of pendingRequest.transactions) {
+          if (transaction.destination === this._address) {
+            sum = sum.plus(bigInt(transaction.amount))
+          }
+        }
+      } else {
+        sum = sum.minus(bigInt(pendingRequest.fee))
+      }
+    })
+    this._pendingBalance = sum.toString()
+  }
+
+  /**
+   * Updates the balances of the account by doing math on the previous balance when given a new request
+   * Also updates the pending balance based on the new balance and the pending chain
+   * @param {Request} request - request that is being calculated on
+   * @returns {void}
+   */
+  updateBalancesFromRequest (request) {
+    // TODO Token Sends / 'Receives'
+    let sum = bigInt(this._balance)
+    if (request.type === 'send') {
+      if (request.origin === this._address) {
+        sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
+      }
       for (let transaction of request.transactions) {
         if (transaction.destination === this._address) {
           sum = sum.plus(bigInt(transaction.amount))
         }
       }
-    })
-    this._chain.forEach(request => {
-      sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
-    })
+    } else {
+      sum = sum.minus(bigInt(request.fee))
+    }
     this._balance = sum.toString()
-    this._pendingChain.forEach(request => {
-      sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
+    this._pendingChain.forEach(pendingRequest => {
+      if (pendingRequest.type === 'send') {
+        sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
+        for (let transaction of pendingRequest.transactions) {
+          if (transaction.destination === this._address) {
+            sum = sum.plus(bigInt(transaction.amount))
+          }
+        }
+      } else {
+        sum = sum.minus(bigInt(pendingRequest.fee))
+      }
     })
     this._pendingBalance = sum.toString()
   }
@@ -542,21 +596,11 @@ class Account {
    * Adds a request to the appropriate chain
    *
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
-   * @returns {void}
+   * @returns {Request}
    */
   addRequest (requestInfo) {
     if (requestInfo.type === 'send') {
-      let request = new Send({
-        origin: requestInfo.origin,
-        signature: requestInfo.signature,
-        work: requestInfo.work,
-        sequence: requestInfo.sequence,
-        previous: requestInfo.previous,
-        fee: requestInfo.fee
-      })
-      if (requestInfo.transactions) {
-        request.transactions = requestInfo.transactions
-      }
+      let request = new Send(requestInfo)
       // If this request was created by us AND
       // we do not currently have that request THEN
       // add the request to confirmed chain
@@ -576,8 +620,16 @@ class Account {
           }
         }
       }
+      return request
+    } else if (requestInfo.type === 'issuance') {
+      let request = new Issuance(requestInfo)
+      this._chain.push(request)
+      return request
+    } else if (requestInfo.type === 'distribute') {
+      let request = new Distribute(requestInfo)
+      this._chain.push(request)
+      return request
     }
-    // TODO HANDLE OTHER BLOCKS
   }
 
   /**
@@ -807,17 +859,17 @@ class Account {
   /**
    * Creates a request from the specified information
    *
-   * @param {TokenOptions} options - The options for the token creation
+   * @param {TokenIssuanceOptions} options - The options for the token creation
    * @throws An exception if the account has not been synced
-   * @throws An exception if the pending balance is less than the required amount to do a send
+   * @throws An exception if the pending balance is less than the required amount to do a token issuance
    * @throws An exception if the request is rejected by the RPC
    * @returns {Promise<Request>} the request object
    */
-  async createTokenIssuance (options) {
+  async createTokenIssuanceRequest (options) {
     if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
     if (!options.symbol) throw new Error('You must pass symbol as a part of the TokenOptions')
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
-    let request = new IssueToken({
+    let request = new Issuance({
       signature: null,
       work: null,
       previous: this.previous,
@@ -845,13 +897,13 @@ class Account {
     if (options.issuerInfo) {
       request.issuerInfo = options.issuerInfo
     }
-    if (bigInt(this._pendingBalance).minus(minimumFee).lesser(0)) {
-      throw new Error('Invalid Request: Not Enough Funds to afford the fee to issue token')
+    if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Not Enough Logos to afford the fee to issue a token')
     }
     request.sign(this._privateKey)
     this._previous = request.hash
     this._sequence = request.sequence
-    this._pendingBalance = bigInt(this._pendingBalance).minus(minimumFee).toString()
+    this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     if (request.work === null) {
       if (this._remoteWork) {
         request.work = EMPTY_WORK
@@ -883,13 +935,73 @@ class Account {
   /**
    * Creates a request from the specified information
    *
-   * @param {SendTransaction[]} transactions - The account destinations and amounts you wish to send them
+   * @param {TokenDistributeOptions} options - The Token ID & transaction
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
    * @throws An exception if the request is rejected by the RPC
    * @returns {Promise<Request>} the request object
    */
-  async createSend (transactions) {
+  async createDistributeTokenRequest (options) {
+    if (!options.tokenID) throw new Error('You must pass tokenID in options')
+    if (!options.transaction) throw new Error('You must pass transaction in options')
+    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    let request = new Distribute({
+      signature: null,
+      work: null,
+      previous: this.previous,
+      fee: minimumFee,
+      sequence: this.sequence + 1,
+      origin: this._address,
+      tokenID: options.tokenID,
+      transaction: options.transaction
+    })
+    if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Not Enough Logos to afford the fee to distribute tokens')
+    }
+    request.sign(this._privateKey)
+    this._previous = request.hash
+    this._sequence = request.sequence
+    this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    this._pendingChain.push(request)
+    if (this._rpc) {
+      if (this._pendingChain.length === 1) {
+        try {
+          console.log(request.toJSON(true))
+          let response = await request.publish(this._rpc)
+          console.log(response)
+          if (response.hash) {
+            return request
+          } else {
+            throw new Error('Invalid Request: Rejected by Logos Node')
+          }
+        } catch (error) {
+          console.log(error)
+        }
+      } else {
+        return request
+      }
+    } else {
+      return request
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {Transaction[]} transactions - The account destinations and amounts you wish to send them
+   * @throws An exception if the account has not been synced
+   * @throws An exception if the pending balance is less than the required amount to do a send
+   * @throws An exception if the request is rejected by the RPC
+   * @returns {Promise<Request>} the request object
+   */
+  async createSendRequest (transactions) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     let request = new Send({
       signature: null,
@@ -900,13 +1012,13 @@ class Account {
       sequence: this.sequence + 1,
       origin: this._address
     })
-    if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(minimumFee).lesser(0)) {
+    if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
     }
     request.sign(this._privateKey)
     this._previous = request.hash
     this._sequence = request.sequence
-    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(minimumFee).toString()
+    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
     if (request.work === null) {
       if (this._remoteWork) {
         request.work = EMPTY_WORK
@@ -940,43 +1052,60 @@ class Account {
    * @throws An exception if the request amount is greater than your balance minus the transaction fee
    * @returns {void}
    */
-  processRequest (requestInfo) {
-    if (requestInfo.type === 'send') {
-      if (requestInfo.origin === this._address) {
-        let request = this.getPendingRequest(requestInfo.hash)
-        if (request) {
-          if (bigInt(this._balance).minus(request.fee).lesser(request.totalAmount)) {
-            throw new Error('Insufficient funds to confirm this request there must be an issue in our local chain or someone is sending us bad requests')
-          } else {
-            // Confirm the request add it to the local confirmed chain and remove from pending.
-            this._chain.push(request)
-            this.removePendingRequest(requestInfo.hash)
-            if (this._fullSync) {
-              this.updateBalancesFromChain()
+  async processRequest (requestInfo) {
+    // Confirm the request add it to the confirmed chain and remove from pending.
+    if (requestInfo.origin === this._address) {
+      let request = this.getPendingRequest(requestInfo.hash)
+      if (request) {
+        this._chain.push(request)
+        this.removePendingRequest(requestInfo.hash)
+        if (this._fullSync) {
+          this.updateBalancesFromChain()
+        } else {
+          this.updateBalancesFromRequest(request)
+        }
+        // Publish the next request in the pending as the previous request has been confirmed
+        // TODO Token Send Support
+        if (this._rpc && this._pendingChain.length > 0) {
+          if (this._pendingChain.length > 1 &&
+            this._pendingChain[0].type === 'send' &&
+            this._pendingChain[0].transactions.length < 8) {
+            // Combine if there are two of more pending transactions and the
+            // Next transaction is a send with less than 8 transactions
+            if (this._batchSends) {
+              this.combineRequests(this._rpc)
             } else {
-              this._balance = bigInt(this._balance).minus(request.fee).minus(request.totalAmount)
-            }
-            // Publish the next request in the pending as the previous request has been confirmed
-            if (this._rpc && this._pendingChain.length > 0) {
-              if (this._pendingChain.length > 1 &&
-                this._pendingChain[0].type === 'send' &&
-                this._pendingChain[0].transactions.length < 8) {
-                // Combine if there are two of more pending transactions and the
-                // Next transaction is a send with less than 8 transactions
-                if (this._batchSends) {
-                  this.combineRequests(this._rpc)
-                } else {
-                  if (this._rpc && this._pendingChain.length > 0) {
-                    this._pendingChain[0].publish(this._rpc)
-                  }
-                }
-              } else {
+              if (this._rpc && this._pendingChain.length > 0) {
                 this._pendingChain[0].publish(this._rpc)
               }
             }
+          } else {
+            this._pendingChain[0].publish(this._rpc)
           }
         }
+      } else {
+        console.log('Someone is sending blocks from this account that is not us!!!')
+        // Add new request to chain
+        let request = this.addRequest(requestInfo)
+
+        // Remove all pendings as they are now invalidated
+        this.removePendingRequests()
+
+        // Update balance for new block
+        if (this._fullSync) {
+          this.updateBalancesFromChain()
+        } else {
+          this.updateBalancesFromRequest(request)
+        }
+
+        // Clear sequence and previous
+        this._sequence = null
+        this._previous = null
       }
+    }
+
+    // Add block to receive chain if it is a recieve
+    if (requestInfo.type === 'send') {
       if (requestInfo.transactions && requestInfo.transactions.length > 0) {
         for (let trans of requestInfo.transactions) {
           if (trans.destination === this._address) {
@@ -993,17 +1122,9 @@ class Account {
             this._receiveChain.push(request)
             if (this._fullSync) {
               this.updateBalancesFromChain()
-            } else {
-              let sum = bigInt(0)
-              for (let transaction of request.transactions) {
-                if (transaction.destination === this._address) {
-                  sum = sum.plus(bigInt(transaction.amount))
-                }
-              }
-              let newBalance = bigInt(this._balance).plus(sum)
-              let newPendingBalance = bigInt(this._pendingBalance).plus(sum)
-              this._balance = newBalance
-              this._pendingBalance = newPendingBalance
+            } else if (requestInfo.origin !== this._address) {
+              // This block was already processed if we sent it.
+              this.updateBalancesFromRequest(request)
             }
             break
           }
@@ -1018,9 +1139,9 @@ class Account {
    * @returns {void}
    */
   async combineRequests () {
+    // TODO Token Send Support
     let aggregate = 0
     let transactionsToCombine = [[]]
-    let otherRequests = []
     for (let request of this._pendingChain) {
       if (request.type === 'send') {
         for (let transaction of request.transactions) {
@@ -1032,8 +1153,12 @@ class Account {
           }
         }
       } else {
-        // TODO HANDLE OTHER BLOCK TYPES
-        otherRequests.push(request)
+        // This isn't all sends lets just abort and send normally
+        // There is probably a better way to handle this edge case
+        if (this._rpc && this._pendingChain.length > 0) {
+          this._pendingChain[0].publish(this._rpc)
+        }
+        return
       }
     }
     this.removePendingRequests()
@@ -1067,14 +1192,7 @@ class Account {
       if (this._fullSync) {
         this.updateBalancesFromChain()
       } else {
-        let sum = bigInt(0)
-        for (let transaction of request.transactions) {
-          if (transaction.destination === this._address) {
-            sum = sum.plus(bigInt(transaction.amount))
-          }
-        }
-        this._balance = bigInt(this._balance).plus(sum)
-        this._pendingBalance = bigInt(this._pendingBalance).plus(sum)
+        this.updateBalancesFromRequest(receive)
       }
       return receive
     } else {

@@ -3,26 +3,39 @@ const Request = require('./Request')
 const blake = require('blakejs')
 const nacl = require('tweetnacl/nacl')
 const Logos = require('@logosnetwork/logos-rpc-client')
-const bigInt = require('big-integer')
 
 /**
- * The Send class for Send Requests.
+ * The Token Distribute class for Token Distribute Requests.
  */
-class Send extends Request {
+class Distribute extends Request {
   constructor (options = {
-    transactions: []
+    tokenID: null,
+    transaction: null
   }) {
     super(options)
 
     /**
-     * Transactions
-     * @type {Transaction[]}
+     * TokenID of the token
+     * @type {Hexadecimal64Length}
      * @private
      */
-    if (options.transactions !== undefined) {
-      this._transactions = options.transactions
+    if (options.tokenID !== undefined) {
+      this._tokenID = options.tokenID
+    } else if (options.token_id !== undefined) {
+      this._tokenID = options.token_id
     } else {
-      this._transactions = []
+      this._tokenID = null
+    }
+
+    /**
+     * Transaction to distribute the token
+     * @type {string}
+     * @private
+     */
+    if (options.transaction !== undefined) {
+      this._transaction = options.transaction
+    } else {
+      this._transaction = null
     }
 
     /**
@@ -33,30 +46,32 @@ class Send extends Request {
     this._version = 1
   }
 
-  set transactions (transactions) {
+  set tokenID (val) {
     super.hash = null
-    this._transactions = transactions
+    this._tokenID = val
+  }
+
+  /**
+   * Return the token id
+   * @type {string}
+   */
+  get tokenID () {
+    return this._tokenID
+  }
+
+  set transaction (transaction) {
+    if (typeof transaction.destination === 'undefined') throw new Error('destination should be passed in transaction object')
+    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your currency (e.g. satoshi)')
+    super.hash = null
+    this._transaction = transaction
   }
 
   /**
    * Return the previous request as hash
-   * @type {Transaction[]}
+   * @type {Transaction}
    */
-  get transactions () {
-    return this._transactions
-  }
-
-  /**
-   * Returns the total amount contained in this request
-   * @type {string}
-   * @readonly
-   */
-  get totalAmount () {
-    let totalAmount = bigInt(0)
-    for (let transaction of this._transactions) {
-      totalAmount = totalAmount.plus(bigInt(transaction.amount))
-    }
-    return totalAmount.toString()
+  get transaction () {
+    return this._transaction
   }
 
   /**
@@ -65,11 +80,7 @@ class Send extends Request {
    * @readonly
    */
   get type () {
-    return 'send'
-  }
-
-  set hash (hash) {
-    super.hash = hash
+    return 'distribute'
   }
 
   /**
@@ -84,36 +95,31 @@ class Send extends Request {
       return super.hash
     } else {
       if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.transactions) throw new Error('Transactions are not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (this.fee === null) throw new Error('Transaction fee is not set.')
       if (!this.origin) throw new Error('Origin account is not set.')
+      if (this.fee === null) throw new Error('fee is not set.')
+      if (this.sequence === null) throw new Error('Sequence is not set.')
+      if (this.transaction === null) throw new Error('transaction is not set.')
+      if (!this.tokenID) throw new Error('TokenID is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(13, 1)))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
-      for (let transaction of this.transactions) {
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
-      }
+
+      // TokenID
+      let tokenID = Utils.hexToUint8(this.tokenID)
+      blake.blake2bUpdate(context, tokenID)
+
+      // Token Distribute Properties
+      let account = Utils.hexToUint8(Utils.keyFromAccount(this.transaction.destination))
+      blake.blake2bUpdate(context, account)
+      let amount = Utils.hexToUint8(Utils.decToHex(this.transaction.amount, 16))
+      blake.blake2bUpdate(context, amount)
+
       super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
       return super.hash
     }
-  }
-
-  /**
-   * Adds a tranction to the Send
-   * @param {Transaction} transaction - transaction you want to add to this send request
-   * @returns {Transaction[]} list of all transactions
-   */
-  addTransaction (transaction) {
-    if (this.transactions.length === 8) throw new Error('Can only fit 8 transactions per send request!')
-    if (!transaction.destination || !transaction.amount) throw new Error('Send destination and amount')
-    super.hash = null
-    this.transactions.push(transaction)
-    return this.transactions
   }
 
   /**
@@ -164,20 +170,20 @@ class Send extends Request {
    */
   toJSON (pretty = false) {
     const obj = {}
-    obj.previous = this.previous
-    obj.sequence = this.sequence.toString()
-    obj.type = 'send'
+    obj.type = this.type
     obj.origin = this._origin
-    obj.fee = this.fee
-    obj.transactions = this.transactions
-    obj.number_transactions = this.transactions.length
-    obj.hash = this.hash
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.work = this.work
     obj.signature = this.signature
+    obj.previous = this.previous
+    obj.fee = this.fee
+    obj.hash = this.hash
+    obj.sequence = this.sequence.toString()
+    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
+    obj.token_id = this.tokenID
+    obj.transaction = this.transaction
+    obj.work = this.work
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }
 }
 
-module.exports = Send
+module.exports = Distribute

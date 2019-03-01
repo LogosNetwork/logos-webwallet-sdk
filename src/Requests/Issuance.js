@@ -8,7 +8,7 @@ const bigInt = require('big-integer')
 /**
  * The Token Issuance class for Token Issuance Requests.
  */
-class IssueToken extends Request {
+class Issuance extends Request {
   constructor (options = {
     tokenID: null,
     symbol: null,
@@ -48,7 +48,7 @@ class IssueToken extends Request {
       update_issuer_info: false,
       update_controller: false,
       burn: false,
-      distribute: false,
+      distribute: true,
       withdraw_fee: false
     }],
     issuerInfo: ''
@@ -62,6 +62,8 @@ class IssueToken extends Request {
      */
     if (options.tokenID !== undefined) {
       this._tokenID = options.tokenID
+    } else if (options.token_id !== undefined) {
+      this._tokenID = options.token_id
     } else {
       this._tokenID = null
     }
@@ -95,6 +97,8 @@ class IssueToken extends Request {
      */
     if (options.totalSupply !== undefined) {
       this._totalSupply = options.totalSupply
+    } else if (options.total_supply !== undefined) {
+      this._totalSupply = options.total_supply
     } else {
       this._totalSupply = '340282366920938463463374607431768210000'
     }
@@ -106,6 +110,8 @@ class IssueToken extends Request {
      */
     if (options.feeType !== undefined) {
       this._feeType = options.feeType
+    } else if (options.fee_type !== undefined) {
+      this._feeType = options.fee_type
     } else {
       this._feeType = 'flat'
     }
@@ -117,6 +123,8 @@ class IssueToken extends Request {
      */
     if (options.feeRate !== undefined) {
       this._feeRate = options.feeRate
+    } else if (options.fee_rate !== undefined) {
+      this._feeRate = options.fee_rate
     } else {
       this._feeRate = '10000000000000000000000'
     }
@@ -127,7 +135,11 @@ class IssueToken extends Request {
      * @private
      */
     if (options.settings !== undefined) {
-      this._settings = options.settings
+      if (options.settings.hasOwnProperty('issuance')) {
+        this._settings = options.settings
+      } else {
+        this._settings = this.getSettingsFromJSON(options.settings)
+      }
     } else {
       this._settings = {
         issuance: false,
@@ -149,7 +161,11 @@ class IssueToken extends Request {
      * @private
      */
     if (options.controllers !== undefined) {
-      this._controllers = options.controllers
+      if (options.controllers.length > 0 && options.controllers[0].hasOwnProperty('privileges')) {
+        this._controllers = this.getControllerFromJSON(options.controllers)
+      } else {
+        this._controllers = options.controllers
+      }
     } else {
       this._controllers = [{
         account: Utils.accountFromHexKey(this.origin),
@@ -171,7 +187,7 @@ class IssueToken extends Request {
         update_issuer_info: false,
         update_controller: false,
         burn: false,
-        distribute: false,
+        distribute: true,
         withdraw_fee: false
       }]
     }
@@ -183,6 +199,8 @@ class IssueToken extends Request {
      */
     if (options.issuerInfo !== undefined) {
       this._issuerInfo = options.issuerInfo
+    } else if (options.issuer_info) {
+      this._issuerInfo = options.issuer_info
     } else {
       this._issuerInfo = ''
     }
@@ -411,6 +429,53 @@ class IssueToken extends Request {
     return controllers
   }
 
+  getControllerFromJSON (controllers) {
+    let newControllers = []
+    for (let controller of controllers) {
+      let newController = {}
+      newController.account = controller.account
+      if (controller.privileges && controller.privileges.length > 0) {
+        newController.change_issuance = controller.privileges.indexOf('change_issuance') > -1
+        newController.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
+        newController.change_revoke = controller.privileges.indexOf('change_revoke') > -1
+        newController.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
+        newController.change_freeze = controller.privileges.indexOf('change_freeze') > -1
+        newController.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
+        newController.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
+        newController.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
+        newController.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
+        newController.change_modify_whitelisting = controller.privileges.indexOf('change_modify_whitelisting') > -1
+        newController.issuance = controller.privileges.indexOf('issuance') > -1
+        newController.revoke = controller.privileges.indexOf('revoke') > -1
+        newController.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
+        newController.whitelist = controller.privileges.indexOf('whitelist') > -1
+        newController.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
+        newController.update_controller = controller.privileges.indexOf('update_controller')
+        newController.burn = controller.privileges.indexOf('burn') > -1
+        newController.distribute = controller.privileges.indexOf('distribute') > -1
+        newController.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
+      }
+      newControllers.push(newController)
+    }
+    return newControllers
+  }
+
+  getSettingsFromJSON (settings) {
+    let newSettings = {
+      issuance: settings.indexOf('issuance') > -1,
+      modify_issuance: settings.indexOf('modify_issuance') > -1,
+      revoke: settings.indexOf('revoke') > -1,
+      modify_revoke: settings.indexOf('modify_revoke') > -1,
+      freeze: settings.indexOf('freeze') > -1,
+      modify_freeze: settings.indexOf('modify_freeze') > -1,
+      adjust_fee: settings.indexOf('adjust_fee') > -1,
+      modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
+      whitelist: settings.indexOf('whitelist') > -1,
+      modify_whitelist: settings.indexOf('modify_whitelist') > -1
+    }
+    return newSettings
+  }
+
   getSettingsJSON () {
     let settings = []
     for (let key in this._settings) {
@@ -538,15 +603,15 @@ class IssueToken extends Request {
    */
   toJSON (pretty = false) {
     const obj = {}
+    obj.work = this.work
     obj.type = this.type
-    obj.previous = this.previous
     obj.origin = this._origin
+    obj.signature = this.signature
+    obj.previous = this.previous
+    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.fee = this.fee
     obj.sequence = this.sequence.toString()
     obj.hash = this.hash
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.work = this.work
-    obj.signature = this.signature
     obj.token_id = this.tokenID
     obj.symbol = this.symbol
     obj.name = this.name
@@ -561,4 +626,4 @@ class IssueToken extends Request {
   }
 }
 
-module.exports = IssueToken
+module.exports = Issuance

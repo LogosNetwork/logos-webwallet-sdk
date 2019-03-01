@@ -22,23 +22,26 @@
 // console.log(Utils.uint8ToHex(keys.secretKey))
 // console.log('------------------------------')
 
-// let create = async () => {
-//   const LogosWallet = require('../')
-//   const Wallet = LogosWallet.Wallet
-//   let wallet = new Wallet({
-//     password: 'password',
-//     fullSync: true
-//   })
-//   let account = await wallet.createAccount({
-//     privateKey: '09CB89F5DCEF8DC3DEC8A930A7F131F820F0BC3210B1CEC8DDC2754BFE9D3B40'
-//   })
-//   account.createTokenIssuance({
-//     name: 'TylerCoin',
-//     symbol: 'Winner',
-//     issuerInfo: 'Hello World'
-//   })
-// }
-// create()
+let create = async () => {
+  const LogosWallet = require('../')
+  const Wallet = LogosWallet.Wallet
+  let wallet = new Wallet({
+    password: 'password',
+    fullSync: true
+  })
+  let account = await wallet.createAccount({
+    privateKey: 'E023B05A01FA0CEFBED38C469A940847C321438D6729CDF06CA43A0E86BBB183'
+  })
+  console.log(account.balance)
+  account.createDistributeTokenRequest({
+    tokenID: 'B7438C6BB8145AC5ABE2852FEC0DC4772AAA1338F23DA8D7CE0D84DB5C09B8EC',
+    transaction: {
+      destination: 'lgs_134fyzk9kxp5tkm7pte7ttb3bhwedm8za4qqagyeu4r64jowybmuy8dkjk1u',
+      amount: '1000000000000000000000000000000'
+    }
+  })
+}
+create()
 
 // const Utils = require('../src/Utils')
 // const nacl = require('tweetnacl/nacl')
