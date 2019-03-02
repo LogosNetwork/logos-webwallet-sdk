@@ -1,31 +1,15 @@
 const Utils = require('../Utils')
-const Request = require('./Request')
+const TokenRequest = require('./TokenRequest')
 const blake = require('blakejs')
-const nacl = require('tweetnacl/nacl')
-const Logos = require('@logosnetwork/logos-rpc-client')
 
 /**
  * The Token Distribute class for Token Distribute Requests.
  */
-class Distribute extends Request {
+class Distribute extends TokenRequest {
   constructor (options = {
-    tokenID: null,
     transaction: null
   }) {
     super(options)
-
-    /**
-     * TokenID of the token
-     * @type {Hexadecimal64Length}
-     * @private
-     */
-    if (options.tokenID !== undefined) {
-      this._tokenID = options.tokenID
-    } else if (options.token_id !== undefined) {
-      this._tokenID = options.token_id
-    } else {
-      this._tokenID = null
-    }
 
     /**
      * Transaction to distribute the token
@@ -37,31 +21,11 @@ class Distribute extends Request {
     } else {
       this._transaction = null
     }
-
-    /**
-     * Request version of webwallet SDK
-     * @type {number}
-     * @private
-     */
-    this._version = 1
-  }
-
-  set tokenID (val) {
-    super.hash = null
-    this._tokenID = val
-  }
-
-  /**
-   * Return the token id
-   * @type {string}
-   */
-  get tokenID () {
-    return this._tokenID
   }
 
   set transaction (transaction) {
     if (typeof transaction.destination === 'undefined') throw new Error('destination should be passed in transaction object')
-    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your currency (e.g. satoshi)')
+    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your token (e.g. satoshi)')
     super.hash = null
     this._transaction = transaction
   }
@@ -123,47 +87,6 @@ class Distribute extends Request {
   }
 
   /**
-   * Creates a signature for the request
-   * @param {Hexadecimal64Length} privateKey - private key in hex
-   * @returns {boolean} if the signature is valid
-   */
-  sign (privateKey) {
-    privateKey = Utils.hexToUint8(privateKey)
-    if (privateKey.length !== 32) throw new Error('Invalid Private Key length. Should be 32 bytes.')
-    let hash = Utils.hexToUint8(this.hash)
-    this.signature = Utils.uint8ToHex(nacl.sign.detached(hash, privateKey))
-    return this.verify()
-  }
-
-  /**
-   * Verifies the request's integrity
-   * @returns {boolean}
-   */
-  verify () {
-    if (!this.hash) throw new Error('Hash is not set.')
-    if (!this.signature) throw new Error('Signature is not set.')
-    if (!this.origin) throw new Error('Origin account is not set.')
-    return nacl.sign.detached.verify(Utils.hexToUint8(this.hash), Utils.hexToUint8(this.signature), Utils.hexToUint8(this.origin))
-  }
-
-  /**
-   * Publishes the request
-   * @param {RPCOptions} options - rpc options
-   * @returns {Promise<Hexadecimal64Length>} hash of transcation
-   */
-  async publish (options) {
-    let delegateId = null
-    if (this.previous !== '0000000000000000000000000000000000000000000000000000000000000000') {
-      delegateId = parseInt(this.previous.slice(-2), 16) % 32
-    } else {
-      delegateId = parseInt(this.origin.slice(-2), 16) % 32
-    }
-    const RPC = new Logos({ url: `http://${options.delegates[delegateId]}:55000`, proxyURL: options.proxy })
-    let hash = await RPC.transactions.publish(this.toJSON())
-    return hash
-  }
-
-  /**
    * Returns the request JSON ready for broadcast to the Logos Network
    * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
    * @returns {RequestJSON} JSON request
@@ -179,6 +102,7 @@ class Distribute extends Request {
     obj.sequence = this.sequence.toString()
     obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.token_id = this.tokenID
+    obj.token_account = Utils.accountFromHexKey(this.tokenID)
     obj.transaction = this.transaction
     obj.work = this.work
     if (pretty) return JSON.stringify(obj, null, 2)

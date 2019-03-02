@@ -1,5 +1,6 @@
 const Utils = require('../Utils')
-
+const nacl = require('tweetnacl/nacl')
+const Logos = require('@logosnetwork/logos-rpc-client')
 /**
  * The base class for all Requests.
  */
@@ -186,7 +187,8 @@ class Request {
    * @param {LogosAddress} origin - The Logos account that created the request
    * @returns {void}
    */
-  setOrigin (origin) {
+  set origin (origin) {
+    this._hash = null
     this._origin = origin
   }
 
@@ -209,6 +211,47 @@ class Request {
     let work = await Utils.generateWork(this._previous, testNet)
     this._work = work
     return work
+  }
+
+  /**
+   * Creates a signature for the request
+   * @param {Hexadecimal64Length} privateKey - private key in hex
+   * @returns {boolean} if the signature is valid
+   */
+  sign (privateKey) {
+    privateKey = Utils.hexToUint8(privateKey)
+    if (privateKey.length !== 32) throw new Error('Invalid Private Key length. Should be 32 bytes.')
+    let hash = Utils.hexToUint8(this.hash)
+    this.signature = Utils.uint8ToHex(nacl.sign.detached(hash, privateKey))
+    return this.verify()
+  }
+
+  /**
+   * Verifies the request's integrity
+   * @returns {boolean}
+   */
+  verify () {
+    if (!this.hash) throw new Error('Hash is not set.')
+    if (!this.signature) throw new Error('Signature is not set.')
+    if (!this.origin) throw new Error('Origin account is not set.')
+    return nacl.sign.detached.verify(Utils.hexToUint8(this.hash), Utils.hexToUint8(this.signature), Utils.hexToUint8(this.origin))
+  }
+
+  /**
+   * Publishes the request
+   * @param {RPCOptions} options - rpc options
+   * @returns {Promise<Hexadecimal64Length>} hash of transcation
+   */
+  async publish (options) {
+    let delegateId = null
+    if (this.previous !== '0000000000000000000000000000000000000000000000000000000000000000') {
+      delegateId = parseInt(this.previous.slice(-2), 16) % 32
+    } else {
+      delegateId = parseInt(this.origin.slice(-2), 16) % 32
+    }
+    const RPC = new Logos({ url: `http://${options.delegates[delegateId]}:55000`, proxyURL: options.proxy })
+    let hash = await RPC.transactions.publish(this.toJSON())
+    return hash
   }
 }
 

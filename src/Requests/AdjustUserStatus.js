@@ -1,42 +1,70 @@
 const Utils = require('../Utils')
 const TokenRequest = require('./TokenRequest')
 const blake = require('blakejs')
-
+const Statuses = {
+  'frozen': 0,
+  'unfrozen': 1,
+  'whitelist': 2,
+  'not_whitelisted': 3
+}
 /**
- * The Token UpdateIssuerInfo class.
+ * The Token AdjustUserStatus class
  */
-class UpdateIssuerInfo extends TokenRequest {
+class AdjustUserStatus extends TokenRequest {
   constructor (options = {
-    issuerInfo: ''
+    account: null,
+    status: null
   }) {
     super(options)
 
     /**
-     * Issuer Info of the token
-     * @type {TokenSettings}
+     * Account to change the status of
+     * @type {LogosAddress}
      * @private
      */
-    if (options.issuerInfo !== undefined) {
-      this._issuerInfo = options.issuerInfo
-    } else if (options.issuer_info) {
-      this._issuerInfo = options.issuer_info
+    if (options.account !== undefined) {
+      this._account = options.account
     } else {
-      this._issuerInfo = ''
+      this._account = null
+    }
+
+    /**
+     * Status that we are applying to the user
+     * @type {string}
+     * @private
+     */
+    if (options.status !== undefined) {
+      this._status = options.status
+    } else {
+      this._status = null
     }
   }
 
-  /**
-   * The issuer info of the token
-   * @type {string}
-   */
-  get issuerInfo () {
-    return this._issuerInfo
+  set status (val) {
+    if (typeof Statuses[val] !== 'number') throw new Error('Invalid status option valid options are frozen, unfrozen, whitelisted, not_whitelisted')
+    super.hash = null
+    this._status = val
   }
 
-  set issuerInfo (val) {
-    if (Utils.byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
+  /**
+   * Returns the string of the status
+   * @type {string}
+   */
+  get status () {
+    return this._status
+  }
+
+  set account (account) {
     super.hash = null
-    this._issuerInfo = val
+    this._account = account
+  }
+
+  /**
+   * Return the account which the status is being changed
+   * @type {LogosAddress}
+   */
+  get account () {
+    return this._account
   }
 
   /**
@@ -45,7 +73,7 @@ class UpdateIssuerInfo extends TokenRequest {
    * @readonly
    */
   get type () {
-    return 'update_issuer_info'
+    return 'adjust_user_status'
   }
 
   /**
@@ -64,9 +92,10 @@ class UpdateIssuerInfo extends TokenRequest {
       if (this.fee === null) throw new Error('fee is not set.')
       if (this.sequence === null) throw new Error('Sequence is not set.')
       if (!this.tokenID) throw new Error('TokenID is not set.')
-      if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
+      if (!this.account) throw new Error('Account is not set.')
+      if (!this.status) throw new Error('Status is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(10, 1)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(7, 1)))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
@@ -76,9 +105,11 @@ class UpdateIssuerInfo extends TokenRequest {
       let tokenID = Utils.hexToUint8(this.tokenID)
       blake.blake2bUpdate(context, tokenID)
 
-      // Issuer Info Properties
-      let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
-      blake.blake2bUpdate(context, issuerInfo)
+      // Token AdjustUserStatus Properties
+      let account = Utils.hexToUint8(Utils.keyFromAccount(this.account))
+      blake.blake2bUpdate(context, account)
+      let status = Utils.hexToUint8(Utils.decToHex(Statuses[this.status], 1))
+      blake.blake2bUpdate(context, status)
 
       super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
       return super.hash
@@ -102,10 +133,11 @@ class UpdateIssuerInfo extends TokenRequest {
     obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.token_id = this.tokenID
     obj.token_account = Utils.accountFromHexKey(this.tokenID)
-    obj.issuer_info = this.issuerInfo
+    obj.account = this.account
+    obj.status = this.status
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }
 }
 
-module.exports = UpdateIssuerInfo
+module.exports = AdjustUserStatus

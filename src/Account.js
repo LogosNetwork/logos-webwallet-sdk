@@ -2,7 +2,17 @@ const Utils = require('./Utils')
 const bigInt = require('big-integer')
 const Send = require('./Requests/Send.js')
 const Issuance = require('./Requests/Issuance.js')
+const IssueAdditional = require('./Requests/IssueAdditional.js')
+const ChangeSetting = require('./Requests/ChangeSetting.js')
+const ImmuteSetting = require('./Requests/ImmuteSetting.js')
+const Revoke = require('./Requests/Revoke.js')
+const AdjustUserStatus = require('./Requests/AdjustUserStatus.js')
+const AdjustFee = require('./Requests/AdjustFee.js')
+const UpdateIssuerInfo = require('./Requests/UpdateIssuerInfo.js')
+const UpdateController = require('./Requests/UpdateController.js')
+const Burn = require('./Requests/Burn.js')
 const Distribute = require('./Requests/Distribute.js')
+const WithdrawFee = require('./Requests/WithdrawFee.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 const minimumFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
@@ -625,10 +635,6 @@ class Account {
       let request = new Issuance(requestInfo)
       this._chain.push(request)
       return request
-    } else if (requestInfo.type === 'distribute') {
-      let request = new Distribute(requestInfo)
-      this._chain.push(request)
-      return request
     }
   }
 
@@ -935,66 +941,6 @@ class Account {
   /**
    * Creates a request from the specified information
    *
-   * @param {TokenDistributeOptions} options - The Token ID & transaction
-   * @throws An exception if the account has not been synced
-   * @throws An exception if the pending balance is less than the required amount to do a send
-   * @throws An exception if the request is rejected by the RPC
-   * @returns {Promise<Request>} the request object
-   */
-  async createDistributeTokenRequest (options) {
-    if (!options.tokenID) throw new Error('You must pass tokenID in options')
-    if (!options.transaction) throw new Error('You must pass transaction in options')
-    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
-    let request = new Distribute({
-      signature: null,
-      work: null,
-      previous: this.previous,
-      fee: minimumFee,
-      sequence: this.sequence + 1,
-      origin: this._address,
-      tokenID: options.tokenID,
-      transaction: options.transaction
-    })
-    if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Not Enough Logos to afford the fee to distribute tokens')
-    }
-    request.sign(this._privateKey)
-    this._previous = request.hash
-    this._sequence = request.sequence
-    this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
-    if (request.work === null) {
-      if (this._remoteWork) {
-        request.work = EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    this._pendingChain.push(request)
-    if (this._rpc) {
-      if (this._pendingChain.length === 1) {
-        try {
-          console.log(request.toJSON(true))
-          let response = await request.publish(this._rpc)
-          console.log(response)
-          if (response.hash) {
-            return request
-          } else {
-            throw new Error('Invalid Request: Rejected by Logos Node')
-          }
-        } catch (error) {
-          console.log(error)
-        }
-      } else {
-        return request
-      }
-    } else {
-      return request
-    }
-  }
-
-  /**
-   * Creates a request from the specified information
-   *
    * @param {Transaction[]} transactions - The account destinations and amounts you wish to send them
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
@@ -1030,6 +976,7 @@ class Account {
     if (this._rpc) {
       if (this._pendingChain.length === 1) {
         let response = await request.publish(this._rpc)
+        console.log(response)
         if (response.hash) {
           return request
         } else {
@@ -1043,6 +990,485 @@ class Account {
       return request
     }
   }
+
+  /**
+   * Gets tokenAccount info from the rpc
+   *
+   * @param {TokenRequest} options - Object contained the tokenID or tokenAccount
+   * @throws An exception if no RPC
+   * @throws An exception if no tokenID or tokenAccount
+   * @returns {TokenAccountInfo} the token account info object
+   */
+  async tokenAccountInfo (options) {
+    if (!this._rpc) throw new Error('You must have RPC enabled to perform token account requests')
+    if (!options.tokenID && !options.token_id && !options.token_account && !options.tokenAccount) throw new Error('You must pass tokenID, token_id, token_account, or tokenAccount in options')
+    let tokenAccount = null
+    if (options.token_account) tokenAccount = options.token_account
+    if (options.tokenAccount) tokenAccount = options.tokenAccount
+    if (options.token_id) tokenAccount = Utils.accountFromHexKey(options.token_id)
+    if (options.tokenID) tokenAccount = Utils.accountFromHexKey(options.tokenID)
+    const RPC = new Logos({ url: `http://${this._rpc.delegates[0]}:55000`, proxyURL: this._rpc.proxy })
+    let tokenAccountInfo = await RPC.accounts.info(tokenAccount)
+    return { info: tokenAccountInfo, publicKey: Utils.keyFromAccount(tokenAccount) }
+  }
+
+  /**
+   * Creates a IssueAdditional Token Request from the specified information
+   *
+   * @param {IssueAdditionalOptions} options - The Token ID & amount
+   * @throws An exception if the token account balance is less than the required amount to do a issue additional token request
+   * @returns {IssueAdditionalRequest} the request object
+   */
+  async createIssueAdditionalRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (options.amount === undefined) throw new Error('You must pass amount in options')
+    let request = new IssueAdditional({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      amount: options.amount
+    })
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to issue additional tokens')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a ChangeSetting Token Request from the specified information
+   *
+   * @param {ChangeSettingOptions} options - Token ID, setting, value
+   * @throws An exception if the token account balance is less than the required amount to do a change setting token request
+   * @returns {ChangeSettingRequest} the request object
+   */
+  async createChangeSettingRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    let request = new ChangeSetting({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey
+    })
+    request.setting = options.setting
+    request.value = options.value
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to change the token settings')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a ImmuteSetting Token Request from the specified information
+   *
+   * @param {ImmuteSettingOptions} options - Token ID, setting
+   * @throws An exception if the token account balance is less than the required amount to do a immute setting token request
+   * @returns {ImmuteSettingRequest} the request object
+   */
+  async createImmuteSettingRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    let request = new ImmuteSetting({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey
+    })
+    request.setting = options.setting
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to immute setting')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a Revoke Token Request from the specified information
+   *
+   * @param {RevokeOptions} options - Token ID, setting
+   * @throws An exception if the token account balance is less than the required amount to do a Revoke token request
+   * @returns {RevokeRequest} the request object
+   */
+  async createRevokeRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!options.transaction) throw new Error('You must pass transaction in the options')
+    if (!options.source) throw new Error('You must source in the options')
+    let request = new Revoke({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      source: options.source,
+      transaction: options.transaction
+    })
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to revoke tokens')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {AdjustUserStatusOptions} options - The Token ID, account, and status
+   * @throws An exception if the pending balance is less than the required amount to adjust a users status
+   * @returns {AdjustUserStatusRequest} the request object
+   */
+  async createAdjustUserStatusRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!options.account) throw new Error('You must pass account in options')
+    let request = new AdjustUserStatus({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      account: options.account
+    })
+    request.status = options.status
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to adjust that users status')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {AdjustFeeOptions} options - The Token ID, feeRate, and feeType
+   * @throws An exception if the pending balance is less than the required amount to do a token distibution
+   * @returns {AdjustFeeRequest} the request object
+   */
+  async createAdjustFeeRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!options.feeRate) throw new Error('You must pass feeRate in options')
+    if (!options.feeType) throw new Error('You must pass feeType in options')
+    let request = new AdjustFee({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      feeRate: options.feeRate,
+      feeType: options.feeType
+    })
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to distribute tokens')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {UpdateIssuerInfoOptions} options - The Token ID and issuerInfo
+   * @throws An exception if the pending balance is less than the required amount to Update Issuer Info
+   * @returns {UpdateIssuerInfoRequest} the request object
+   */
+  async createUpdateIssuerInfoRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!options.issuerInfo) throw new Error('You must pass issuerInfo in the options')
+    let request = new UpdateIssuerInfo({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey
+    })
+    request.issuerInfo = options.issuerInfo
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to update issuer info')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {UpdateControllerOptions} options - The Token ID, action ('add' or 'remove'), and controller
+   * @throws An exception if the pending balance is less than the required amount to Update Controller
+   * @returns {UpdateControllerRequest} the request object
+   */
+  async createUpdateControllerRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!options.controller) throw new Error('You must pass controller in the options')
+    if (!options.action) throw new Error('You must pass action in the options')
+    let request = new UpdateController({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      controller: options.controller
+    })
+    request.action = options.action
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to update controller')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a Burn Token Request from the specified information
+   *
+   * @param {BurnOptions} options - The Token ID & amount
+   * @throws An exception if the token account balance is less than the required amount to do a burn token request
+   * @returns {BurnRequest} the request object
+   */
+  async createBurnRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (options.amount === undefined) throw new Error('You must pass amount in options')
+    let request = new Burn({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      amount: options.amount
+    })
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to burn tokens')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {TokenDistributeOptions} options - The Token ID & transaction
+   * @throws An exception if the pending balance is less than the required amount to do a token distibution
+   * @returns {DistributeRequest} the request object
+   */
+  async createDistributeRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!options.transaction) throw new Error('You must pass transaction in options')
+    let request = new Distribute({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      transaction: options.transaction
+    })
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to distribute tokens')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {WithdrawFeeOptions} options - The Token ID & transaction
+   * @throws An exception if the pending balance is less than the required amount to do a withdraw fee request
+   * @returns {WithdrawFeeRequest} the request object
+   */
+  async createWithdrawFeeRequest (options) {
+    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!options.transaction) throw new Error('You must pass transaction in options')
+    let request = new WithdrawFee({
+      signature: null,
+      work: null,
+      previous: tokenAccount.info.frontier,
+      fee: minimumFee,
+      sequence: tokenAccount.info.sequence,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      transaction: options.transaction
+    })
+    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to withdraw the token fees')
+    }
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(request.toJSON(true))
+    let response = await request.publish(this._rpc)
+    console.log(response)
+    if (response.hash) {
+      return request
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+    }
+  }
+
   /**
    * Confirms the request in the local chain
    *

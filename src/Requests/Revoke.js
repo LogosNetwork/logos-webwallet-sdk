@@ -3,40 +3,64 @@ const TokenRequest = require('./TokenRequest')
 const blake = require('blakejs')
 
 /**
- * The Token UpdateIssuerInfo class.
+ * The Token Revoke class for Token Revoke Requests.
  */
-class UpdateIssuerInfo extends TokenRequest {
+class Revoke extends TokenRequest {
   constructor (options = {
-    issuerInfo: ''
+    source: null,
+    transaction: null
   }) {
     super(options)
 
     /**
-     * Issuer Info of the token
-     * @type {TokenSettings}
+     * Transaction to distribute the token
+     * @type {string}
      * @private
      */
-    if (options.issuerInfo !== undefined) {
-      this._issuerInfo = options.issuerInfo
-    } else if (options.issuer_info) {
-      this._issuerInfo = options.issuer_info
+    if (options.transaction !== undefined) {
+      this._transaction = options.transaction
     } else {
-      this._issuerInfo = ''
+      this._transaction = null
+    }
+
+    /**
+     * Amount to add to the token
+     * @type {string}
+     * @private
+     */
+    if (options.amount !== undefined) {
+      this._amount = options.amount
+    } else {
+      this._amount = '0'
     }
   }
 
-  /**
-   * The issuer info of the token
-   * @type {string}
-   */
-  get issuerInfo () {
-    return this._issuerInfo
+  set transaction (transaction) {
+    if (typeof transaction.destination === 'undefined') throw new Error('destination should be passed in transaction object')
+    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your token (e.g. satoshi)')
+    super.hash = null
+    this._transaction = transaction
   }
 
-  set issuerInfo (val) {
-    if (Utils.byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
+  /**
+   * Return the previous request as hash
+   * @type {Transaction}
+   */
+  get transaction () {
+    return this._transaction
+  }
+
+  set source (revokee) {
     super.hash = null
-    this._issuerInfo = val
+    this._source = revokee
+  }
+
+  /**
+   * Return where the token is being revoked from
+   * @type {LogosAddress}
+   */
+  get source () {
+    return this._source
   }
 
   /**
@@ -45,7 +69,7 @@ class UpdateIssuerInfo extends TokenRequest {
    * @readonly
    */
   get type () {
-    return 'update_issuer_info'
+    return 'revoke'
   }
 
   /**
@@ -63,10 +87,11 @@ class UpdateIssuerInfo extends TokenRequest {
       if (!this.origin) throw new Error('Origin account is not set.')
       if (this.fee === null) throw new Error('fee is not set.')
       if (this.sequence === null) throw new Error('Sequence is not set.')
+      if (this.transaction === null) throw new Error('transaction is not set.')
       if (!this.tokenID) throw new Error('TokenID is not set.')
-      if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
+      if (!this.source) throw new Error('Source account is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(10, 1)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(6, 1)))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
@@ -76,9 +101,13 @@ class UpdateIssuerInfo extends TokenRequest {
       let tokenID = Utils.hexToUint8(this.tokenID)
       blake.blake2bUpdate(context, tokenID)
 
-      // Issuer Info Properties
-      let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
-      blake.blake2bUpdate(context, issuerInfo)
+      // Token Revoke Properties
+      let source = Utils.hexToUint8(Utils.keyFromAccount(this.source))
+      blake.blake2bUpdate(context, source)
+      let account = Utils.hexToUint8(Utils.keyFromAccount(this.transaction.destination))
+      blake.blake2bUpdate(context, account)
+      let amount = Utils.hexToUint8(Utils.decToHex(this.transaction.amount, 16))
+      blake.blake2bUpdate(context, amount)
 
       super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
       return super.hash
@@ -102,10 +131,11 @@ class UpdateIssuerInfo extends TokenRequest {
     obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.token_id = this.tokenID
     obj.token_account = Utils.accountFromHexKey(this.tokenID)
-    obj.issuer_info = this.issuerInfo
+    obj.source = this.source
+    obj.transaction = this.transaction
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }
 }
 
-module.exports = UpdateIssuerInfo
+module.exports = Revoke
