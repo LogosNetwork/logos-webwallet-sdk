@@ -33,6 +33,7 @@ class Account {
     sequence: null,
     balance: '0',
     pendingBalance: '0',
+    tokenBalances: {},
     pendingTokenBalances: {},
     representative: null,
     chain: [],
@@ -131,10 +132,21 @@ class Account {
     }
 
     /**
+     * Token Balance of the token account in base unit of tokens
+     * @type {TokenBalances}
+     * @private
+     */
+    if (options.tokenBalances !== undefined) {
+      this._tokenBalances = options.tokenBalances
+    } else {
+      this._tokenBalances = {}
+    }
+
+    /**
      * Pending Token Balance of the token account in base unit of tokens
      *
      * pending token balance is the token balance minus the token sends that are pending
-     * @type {string}
+     * @type {TokenBalances}
      * @private
      */
     if (options.pendingTokenBalances !== undefined) {
@@ -344,11 +356,20 @@ class Account {
   }
 
   /**
+   * The balance of the tokens in base token unit
+   * @type {TokenBalances}
+   * @readonly
+   */
+  get tokenBalances () {
+    return this._tokenBalances
+  }
+
+  /**
    * The pending token balance of the account in base token
    *
    * pending token balance is balance minus the token sends that are pending
    *
-   * @type {string}
+   * @type {TokenBalances}
    * @readonly
    */
   get pendingTokenBalances () {
@@ -941,6 +962,57 @@ class Account {
   /**
    * Creates a request from the specified information
    *
+   * @param {Transaction[]} transactions - The account destinations and amounts you wish to send them
+   * @throws An exception if the account has not been synced
+   * @throws An exception if the pending balance is less than the required amount to do a send
+   * @throws An exception if the request is rejected by the RPC
+   * @returns {Promise<Request>} the request object
+   */
+  async createSendRequest (transactions) {
+    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    let request = new Send({
+      signature: null,
+      work: null,
+      previous: this.previous,
+      fee: minimumFee,
+      transactions: transactions,
+      sequence: this.sequence + 1,
+      origin: this._address
+    })
+    if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
+    }
+    request.sign(this._privateKey)
+    this._previous = request.hash
+    this._sequence = request.sequence
+    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    this._pendingChain.push(request)
+    if (this._rpc) {
+      if (this._pendingChain.length === 1) {
+        let response = await request.publish(this._rpc)
+        if (response.hash) {
+          return request
+        } else {
+          throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+        }
+      } else {
+        return request
+      }
+    } else {
+      return request
+    }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
    * @param {TokenIssuanceOptions} options - The options for the token creation
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a token issuance
@@ -1015,63 +1087,12 @@ class Account {
   }
 
   /**
-   * Creates a request from the specified information
-   *
-   * @param {Transaction[]} transactions - The account destinations and amounts you wish to send them
-   * @throws An exception if the account has not been synced
-   * @throws An exception if the pending balance is less than the required amount to do a send
-   * @throws An exception if the request is rejected by the RPC
-   * @returns {Promise<Request>} the request object
-   */
-  async createSendRequest (transactions) {
-    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
-    let request = new Send({
-      signature: null,
-      work: null,
-      previous: this.previous,
-      fee: minimumFee,
-      transactions: transactions,
-      sequence: this.sequence + 1,
-      origin: this._address
-    })
-    if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
-    }
-    request.sign(this._privateKey)
-    this._previous = request.hash
-    this._sequence = request.sequence
-    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
-    if (request.work === null) {
-      if (this._remoteWork) {
-        request.work = EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    this._pendingChain.push(request)
-    if (this._rpc) {
-      if (this._pendingChain.length === 1) {
-        let response = await request.publish(this._rpc)
-        if (response.hash) {
-          return request
-        } else {
-          throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
-        }
-      } else {
-        return request
-      }
-    } else {
-      return request
-    }
-  }
-
-  /**
    * Gets tokenAccount info from the rpc
    *
    * @param {TokenRequest} options - Object contained the tokenID or tokenAccount
    * @throws An exception if no RPC
    * @throws An exception if no tokenID or tokenAccount
-   * @returns {TokenAccountInfo} the token account info object
+   * @returns {Promise<TokenAccountInfo>} the token account info object
    */
   async tokenAccountInfo (options) {
     if (!this._rpc) throw new Error('You must have RPC enabled to perform token account requests')
@@ -1093,7 +1114,7 @@ class Account {
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
    * @throws An exception if the request is rejected by the RPC
-   * @returns {TokenSendRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createTokenSendRequest (options) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
@@ -1153,7 +1174,7 @@ class Account {
    *
    * @param {IssueAdditionalOptions} options - The Token ID & amount
    * @throws An exception if the token account balance is less than the required amount to do a issue additional token request
-   * @returns {IssueAdditionalRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createIssueAdditionalRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1194,7 +1215,7 @@ class Account {
    *
    * @param {ChangeSettingOptions} options - Token ID, setting, value
    * @throws An exception if the token account balance is less than the required amount to do a change setting token request
-   * @returns {ChangeSettingRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createChangeSettingRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1235,7 +1256,7 @@ class Account {
    *
    * @param {ImmuteSettingOptions} options - Token ID, setting
    * @throws An exception if the token account balance is less than the required amount to do a immute setting token request
-   * @returns {ImmuteSettingRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createImmuteSettingRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1275,7 +1296,7 @@ class Account {
    *
    * @param {RevokeOptions} options - Token ID, setting
    * @throws An exception if the token account balance is less than the required amount to do a Revoke token request
-   * @returns {RevokeRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createRevokeRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1318,7 +1339,7 @@ class Account {
    *
    * @param {AdjustUserStatusOptions} options - The Token ID, account, and status
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
-   * @returns {AdjustUserStatusRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createAdjustUserStatusRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1360,7 +1381,7 @@ class Account {
    *
    * @param {AdjustFeeOptions} options - The Token ID, feeRate, and feeType
    * @throws An exception if the pending balance is less than the required amount to do a token distibution
-   * @returns {AdjustFeeRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createAdjustFeeRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1403,7 +1424,7 @@ class Account {
    *
    * @param {UpdateIssuerInfoOptions} options - The Token ID and issuerInfo
    * @throws An exception if the pending balance is less than the required amount to Update Issuer Info
-   * @returns {UpdateIssuerInfoRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createUpdateIssuerInfoRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1444,7 +1465,7 @@ class Account {
    *
    * @param {UpdateControllerOptions} options - The Token ID, action ('add' or 'remove'), and controller
    * @throws An exception if the pending balance is less than the required amount to Update Controller
-   * @returns {UpdateControllerRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createUpdateControllerRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1487,7 +1508,7 @@ class Account {
    *
    * @param {BurnOptions} options - The Token ID & amount
    * @throws An exception if the token account balance is less than the required amount to do a burn token request
-   * @returns {BurnRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createBurnRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1528,7 +1549,7 @@ class Account {
    *
    * @param {TokenDistributeOptions} options - The Token ID & transaction
    * @throws An exception if the pending balance is less than the required amount to do a token distibution
-   * @returns {DistributeRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createDistributeRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1569,7 +1590,7 @@ class Account {
    *
    * @param {WithdrawFeeOptions} options - The Token ID & transaction
    * @throws An exception if the pending balance is less than the required amount to do a withdraw fee request
-   * @returns {WithdrawFeeRequest} the request object
+   * @returns {Promise<Request>} the request object
    */
   async createWithdrawFeeRequest (options) {
     let tokenAccount = await this.tokenAccountInfo(options)
@@ -1612,7 +1633,7 @@ class Account {
    * @throws An exception if the request is not found in the pending requests array
    * @throws An exception if the previous request does not match the last chain request
    * @throws An exception if the request amount is greater than your balance minus the transaction fee
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async processRequest (requestInfo) {
     // Confirm the request add it to the confirmed chain and remove from pending.
@@ -1695,7 +1716,7 @@ class Account {
   /**
    * Batchs send requests
    *
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async combineRequests () {
     // TODO Token Send Support

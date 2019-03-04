@@ -10,6 +10,8 @@ declare module 'logos-webwallet-sdk' {
   export class Wallet {
     constructor(options?: WalletOptions)
     public walletID: string
+    public batchSends: boolean
+    public fullSync: boolean
     public currentAccountAddress: LogosAddress
     public seed: Hexadecimal64Length
     public rpc: RPCOptions
@@ -17,19 +19,23 @@ declare module 'logos-webwallet-sdk' {
 		public readonly accounts: Account[]
 		public readonly account: Account
 		public readonly balance: string
-    public readonly pendingBlocks: Block[]
+    public readonly pendingRequests: Request[]
     public setPassword(password: string): void
 		public createSeed(overwrite?: boolean): Hexadecimal64Length
 		public addAccount(account: Account): Account
 		public createAccount(options?: AccountOptions): Promise<Account>
 		public recalculateWalletBalancesFromChain(): void
-		public getBlock(hash: Hexadecimal64Length): Block | boolean
-		public confirmBlock(account: LogosAddress, hash: Hexadecimal64Length): void
+		public getRequest(hash: Hexadecimal64Length): Request | boolean
+		public confirmRequest(address: LogosAddress, hash: Hexadecimal64Length): void
 		public encrypt(): string
 		public load(encryptedWallet: string): Promise<WalletData>
 		private _decrypt(encryptedWallet: string): WalletData | boolean
 		private _generateAccountOptionsFromSeed(index: number): MinimialAccount
-		private _generateAccountOptionsFromPrivateKey(privateKey: Hexadecimal64Length): MinimialAccount
+    private _generateAccountOptionsFromPrivateKey(privateKey: Hexadecimal64Length): MinimialAccount
+    private _subscribe(topic: string): void
+		private _unsubscribe(topic: string): void
+		private _mqttDisconnect(): void
+		private _mqttConnect(): void
 	}
 
 	export class Account {
@@ -42,52 +48,55 @@ declare module 'logos-webwallet-sdk' {
     public readonly publicKey: Hexadecimal64Length
     public readonly privateKey: Hexadecimal64Length
     public readonly balance: string
+    public readonly tokenBalances: TokenBalances
     public readonly pendingBalance: string
+    public readonly pendingTokenBalances: TokenBalances
     public readonly representative: LogosAddress
-    public readonly chain: Block[]
-    public readonly recieveChain: Block[]
-    public readonly pendingChain: Block[]
-    public readonly blockCount: number
-    public readonly pendingBlockCount: number
+    public readonly chain: Request[]
+    public readonly recieveChain: Request[]
+    public readonly pendingChain: Request[]
+    public readonly requestCount: number
+    public readonly pendingRequestCount: number
     public readonly recieveCount: number
     public sync(options: RPCOptions): Promise<Account>
 		public updateBalancesFromChain(): void
+    public updateBalancesFromRequest(request: Request): void
+    public addRequest(requestInfo: RequestOptions): Request
 		public verifyChain(): boolean
 		public verifyRecieveChain(): boolean
-		public recentBlocks(count?: number, offset?: number): Block[]
-		public recentPendingBlocks(count?: number, offset?: number): Block[]
-		public recentReceiveBlocks(count?: number, offset?: number): Block[]
-		public getBlocksUpTo(hash: Hexadecimal64Length): Block[]
-		public getPendingBlocksUpTo(hash: Hexadecimal64Length): Block[]
-		public getReceiveBlocksUpTo(hash: Hexadecimal64Length): Block[]
-		public removePendingBlocks(): void
-		public removePendingBlock(hash: Hexadecimal64Length): boolean
-		public getBlock(hash: Hexadecimal64Length): Block
-		public createBlock(to: LogosAddress, amount?: string, remoteWork?: boolean, rpc?: RPCOptions): Promise<Block>
-		public getPendingBlock(hash: Hexadecimal64Length): boolean | Block
-    public confirmBlock(hash: Hexadecimal64Length, rpc: RPCOptions | boolean): void
-    public addReceiveBlock(block: MQTTBlockOptions): boolean | Block
+		public recentRequests(count?: number, offset?: number): Request[]
+		public recentPendingRequests(count?: number, offset?: number): Request[]
+		public recentReceiveRequests(count?: number, offset?: number): Request[]
+		public getRequestsUpTo(hash: Hexadecimal64Length): Request[]
+		public getPendingRequestsUpTo(hash: Hexadecimal64Length): Request[]
+		public getReceiveRequestsUpTo(hash: Hexadecimal64Length): Request[]
+		public removePendingRequests(): void
+		public removePendingRequest(hash: Hexadecimal64Length): boolean
+		public getRequest(hash: Hexadecimal64Length): Request
+		public getChainRequest(hash: Hexadecimal64Length): Request
+		public getPendingRequest(hash: Hexadecimal64Length): boolean | Request
+		public getRecieveRequest(hash: Hexadecimal64Length): boolean | Request
+    public confirmRequest(hash: Hexadecimal64Length, rpc: RPCOptions | boolean): void
+    public createSendRequest(transactions: Transaction[]): Promise<Request>
+    public processRequest(requestInfo: MQTTRequestOptions): Promise<void>
+    public combineRequests(): Promise<void>
+    public addReceiveRequest(request: MQTTRequestOptions): boolean | Request
 	}
 
-	export class Block {
-		constructor(options?: BlockOptions);
+	export class Request {
+		constructor(options?: RequestOptions);
     public signature: Hexadecimal64Length
-    public readonly hash: Hexadecimal64Length
     public work: Hexadecimal16Length
-    public amount: string
     public previous: Hexadecimal64Length
-    public transactionFee: string
-    public readonly representative: Hexadecimal64Length
-    public readonly destination: Hexadecimal64Length
-    public readonly account: Hexadecimal64Length
+    public fee: string
+    public sequence: number
+    public hash: Hexadecimal64Length
+    public readonly origin: Hexadecimal64Length
     public createWork(testNet?: boolean): Hexadecimal16Length
-    public setRepresentative(account: LogosAddress): void
-    public setDestination(account: LogosAddress): void
-    public setAccount(account: LogosAddress): void
+    public setOrigin(address: LogosAddress): void
 		public sign(privateKey: Hexadecimal64Length): boolean
     public verify(): boolean
     public publish(options: RPCOptions): Promise<Hexadecimal64Length>
-		public toJSON(pretty?: boolean): BlockJSON
 	}
 //#endregion
 
@@ -100,9 +109,12 @@ declare module 'logos-webwallet-sdk' {
     currentAccountAddress?: LogosAddress
     accounts?: Map<LogosAddress, Account>
     walletID?: string
-    version?: number
     remoteWork?: boolean
+    batchSends?: boolean
+    fullSync?: boolean
+    mqtt?: string
     rpc?: RPCOptions
+    version?: number
   };
 
   type AccountOptions = {
@@ -110,44 +122,58 @@ declare module 'logos-webwallet-sdk' {
     address?: LogosAddress
     publicKey?: Hexadecimal64Length
     privateKey?: Hexadecimal64Length
-    balance?: string | number
-    pendingBalance?: string | number
-    representative?: LogosAddress
-    chain?: Block[]
-    receiveChain?: Block[]
-    pendingChain?: Block[]
     previous?: Hexadecimal64Length
+    sequence?: number
+    balance?: string | number
+    tokenBalances?: TokenBalances
+    pendingBalance?: string | number
+    pendingTokenBalances?: TokenBalances
+    representative?: LogosAddress
+    chain?: Request[]
+    pendingChain?: Request[]
+    receiveChain?: Request[]
+    remoteWork?: boolean
+    batchSends?: boolean
+    fullSync?: boolean
+    rpc?: RPCOptions
     version?: number
     index?: number
   };
 
-  type BlockOptions = {
-    account?: LogosAddress
+  type TokenBalances = Map<Hexadecimal64Length, string | number>
+
+  type Transaction = {
+    destination: LogosAddress
+    amount: string
+  }
+
+  type RequestOptions = {
+    origin?: LogosAddress
     previous?: Hexadecimal64Length
     sequence?: string
-    transactionFee?: string
+    fee?: string
     signature?: Hexadecimal64Length
     work?: Hexadecimal16Length
   };
 
   type SendOptions = {
-    account?: LogosAddress
+    origin?: LogosAddress
     previous?: Hexadecimal64Length
     sequence?: string
-    transactionFee?: string
+    fee?: string
     signature?: Hexadecimal64Length
     work?: Hexadecimal16Length
-    transactions?: SendTransaction[]
+    transactions?: Transaction[]
   };
 
-  type BlockJSON = string
+  type RequestJSON = string
   // This object is the JSON string
   // {
   //   type: string
   //   previous: Hexadecimal64Length
   //   link: Hexadecimal64Length
   //   representative: Hexadecimal64Length
-  //   transaction_fee: string | number
+  //   fee: string | number
   //   signature: Hexadecimal64Length
   //   account: Hexadecimal64Length
   //   amount: string
@@ -162,11 +188,6 @@ declare module 'logos-webwallet-sdk' {
     accounts?: MinimialAccount[]
   }
 
-  type SendTransaction = {
-    target: LogosAddress
-    amount: string
-  }
-
   type MinimialAccount = {
     privateKey?: Hexadecimal64Length
     publicKey?: Hexadecimal64Length
@@ -175,26 +196,24 @@ declare module 'logos-webwallet-sdk' {
     label?: string
   }
 
-  type MQTTBlockOptions = {
+  type MQTTRequestOptions = {
     type: string
-    account: LogosAddress
+    origin: LogosAddress
     previous: Hexadecimal64Length
     representative: LogosAddress
     amount: string
-    transaction_fee: string
+    fee: string
     link: Hexadecimal64Length
     link_as_account: LogosAddress
     signature: string
     work: Hexadecimal16Length
     timestamp: string
     hash: Hexadecimal64Length
-    batchBlockHash: Hexadecimal64Length
   }
 
   type RPCOptions = {
-    host: string,
+    proxy?: string,
     delegates: string[],
-    proxy?: string
   }
 
 	type Hexadecimal64Length = string

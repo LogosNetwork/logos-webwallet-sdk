@@ -181,12 +181,6 @@ class Request {
     return this._hash
   }
 
-  /**
-   * Sets the origin account
-   *
-   * @param {LogosAddress} origin - The Logos account that created the request
-   * @returns {void}
-   */
   set origin (origin) {
     this._hash = null
     this._origin = origin

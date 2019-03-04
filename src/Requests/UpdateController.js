@@ -7,9 +7,9 @@ const Actions = {
 }
 
 /**
- * The Token UpdateIssuerInfo class.
+ * The Token UpdateController class.
  */
-class UpdateIssuerInfo extends TokenRequest {
+class UpdateController extends TokenRequest {
   constructor (options = {
     action: null,
     controller: null
@@ -156,4 +156,4 @@ class UpdateIssuerInfo extends TokenRequest {
   }
 }
 
-module.exports = UpdateIssuerInfo
+module.exports = UpdateController

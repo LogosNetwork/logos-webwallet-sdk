@@ -278,6 +278,7 @@ class Wallet {
    * Sets a new password
    *
    * @param {string} password - The password you want to use to encrypt the wallet
+   * @returns {void}
    */
   setPassword (password) {
     this._password = password
@@ -577,6 +578,13 @@ class Wallet {
     }
   }
 
+  /**
+   * Subscribe to the mqtt topic
+   *
+   * @param {string} topic - topic to subscribe to
+   * @returns {void}
+   * @private
+   */
   _subscribe (topic) {
     if (this._mqttConnected && this._mqttClient) {
       this._mqttClient.subscribe(topic, (err) => {
@@ -589,6 +597,13 @@ class Wallet {
     }
   }
 
+  /**
+   * Unsubscribe to the mqtt topic
+   *
+   * @param {string} topic - topic to unsubscribe to
+   * @returns {void}
+   * @private
+   */
   _unsubscribe (topic) {
     if (this._mqttConnected && this._mqttClient) {
       this._mqttClient.unsubscribe(topic, (err) => {
@@ -601,10 +616,22 @@ class Wallet {
     }
   }
 
+  /**
+   * Disconnect from the mqtt
+   *
+   * @returns {void}
+   * @private
+   */
   _mqttDisconnect () {
     this._mqttClient.end()
   }
 
+  /**
+   * Connect to the mqtt
+   *
+   * @returns {void}
+   * @private
+   */
   _mqttConnect () {
     if (this._mqtt) {
       this._mqttClient = mqtt.connect(this._mqtt)

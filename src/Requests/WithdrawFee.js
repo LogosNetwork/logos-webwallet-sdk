@@ -5,7 +5,7 @@ const blake = require('blakejs')
 /**
  * The Token Withdraw Fee class for Token Withdraw Fee Request.
  */
-class Distribute extends TokenRequest {
+class WithdrawFee extends TokenRequest {
   constructor (options = {
     transaction: null
   }) {
@@ -110,4 +110,4 @@ class Distribute extends TokenRequest {
   }
 }
 
-module.exports = Distribute
+module.exports = WithdrawFee
