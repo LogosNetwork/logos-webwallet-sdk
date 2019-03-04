@@ -13,6 +13,7 @@ const UpdateController = require('./Requests/UpdateController.js')
 const Burn = require('./Requests/Burn.js')
 const Distribute = require('./Requests/Distribute.js')
 const WithdrawFee = require('./Requests/WithdrawFee.js')
+const TokenSend = require('./Requests/TokenSend.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 const minimumFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
@@ -32,6 +33,7 @@ class Account {
     sequence: null,
     balance: '0',
     pendingBalance: '0',
+    pendingTokenBalances: {},
     representative: null,
     chain: [],
     receiveChain: [],
@@ -126,6 +128,19 @@ class Account {
       this._pendingBalance = options.pendingBalance
     } else {
       this._pendingBalance = '0'
+    }
+
+    /**
+     * Pending Token Balance of the token account in base unit of tokens
+     *
+     * pending token balance is the token balance minus the token sends that are pending
+     * @type {string}
+     * @private
+     */
+    if (options.pendingTokenBalances !== undefined) {
+      this._pendingTokenBalances = options.pendingTokenBalances
+    } else {
+      this._pendingTokenBalances = {}
     }
 
     /**
@@ -329,6 +344,18 @@ class Account {
   }
 
   /**
+   * The pending token balance of the account in base token
+   *
+   * pending token balance is balance minus the token sends that are pending
+   *
+   * @type {string}
+   * @readonly
+   */
+  get pendingTokenBalances () {
+    return this._pendingTokenBalances
+  }
+
+  /**
    * The representative of the account
    * @type {LogosAddress}
    * @readonly
@@ -504,6 +531,7 @@ class Account {
               this.addRequest(val)
               this._balance = info.balance
               this._pendingBalance = info.balance
+              // TODO TOKEN BALANCES
               this._sequence = null
               this._previous = null
               this._synced = true
@@ -513,6 +541,7 @@ class Account {
             if (info && info.balance) {
               this._balance = info.balance
               this._pendingBalance = info.balance
+              // TODO TOKEN BALANCES
             }
             this._sequence = null
             this._previous = null
@@ -530,9 +559,9 @@ class Account {
    * @returns {void}
    */
   updateBalancesFromChain () {
-    // TODO Token Sends / 'Receives'
     if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
+    let tokenSums = {}
     this._receiveChain.forEach(request => {
       if (request.type === 'send') {
         for (let transaction of request.transactions) {
@@ -540,16 +569,26 @@ class Account {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
+      } else if (request.type === 'token_send') {
+        for (let transaction of request.transactions) {
+          if (transaction.destination === this._address) {
+            tokenSums[request.tokenID] = tokenSums[request.tokenID].plus(bigInt(transaction.amount))
+          }
+        }
       }
     })
     this._chain.forEach(request => {
       if (request.type === 'send') {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
+      } else if (request.type === 'token_send') {
+        tokenSums[request.tokenID] = tokenSums[request.tokenID].minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+        sum = sum.minus(bigInt(request.fee))
       } else {
         sum = sum.minus(bigInt(request.fee))
       }
     })
     this._balance = sum.toString()
+    this._tokenBalances = tokenSums
     this._pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -558,11 +597,20 @@ class Account {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
+      } else if (pendingRequest.type === 'token_send') {
+        sum = sum.minus(bigInt(pendingRequest.fee))
+        tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee))
+        for (let transaction of pendingRequest.transactions) {
+          if (transaction.destination === this._address) {
+            tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].plus(bigInt(transaction.amount))
+          }
+        }
       } else {
         sum = sum.minus(bigInt(pendingRequest.fee))
       }
     })
     this._pendingBalance = sum.toString()
+    this._pendingTokenBalances = tokenSums
   }
 
   /**
@@ -572,8 +620,8 @@ class Account {
    * @returns {void}
    */
   updateBalancesFromRequest (request) {
-    // TODO Token Sends / 'Receives'
     let sum = bigInt(this._balance)
+    let tokenSums = {}
     if (request.type === 'send') {
       if (request.origin === this._address) {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
@@ -583,10 +631,21 @@ class Account {
           sum = sum.plus(bigInt(transaction.amount))
         }
       }
+    } else if (request.type === 'token_send') {
+      sum = sum.minus(bigInt(request.fee))
+      if (request.origin === this._address) {
+        tokenSums[request.tokenID] = tokenSums[request.tokenID].minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+      }
+      for (let transaction of request.transactions) {
+        if (transaction.destination === this._address) {
+          tokenSums[request.tokenID] = tokenSums[request.tokenID].plus(bigInt(transaction.amount))
+        }
+      }
     } else {
       sum = sum.minus(bigInt(request.fee))
     }
     this._balance = sum.toString()
+    this._tokenBalances = tokenSums
     this._pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -595,10 +654,21 @@ class Account {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
+      } else if (pendingRequest.type === 'token_send') {
+        sum = sum.minus(bigInt(pendingRequest.fee))
+        if (request.origin === this._address) {
+          tokenSums[request.tokenID] = tokenSums[request.tokenID].minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+        }
+        for (let transaction of request.transactions) {
+          if (transaction.destination === this._address) {
+            tokenSums[request.tokenID] = tokenSums[request.tokenID].plus(bigInt(transaction.amount))
+          }
+        }
       } else {
         sum = sum.minus(bigInt(pendingRequest.fee))
       }
     })
+    this._pendingTokenBalances = tokenSums
     this._pendingBalance = sum.toString()
   }
 
@@ -609,8 +679,13 @@ class Account {
    * @returns {Request}
    */
   addRequest (requestInfo) {
-    if (requestInfo.type === 'send') {
-      let request = new Send(requestInfo)
+    if (requestInfo.type === 'send' || requestInfo.type === 'token_send') {
+      let request = null
+      if (requestInfo.type === 'send') {
+        request = new Send(requestInfo)
+      } else {
+        request = new TokenSend(requestInfo)
+      }
       // If this request was created by us AND
       // we do not currently have that request THEN
       // add the request to confirmed chain
@@ -775,6 +850,7 @@ class Account {
   removePendingRequests () {
     this._pendingChain = []
     this._pendingBalance = this._balance
+    this._pendingTokenBalances = this._tokenBalances
   }
 
   /**
@@ -976,12 +1052,10 @@ class Account {
     if (this._rpc) {
       if (this._pendingChain.length === 1) {
         let response = await request.publish(this._rpc)
-        console.log(response)
         if (response.hash) {
           return request
         } else {
-          console.log(response)
-          throw new Error('Invalid Request: Rejected by Logos Node')
+          throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
         }
       } else {
         return request
@@ -1010,6 +1084,68 @@ class Account {
     const RPC = new Logos({ url: `http://${this._rpc.delegates[0]}:55000`, proxyURL: this._rpc.proxy })
     let tokenAccountInfo = await RPC.accounts.info(tokenAccount)
     return { info: tokenAccountInfo, publicKey: Utils.keyFromAccount(tokenAccount) }
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {TokenSendOptions} options - The account destinations and amounts you wish to send them
+   * @throws An exception if the account has not been synced
+   * @throws An exception if the pending balance is less than the required amount to do a send
+   * @throws An exception if the request is rejected by the RPC
+   * @returns {TokenSendRequest} the request object
+   */
+  async createTokenSendRequest (options) {
+    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    if (!options.transactions) throw new Error('You must pass transaction in the token send options')
+    if (!options.tokenFee) throw new Error('You must pass tokenFee in the token send options')
+    let tokenAccount = await this.tokenAccountInfo(options)
+    let request = new TokenSend({
+      signature: null,
+      work: null,
+      previous: this.previous,
+      fee: minimumFee,
+      sequence: this.sequence + 1,
+      origin: this._address,
+      tokenID: tokenAccount.publicKey,
+      transactions: options.transactions,
+      tokenFee: options.tokenFee
+    })
+    if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Not Enough Logos to pay the logos fee for token sends')
+    }
+    if (bigInt(this._pendingTokenBalances[tokenAccount.publicKey]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
+      throw new Error('Invalid Request: Not Enough Token to pay the Logos fee for token sends')
+    }
+    request.sign(this._privateKey)
+    this._previous = request.hash
+    this._sequence = request.sequence
+    this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
+    this._pendingTokenBalances[tokenAccount.publicKey] = bigInt(this._pendingTokenBalances[tokenAccount.publicKey]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
+    if (request.work === null) {
+      if (this._remoteWork) {
+        request.work = EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    this._pendingChain.push(request)
+    if (this._rpc) {
+      if (this._pendingChain.length === 1) {
+        console.log(request.toJSON(true))
+        let response = await request.publish(this._rpc)
+        console.log(response)
+        if (response.hash) {
+          return request
+        } else {
+          throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+        }
+      } else {
+        return request
+      }
+    } else {
+      return request
+    }
   }
 
   /**
