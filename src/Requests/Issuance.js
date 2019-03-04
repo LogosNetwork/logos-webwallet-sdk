@@ -37,7 +37,7 @@ class Issuance extends Request {
       change_adjust_fee: false,
       change_modify_adjust_fee: false,
       change_whitelist: false,
-      change_modify_whitelisting: false,
+      change_modify_whitelist: false,
       issuance: false,
       revoke: false,
       freeze: false,

@@ -22,31 +22,72 @@
 // console.log(Utils.uint8ToHex(keys.secretKey))
 // console.log('------------------------------')
 
-// let create = async () => {
-//   const LogosWallet = require('../')
-//   const Wallet = LogosWallet.Wallet
-//   let wallet = new Wallet({
-//     password: 'password',
-//     fullSync: true
-//   })
-//   let account = await wallet.createAccount({
-//     privateKey: 'E023B05A01FA0CEFBED38C469A940847C321438D6729CDF06CA43A0E86BBB183'
-//   })
-//   console.log(account.balance)
-//   account.createSendRequest([{
-//     destination: 'lgs_1z78k8wo6nthic4seqtxfx8j4m44apk4e3coccohyjmesmzaf1w3wwzm4x7k',
-//     amount: '1000000000000000000000000000000'
-//   }])
+let create = async () => {
+  const LogosWallet = require('../')
+  const Wallet = LogosWallet.Wallet
+  let wallet = new Wallet({
+    password: 'password',
+    fullSync: false
+  })
+  let account = await wallet.createAccount({
+    privateKey: '872C745C3401354C6BF4BFD869CCC2B8382736DA68BF6D7A23AF01AAFDD67700'
+  })
+  console.log(account.balance)
+  // account.createSendRequest([{
+  //   destination: 'lgs_1z78k8wo6nthic4seqtxfx8j4m44apk4e3coccohyjmesmzaf1w3wwzm4x7k',
+  //   amount: '1000000000000000000000000000000'
+  // }])
 
-//   account.createDistributeTokenRequest({
-//     tokenID: 'B7438C6BB8145AC5ABE2852FEC0DC4772AAA1338F23DA8D7CE0D84DB5C09B8EC',
-//     transaction: {
-//       destination: 'lgs_134fyzk9kxp5tkm7pte7ttb3bhwedm8za4qqagyeu4r64jowybmuy8dkjk1u',
-//       amount: '1000000000000000000000000000000'
-//     }
-//   })
-// }
-// create()
+  // account.createTokenIssuanceRequest({
+  //   name: 'FullPermissionCoin',
+  //   symbol: 'FP',
+  //   issuerInfo: 'I have full control of this coin',
+  //   settings: {
+  //     issuance: true,
+  //     modify_issuance: true,
+  //     revoke: true,
+  //     modify_revoke: true,
+  //     freeze: true,
+  //     modify_freeze: true,
+  //     adjust_fee: true,
+  //     modify_adjust_fee: true,
+  //     whitelist: true,
+  //     modify_whitelist: true
+  //   },
+  //   controllers: [{
+  //     account: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
+  //     change_issuance: true,
+  //     change_modify_issuance: true,
+  //     change_revoke: true,
+  //     change_modify_revoke: true,
+  //     change_freeze: true,
+  //     change_modify_freeze: true,
+  //     change_adjust_fee: true,
+  //     change_modify_adjust_fee: true,
+  //     change_whitelist: true,
+  //     change_modify_whitelist: true,
+  //     issuance: true,
+  //     revoke: true,
+  //     freeze: true,
+  //     adjust_fee: true,
+  //     whitelist: true,
+  //     update_issuer_info: true,
+  //     update_controller: true,
+  //     burn: true,
+  //     distribute: true,
+  //     withdraw_fee: true
+  //   }]
+  // })
+
+  // account.createDistributeTokenRequest({
+  //   tokenID: 'B7438C6BB8145AC5ABE2852FEC0DC4772AAA1338F23DA8D7CE0D84DB5C09B8EC',
+  //   transaction: {
+  //     destination: 'lgs_134fyzk9kxp5tkm7pte7ttb3bhwedm8za4qqagyeu4r64jowybmuy8dkjk1u',
+  //     amount: '1000000000000000000000000000000'
+  //   }
+  // })
+}
+create()
 
 // const Utils = require('../src/Utils')
 // const nacl = require('tweetnacl/nacl')

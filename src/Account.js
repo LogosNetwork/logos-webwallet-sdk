@@ -1000,7 +1000,7 @@ class Account {
         if (response.hash) {
           return request
         } else {
-          throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+          throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
         }
       } else {
         return request
@@ -1073,7 +1073,7 @@ class Account {
           if (response.hash) {
             return request
           } else {
-            throw new Error('Invalid Request: Rejected by Logos Node')
+            throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
           }
         } catch (error) {
           console.log(error)
@@ -1119,7 +1119,6 @@ class Account {
   async createTokenSendRequest (options) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     if (!options.transactions) throw new Error('You must pass transaction in the token send options')
-    if (!options.tokenFee) throw new Error('You must pass tokenFee in the token send options')
     let tokenAccount = await this.tokenAccountInfo(options)
     let request = new TokenSend({
       signature: null,
@@ -1129,9 +1128,17 @@ class Account {
       sequence: this.sequence + 1,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
-      transactions: options.transactions,
-      tokenFee: options.tokenFee
+      transactions: options.transactions
     })
+    if (options.tokenFee) {
+      request.tokenFee = options.tokenFee
+    } else {
+      if (tokenAccount.fee_type === 'Flat') {
+        request.tokenFee = tokenAccount.fee_rate
+      } else {
+        request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.fee_rate).divide(100))
+      }
+    }
     if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Logos to pay the logos fee for token sends')
     }
@@ -1159,7 +1166,7 @@ class Account {
         if (response.hash) {
           return request
         } else {
-          throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+          throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
         }
       } else {
         return request
@@ -1206,7 +1213,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1247,7 +1254,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1287,7 +1294,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1330,7 +1337,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1372,7 +1379,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1415,7 +1422,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1456,7 +1463,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1499,7 +1506,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1540,7 +1547,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1581,7 +1588,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
@@ -1622,7 +1629,7 @@ class Account {
     if (response.hash) {
       return request
     } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${response}`)
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
 
