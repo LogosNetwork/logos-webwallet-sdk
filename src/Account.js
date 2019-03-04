@@ -1627,19 +1627,16 @@ class Account {
           this.updateBalancesFromRequest(request)
         }
         // Publish the next request in the pending as the previous request has been confirmed
-        // TODO Token Send Support
         if (this._rpc && this._pendingChain.length > 0) {
           if (this._pendingChain.length > 1 &&
-            this._pendingChain[0].type === 'send' &&
+            (this._pendingChain[0].type === 'send' || this._pendingChain[0].type === 'token_send') &&
             this._pendingChain[0].transactions.length < 8) {
             // Combine if there are two of more pending transactions and the
             // Next transaction is a send with less than 8 transactions
             if (this._batchSends) {
               this.combineRequests(this._rpc)
             } else {
-              if (this._rpc && this._pendingChain.length > 0) {
-                this._pendingChain[0].publish(this._rpc)
-              }
+              this._pendingChain[0].publish(this._rpc)
             }
           } else {
             this._pendingChain[0].publish(this._rpc)
