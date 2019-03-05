@@ -110,6 +110,11 @@ class TokenSend extends TokenRequest {
       blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
+
+      // TokenID
+      let tokenID = Utils.hexToUint8(this.tokenID)
+      blake.blake2bUpdate(context, tokenID)
+
       for (let transaction of this.transactions) {
         blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
         blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
@@ -145,12 +150,14 @@ class TokenSend extends TokenRequest {
     obj.type = this.type
     obj.origin = this._origin
     obj.fee = this.fee
+    obj.token_id = this.tokenID
     obj.transactions = this.transactions
     obj.token_fee = this.tokenFee
     obj.hash = this.hash
     obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.work = this.work
     obj.signature = this.signature
+    obj.token_account = Utils.accountFromHexKey(this.tokenID)
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }

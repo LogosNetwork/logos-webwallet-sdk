@@ -4,7 +4,7 @@ const blake = require('blakejs')
 const Statuses = {
   'frozen': 0,
   'unfrozen': 1,
-  'whitelist': 2,
+  'whitelisted': 2,
   'not_whitelisted': 3
 }
 /**

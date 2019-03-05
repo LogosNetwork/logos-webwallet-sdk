@@ -31,10 +31,10 @@ class Burn extends TokenRequest {
 
   /**
    * Return the amount you are adding
-   * @type {Transaction}
+   * @type {string}
    */
   get amount () {
-    return this._transaction
+    return this._amount
   }
 
   /**

@@ -102,7 +102,7 @@ class UpdateIssuerInfo extends TokenRequest {
     obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.token_id = this.tokenID
     obj.token_account = Utils.accountFromHexKey(this.tokenID)
-    obj.issuer_info = this.issuerInfo
+    obj.new_info = this.issuerInfo
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }

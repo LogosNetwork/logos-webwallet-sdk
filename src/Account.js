@@ -550,19 +550,35 @@ class Account {
           if (info && info.frontier && info.frontier !== GENESIS_HASH) {
             RPC.transactions.info(info.frontier).then(val => {
               this.addRequest(val)
-              this._balance = info.balance
-              this._pendingBalance = info.balance
-              // TODO TOKEN BALANCES
+              if (info.balance) {
+                this._balance = info.balance
+                this._pendingBalance = info.balance
+              }
+              if (info.tokens) {
+                for (let pairs of Object.entries(info.tokens)) {
+                  info.tokens[pairs[0]] = pairs[1].balance
+                }
+                this._tokenBalances = info.tokens
+                this._pendingTokenBalances = info.tokens
+              }
               this._sequence = null
               this._previous = null
               this._synced = true
               resolve(this)
             })
           } else {
-            if (info && info.balance) {
-              this._balance = info.balance
-              this._pendingBalance = info.balance
-              // TODO TOKEN BALANCES
+            if (info) {
+              if (info.balance) {
+                this._balance = info.balance
+                this._pendingBalance = info.balance
+              }
+              if (info.tokens) {
+                for (let pairs of Object.entries(info.tokens)) {
+                  info.tokens[pairs[0]] = pairs[1].balance
+                }
+                this._tokenBalances = info.tokens
+                this._pendingTokenBalances = info.tokens
+              }
             }
             this._sequence = null
             this._previous = null
@@ -1069,7 +1085,9 @@ class Account {
     if (this._rpc) {
       if (this._pendingChain.length === 1) {
         try {
+          console.log(request.toJSON(true))
           let response = await request.publish(this._rpc)
+          console.log(response)
           if (response.hash) {
             return request
           } else {
@@ -1133,10 +1151,10 @@ class Account {
     if (options.tokenFee) {
       request.tokenFee = options.tokenFee
     } else {
-      if (tokenAccount.fee_type === 'Flat') {
-        request.tokenFee = tokenAccount.fee_rate
+      if (tokenAccount.info.fee_type === 'Flat') {
+        request.tokenFee = tokenAccount.info.fee_rate
       } else {
-        request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.fee_rate).divide(100))
+        request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.info.fee_rate).divide(100))
       }
     }
     if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
@@ -1301,7 +1319,7 @@ class Account {
   /**
    * Creates a Revoke Token Request from the specified information
    *
-   * @param {RevokeOptions} options - Token ID, setting
+   * @param {RevokeOptions} options - Token ID, transaction, source
    * @throws An exception if the token account balance is less than the required amount to do a Revoke token request
    * @returns {Promise<Request>} the request object
    */

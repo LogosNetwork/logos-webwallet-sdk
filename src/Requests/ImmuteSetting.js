@@ -70,7 +70,7 @@ class ImmuteSetting extends TokenRequest {
       if (!this.tokenID) throw new Error('TokenID is not set.')
       if (!this.setting) throw new Error('setting is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(4, 1)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(5, 1)))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))

@@ -24,14 +24,14 @@ class Revoke extends TokenRequest {
     }
 
     /**
-     * Amount to add to the token
-     * @type {string}
+     * Source to send to revoke the tokens from
+     * @type {LogosAddress}
      * @private
      */
-    if (options.amount !== undefined) {
-      this._amount = options.amount
+    if (options.source !== undefined) {
+      this._source = options.source
     } else {
-      this._amount = '0'
+      this._source = null
     }
   }
 
