@@ -3,7 +3,7 @@ let create = async () => {
   // const Wallet = LogosWallet.Wallet
   // let wallet = new Wallet({
   //   password: 'password',
-  //   fullSync: false
+  //   fullSync: true
   // })
   // let account = await wallet.createAccount({
   //   privateKey: '872C745C3401354C6BF4BFD869CCC2B8382736DA68BF6D7A23AF01AAFDD67700'
@@ -18,7 +18,7 @@ let create = async () => {
   //     modify_issuance: true,
   //     revoke: true,
   //     modify_revoke: true,
-  //     freeze: false,
+  //     freeze: true,
   //     modify_freeze: true,
   //     adjust_fee: true,
   //     modify_adjust_fee: true,
@@ -51,76 +51,97 @@ let create = async () => {
   // })
 
   // await account.createSendRequest([{
-  //   destination: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   destination: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
+  //   amount: '1000000000000000000000000000000'
+  // }])
+
+  // await account.createSendRequest([{
+  //   destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
   //   amount: '1000000000000000000000000000000'
   // }])
 
   // await account.createAdjustUserStatusRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   account: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
   //   status: 'whitelisted'
   // })
 
+  // await account.createAdjustUserStatusRequest({
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
+  //   account: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+  //   status: 'whitelisted'
+  // })
+
   // await account.createDistributeRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   transaction: {
   //     destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
   //     amount: '1000000000000000000000000000000'
   //   }
   // })
 
-  // TODO Broken
   // await account.createTokenSendRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   transactions: [
   //     {
   //       destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
-  //       amount: '1000000'
+  //       amount: '1000000000000000'
+  //     }
+  //   ]
+  // })
+
+  // Invalid to send to token account?
+  // await account.createTokenSendRequest({
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
+  //   transactions: [
+  //     {
+  //       destination: 'lgs_3zm5igpgy657hotwfxkfq9utjxb11j9k4y7iuqb91f6xxaf3kkgu3ugd59ab',
+  //       amount: '1000000000000000'
   //     }
   //   ]
   // })
 
   // await account.createChangeSettingRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   setting: 'whitelist',
   //   value: false
   // })
 
   // await account.createChangeSettingRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   setting: 'whitelist',
   //   value: true
   // })
 
-  // TODO Broken
+  // TODO Broken - Cannot changee that setting
   // await account.createImmuteSettingRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   setting: 'modify_issuance'
   // })
 
-  // TODO Broken
+  // TODO Broken - ???
   // await account.createRevokeRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
-  //   source: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
+  //   source: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
   //   transaction: {
-  //     destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
-  //     amount: '10000'
+  //     destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+  //     amount: '100000'
   //   }
   // })
 
   // await account.createAdjustFeeRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
-  //   feeRate: '10000',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
+  //   feeRate: '10000000',
   //   feeType: 'flat'
   // })
 
   // await account.createUpdateIssuerInfoRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   issuerInfo: 'Hello update the token info'
   // })
 
   // await account.createUpdateControllerRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   action: 'add',
   //   controller: {
   //     account: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
@@ -148,17 +169,17 @@ let create = async () => {
   // })
 
   // await account.createBurnRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   amount: '1000000000000000000000000000000'
   // })
 
   // await account.createIssueAdditionalRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   amount: '10000'
   // })
 
   // await account.createWithdrawFeeRequest({
-  //   tokenAccount: 'lgs_39tqbdtibuggsswhbsex1qw7jqpmpw5quyb9p5gjbwindix5snc6edtwbqmm',
+  //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   transaction: {
   //     destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
   //     amount: '10000'

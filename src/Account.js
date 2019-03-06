@@ -609,8 +609,12 @@ class Account {
       } else if (request.type === 'token_send') {
         for (let transaction of request.transactions) {
           if (transaction.destination === this._address) {
-            tokenSums[request.tokenID] = tokenSums[request.tokenID].plus(bigInt(transaction.amount))
+            tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
           }
+        }
+      } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
+        if (request.transaction.destination === this._address) {
+          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount))
         }
       }
     })
@@ -618,10 +622,12 @@ class Account {
       if (request.type === 'send') {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
       } else if (request.type === 'token_send') {
-        tokenSums[request.tokenID] = tokenSums[request.tokenID].minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
         sum = sum.minus(bigInt(request.fee))
-      } else {
+      } else if (request.type === 'issuance') {
         sum = sum.minus(bigInt(request.fee))
+      } else if (request.type === 'revoke') {
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount))
       }
     })
     this._balance = sum.toString()
@@ -671,11 +677,11 @@ class Account {
     } else if (request.type === 'token_send') {
       sum = sum.minus(bigInt(request.fee))
       if (request.origin === this._address) {
-        tokenSums[request.tokenID] = tokenSums[request.tokenID].minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
       }
       for (let transaction of request.transactions) {
         if (transaction.destination === this._address) {
-          tokenSums[request.tokenID] = tokenSums[request.tokenID].plus(bigInt(transaction.amount))
+          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
         }
       }
     } else {
@@ -694,11 +700,11 @@ class Account {
       } else if (pendingRequest.type === 'token_send') {
         sum = sum.minus(bigInt(pendingRequest.fee))
         if (request.origin === this._address) {
-          tokenSums[request.tokenID] = tokenSums[request.tokenID].minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
         }
         for (let transaction of request.transactions) {
           if (transaction.destination === this._address) {
-            tokenSums[request.tokenID] = tokenSums[request.tokenID].plus(bigInt(transaction.amount))
+            tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
           }
         }
       } else {
@@ -746,6 +752,23 @@ class Account {
     } else if (requestInfo.type === 'issuance') {
       let request = new Issuance(requestInfo)
       this._chain.push(request)
+      return request
+    } else if (requestInfo.type === 'distribute') {
+      let request = new Distribute(requestInfo)
+      this._receiveChain.push(request)
+      return request
+    } else if (requestInfo.type === 'withdraw_fee') {
+      let request = new WithdrawFee(requestInfo)
+      this._receiveChain.push(request)
+      return request
+    } else if (requestInfo.type === 'revoke') {
+      let request = new Distribute(requestInfo)
+      if (request.source === this._address) {
+        this._chain.push(request)
+      }
+      if (request.transaction.destination === this._address) {
+        this._receiveChain.push(request)
+      }
       return request
     }
   }
