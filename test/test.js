@@ -113,10 +113,9 @@ let create = async () => {
   //   value: true
   // })
 
-  // TODO Broken - Cannot changee that setting
   // await account.createImmuteSettingRequest({
   //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
-  //   setting: 'modify_issuance'
+  //   setting: 'issuance'
   // })
 
   // TODO Broken - ???
@@ -131,13 +130,13 @@ let create = async () => {
 
   // await account.createAdjustFeeRequest({
   //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
-  //   feeRate: '10000000',
+  //   feeRate: '1000000000',
   //   feeType: 'flat'
   // })
 
   // await account.createUpdateIssuerInfoRequest({
   //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
-  //   issuerInfo: 'Hello update the token info'
+  //   issuerInfo: '{"image":"https://www.logos.network/assets/images/custom/logo.png","decimals":"30","website":"https://www.logos.network/"}'
   // })
 
   // await account.createUpdateControllerRequest({
@@ -146,25 +145,25 @@ let create = async () => {
   //   controller: {
   //     account: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
   //     change_issuance: true,
-  //     change_modify_issuance: true,
-  //     change_revoke: true,
-  //     change_modify_revoke: true,
-  //     change_freeze: true,
-  //     change_modify_freeze: true,
-  //     change_adjust_fee: true,
-  //     change_modify_adjust_fee: true,
-  //     change_whitelist: true,
-  //     change_modify_whitelist: true,
-  //     issuance: true,
-  //     revoke: true,
-  //     freeze: true,
-  //     adjust_fee: true,
-  //     whitelist: true,
-  //     update_issuer_info: true,
-  //     update_controller: true,
-  //     burn: true,
-  //     distribute: true,
-  //     withdraw_fee: true
+  //     change_modify_issuance: false,
+  //     change_revoke: false,
+  //     change_modify_revoke: false,
+  //     change_freeze: false,
+  //     change_modify_freeze: false,
+  //     change_adjust_fee: false,
+  //     change_modify_adjust_fee: false,
+  //     change_whitelist: false,
+  //     change_modify_whitelist: false,
+  //     issuance: false,
+  //     revoke: false,
+  //     freeze: false,
+  //     adjust_fee: false,
+  //     whitelist: false,
+  //     update_issuer_info: false,
+  //     update_controller: false,
+  //     burn: false,
+  //     distribute: false,
+  //     withdraw_fee: false
   //   }
   // })
 

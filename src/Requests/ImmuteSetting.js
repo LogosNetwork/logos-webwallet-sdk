@@ -2,11 +2,11 @@ const Utils = require('../Utils')
 const TokenRequest = require('./TokenRequest')
 const blake = require('blakejs')
 const Settings = {
-  'modify_issuance': 1,
-  'modify_revoke': 3,
-  'modify_freeze': 5,
-  'modify_adjust_fee': 7,
-  'modify_whitelist': 9
+  'issuance': 0,
+  'revoke': 2,
+  'freeze': 4,
+  'adjust_fee': 6,
+  'whitelist': 8
 }
 /**
  * The Token ImmuteSetting class for Token ImmuteSetting Requests.

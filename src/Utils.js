@@ -180,6 +180,7 @@ const parseAccount = (str) => {
   let i = str.indexOf('lgs_')
   let acc = false
   if (i !== -1) acc = str.slice(i, i + 64)
+  if (i === -1) acc = accountFromHexKey(str)
   try {
     keyFromAccount(acc)
     return acc

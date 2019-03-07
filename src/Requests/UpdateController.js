@@ -71,7 +71,7 @@ class UpdateController extends TokenRequest {
   getObjectBits (obj) {
     let bits = ''
     for (let val of Object.values(obj)) {
-      if (typeof val === 'boolean') bits = bits + (+val)
+      if (typeof val === 'boolean') bits = (+val) + bits
     }
     return bits
   }
