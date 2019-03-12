@@ -65,9 +65,9 @@ class WithdrawFee extends TokenRequest {
       if (this.transaction === null) throw new Error('transaction is not set.')
       if (!this.tokenID) throw new Error('TokenID is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(14, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(13, 1)))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
 

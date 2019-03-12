@@ -126,9 +126,9 @@ describe('Wallet', () => {
     it('Creates Wallets | Sends Two Transactions', async function () {
       this.timeout(600000)
       await wallet.createAccount({
-        privateKey: 'CA1308CB1A458F2FC3BB41DD26639705945C87FB820B7B6AC5C3B5FD05FE9576'
+        privateKey: '34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4'
       })
-      expect(wallet.account.address).to.equal('lgs_3bfafmaagg87o4mgg14865ebxbkwbh9yog9dgg97zxh64dm3czcxryd35wqb')
+      expect(wallet.account.address).to.equal('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo')
       await wallet.account.createSendRequest([{
         destination: 'lgs_15iaeuk818zfgkbtou9fwu41mdrx81adygzaa9uhzc9pdjpqjaqdaz1my9mt',
         amount: '100000000000000000000000000000'

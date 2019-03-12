@@ -84,7 +84,7 @@ let create = async () => {
   //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
   //   transactions: [
   //     {
-  //       destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+  //       destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
   //       amount: '1000000000000000'
   //     }
   //   ]
@@ -136,7 +136,7 @@ let create = async () => {
 
   // await account.createUpdateIssuerInfoRequest({
   //   tokenAccount: 'lgs_3zeis94j83oaozmmxa3rse1skbyetu3sgzf47ts43eobatn9trznpn4kigzh',
-  //   issuerInfo: '{"image":"https://www.logos.network/assets/images/custom/logo.png","decimals":"30","website":"https://www.logos.network/"}'
+  //   issuerInfo: '{"image":"https://s2.coinmarketcap.com/static/img/coins/64x64/1.png","decimals":"30","website":"https://www.logos.network/"}'
   // })
 
   // await account.createUpdateControllerRequest({
