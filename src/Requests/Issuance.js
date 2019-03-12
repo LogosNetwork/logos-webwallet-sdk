@@ -441,7 +441,7 @@ class Issuance extends Request {
         newController.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
         newController.whitelist = controller.privileges.indexOf('whitelist') > -1
         newController.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
-        newController.update_controller = controller.privileges.indexOf('update_controller')
+        newController.update_controller = controller.privileges.indexOf('update_controller') > -1
         newController.burn = controller.privileges.indexOf('burn') > -1
         newController.distribute = controller.privileges.indexOf('distribute') > -1
         newController.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
