@@ -244,7 +244,7 @@ class Request {
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
     const RPC = new Logos({ url: `http://${options.delegates[delegateId]}:55000`, proxyURL: options.proxy })
-    let hash = await RPC.transactions.publish(this.toJSON())
+    let hash = await RPC.requests.publish(this.toJSON())
     return hash
   }
 }

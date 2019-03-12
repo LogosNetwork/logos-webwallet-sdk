@@ -548,7 +548,7 @@ class Account {
       } else {
         RPC.accounts.info(this._address).then(info => {
           if (info && info.frontier && info.frontier !== GENESIS_HASH) {
-            RPC.transactions.info(info.frontier).then(val => {
+            RPC.requests.info(info.frontier).then(val => {
               this.addRequest(val)
               if (info.balance) {
                 this._balance = info.balance
