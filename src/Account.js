@@ -39,13 +39,7 @@ class Account {
     chain: [],
     receiveChain: [],
     pendingChain: [],
-    remoteWork: true,
-    batchSends: true,
-    fullSync: true,
-    rpc: {
-      proxy: 'https://pla.bs',
-      delegates: ['172.1.1.100', '172.1.1.101', '172.1.1.102', '172.1.1.103', '172.1.1.104', '172.1.1.105', '172.1.1.106', '172.1.1.107', '172.1.1.108', '172.1.1.109', '172.1.1.110', '172.1.1.111', '172.1.1.112', '172.1.1.113', '172.1.1.114', '172.1.1.115', '172.1.1.116', '172.1.1.117', '172.1.1.118', '172.1.1.119', '172.1.1.120', '172.1.1.121', '172.1.1.122', '172.1.1.123', '172.1.1.124', '172.1.1.125', '172.1.1.126', '172.1.1.127', '172.1.1.128', '172.1.1.129', '172.1.1.130', '172.1.1.131']
-    },
+    wallet: null,
     version: 1,
     index: null
   }) {
@@ -233,50 +227,14 @@ class Account {
     }
 
     /**
-     * Remote work enabled
-     * @type {boolean}
+     * The Wallet this account belongs to
+     * @type {Wallet}
      * @private
      */
-    if (options.remoteWork !== undefined) {
-      this._remoteWork = options.remoteWork
+    if (options.wallet !== undefined) {
+      this._wallet = options.wallet
     } else {
-      this._remoteWork = true
-    }
-
-    /**
-     * Batch Sends - When lots of requests are pending auto batch them togeather for speed
-     * @type {boolean}
-     * @private
-     */
-    if (options.batchSends !== undefined) {
-      this._batchSends = options.batchSends
-    } else {
-      this._batchSends = true
-    }
-
-    /**
-     * Full Sync - Should we fully sync and validate the full request chain or just sync the request
-     * @type {boolean}
-     * @private
-     */
-    if (options.fullSync !== undefined) {
-      this._fullSync = options.fullSync
-    } else {
-      this._fullSync = true
-    }
-
-    /**
-     * RPC enabled
-     * @type {RPCOptions}
-     * @private
-     */
-    if (options.rpc !== undefined) {
-      this._rpc = options.rpc
-    } else {
-      this._rpc = {
-        proxy: 'https://pla.bs',
-        delegates: ['172.1.1.100', '172.1.1.101', '172.1.1.102', '172.1.1.103', '172.1.1.104', '172.1.1.105', '172.1.1.106', '172.1.1.107', '172.1.1.108', '172.1.1.109', '172.1.1.110', '172.1.1.111', '172.1.1.112', '172.1.1.113', '172.1.1.114', '172.1.1.115', '172.1.1.116', '172.1.1.117', '172.1.1.118', '172.1.1.119', '172.1.1.120', '172.1.1.121', '172.1.1.122', '172.1.1.123', '172.1.1.124', '172.1.1.125', '172.1.1.126', '172.1.1.127', '172.1.1.128', '172.1.1.129', '172.1.1.130', '172.1.1.131']
-      }
+      this._wallet = null
     }
 
     this._tokens = {}
@@ -289,6 +247,14 @@ class Account {
    */
   get synced () {
     return this._synced
+  }
+
+  /**
+   * The wallet this account belongs to
+   * @type {boolean}
+   */
+  get wallet () {
+    return this._wallet
   }
 
   /**
@@ -526,8 +492,8 @@ class Account {
       this._synced = false
       this._chain = []
       this._receiveChain = []
-      const RPC = new Logos({ url: `http://${this._rpc.delegates[0]}:55000`, proxyURL: this._rpc.proxy })
-      if (this._fullSync) {
+      const RPC = new Logos({ url: `http://${this.wallet.rpc.delegates[0]}:55000`, proxyURL: this.wallet.rpc.proxy })
+      if (this.wallet.fullSync) {
         RPC.accounts.history(this._address, -1, true).then((history) => {
           if (history) {
             for (const requestInfo of history) {
@@ -1027,17 +993,17 @@ class Account {
     this._sequence = request.sequence
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     this._pendingChain.push(request)
-    if (this._rpc) {
+    if (this.wallet.rpc) {
       console.log(request.toJSON(true))
       if (this._pendingChain.length === 1) {
-        let response = await request.publish(this._rpc)
+        let response = await request.publish(this.wallet.rpc)
         console.log(response)
         if (response.hash) {
           return request
@@ -1101,18 +1067,18 @@ class Account {
     this._sequence = request.sequence
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     this._pendingChain.push(request)
-    if (this._rpc) {
+    if (this.wallet.rpc) {
       if (this._pendingChain.length === 1) {
         try {
           console.log(request.toJSON(true))
-          let response = await request.publish(this._rpc)
+          let response = await request.publish(this.wallet.rpc)
           console.log(response)
           if (response.hash) {
             return request
@@ -1139,7 +1105,7 @@ class Account {
    * @returns {Promise<TokenAccountInfo>} the token account info object
    */
   async tokenAccountInfo (options) {
-    if (!this._rpc) throw new Error('You must have RPC enabled to perform token account requests')
+    if (!this.wallet.rpc) throw new Error('You must have RPC enabled to perform token account requests')
     if (!options.tokenID && !options.token_id && !options.token_account && !options.tokenAccount) throw new Error('You must pass tokenID, token_id, token_account, or tokenAccount in options')
     let tokenAccount = null
     if (options.token_account) tokenAccount = options.token_account
@@ -1149,7 +1115,7 @@ class Account {
     if (this._tokens && this._tokens[tokenAccount]) {
       return { info: this._tokens[tokenAccount], publicKey: Utils.keyFromAccount(tokenAccount) }
     } else {
-      const RPC = new Logos({ url: `http://${this._rpc.delegates[0]}:55000`, proxyURL: this._rpc.proxy })
+      const RPC = new Logos({ url: `http://${this.wallet.rpc.delegates[0]}:55000`, proxyURL: this.wallet.rpc.proxy })
       let tokenAccountInfo = await RPC.accounts.info(tokenAccount)
       this._tokens[tokenAccount] = tokenAccountInfo
       return { info: tokenAccountInfo, publicKey: Utils.keyFromAccount(tokenAccount) }
@@ -1200,17 +1166,17 @@ class Account {
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     this._pendingTokenBalances[tokenAccount.publicKey] = bigInt(this._pendingTokenBalances[tokenAccount.publicKey]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     this._pendingChain.push(request)
-    if (this._rpc) {
+    if (this.wallet.rpc) {
       if (this._pendingChain.length === 1) {
         console.log(request.toJSON(true))
-        let response = await request.publish(this._rpc)
+        let response = await request.publish(this.wallet.rpc)
         console.log(response)
         if (response.hash) {
           return request
@@ -1250,14 +1216,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1291,14 +1257,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1331,14 +1297,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1374,14 +1340,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1416,14 +1382,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1459,14 +1425,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1500,14 +1466,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1543,14 +1509,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1584,14 +1550,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1625,14 +1591,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1666,14 +1632,14 @@ class Account {
     }
     request.sign(this._privateKey)
     if (request.work === null) {
-      if (this._remoteWork) {
+      if (this.wallet.remoteWork) {
         request.work = EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     console.log(request.toJSON(true))
-    let response = await request.publish(this._rpc)
+    let response = await request.publish(this.wallet.rpc)
     console.log(response)
     if (response.hash) {
       return request
@@ -1698,28 +1664,28 @@ class Account {
       if (request) {
         this._chain.push(request)
         this.removePendingRequest(requestInfo.hash)
-        if (this._fullSync) {
+        if (this.wallet.fullSync) {
           this.updateBalancesFromChain()
         } else {
           this.updateBalancesFromRequest(request)
         }
         // Publish the next request in the pending as the previous request has been confirmed
-        if (this._rpc && this._pendingChain.length > 0) {
+        if (this.wallet.rpc && this._pendingChain.length > 0) {
           if (this._pendingChain.length > 1 &&
             (this._pendingChain[0].type === 'send' || this._pendingChain[0].type === 'token_send') &&
             this._pendingChain[0].transactions.length < 8) {
             // Combine if there are two of more pending transactions and the
             // Next transaction is a send with less than 8 transactions
-            if (this._batchSends) {
+            if (this.wallet.batchSends) {
               console.log('batching')
-              this.combineRequests(this._rpc)
+              this.combineRequests(this.wallet.rpc)
             } else {
               console.log('No batching just publishing')
-              let response = await this._pendingChain[0].publish(this._rpc)
+              let response = await this._pendingChain[0].publish(this.wallet.rpc)
               console.log(response)
             }
           } else {
-            this._pendingChain[0].publish(this._rpc)
+            this._pendingChain[0].publish(this.wallet.rpc)
           }
         }
       } else {
@@ -1734,7 +1700,7 @@ class Account {
           this.removePendingRequests()
 
           // Update balance for new block
-          if (this._fullSync) {
+          if (this.wallet.fullSync) {
             this.updateBalancesFromChain()
           } else {
             this.updateBalancesFromRequest(request)
@@ -1775,7 +1741,7 @@ class Account {
             })
             if (!request.verify()) throw new Error('Invalid Recieve Request!')
             this._receiveChain.push(request)
-            if (this._fullSync) {
+            if (this.wallet.fullSync) {
               this.updateBalancesFromChain()
             } else if (requestInfo.origin !== this._address) {
               // This block was already processed if we sent it.
@@ -1810,8 +1776,8 @@ class Account {
       } else {
         // This isn't all sends lets just abort and send normally
         // There is probably a better way to handle this edge case
-        if (this._rpc && this._pendingChain.length > 0) {
-          this._pendingChain[0].publish(this._rpc)
+        if (this.wallet.rpc && this._pendingChain.length > 0) {
+          this._pendingChain[0].publish(this.wallet.rpc)
         }
         return
       }
@@ -1821,8 +1787,8 @@ class Account {
     this._sequence = null
     const promises = transactionsToCombine.map(transactions => this.createSendRequest(transactions))
     await Promise.all(promises)
-    if (this._rpc && this._pendingChain.length > 0) {
-      this._pendingChain[0].publish(this._rpc)
+    if (this.wallet.rpc && this._pendingChain.length > 0) {
+      this._pendingChain[0].publish(this.wallet.rpc)
     }
   }
 
@@ -1844,7 +1810,7 @@ class Account {
     })
     if (receive.verify()) {
       this._receiveChain.push(receive)
-      if (this._fullSync) {
+      if (this.wallet.fullSync) {
         this.updateBalancesFromChain()
       } else {
         this.updateBalancesFromRequest(receive)

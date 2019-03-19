@@ -189,6 +189,20 @@ class Wallet {
   }
 
   /**
+   * Should the webwallet SDK get work from remote server
+   * True - Remote Work Server
+   * False - Locally create it (Need to have WASM)
+   * @type {boolean}
+   */
+  get remoteWork () {
+    return this._remoteWork
+  }
+
+  set remoteWork (val) {
+    this._remoteWork = val
+  }
+
+  /**
    * Full Sync the entire requestchain or prune version only
    * @type {boolean}
    */
@@ -361,13 +375,10 @@ class Wallet {
         this._deterministicKeyIndex++
       }
     }
-    accountOptions.fullSync = this._fullSync
-    accountOptions.rpc = this._rpc
-    accountOptions.batchSends = this._batchSends
-    accountOptions.remoteWork = this._remoteWork
+    accountOptions.wallet = this
     const account = new Account(accountOptions)
     if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
-    this._accounts[account.address] = account
+    this.addAccount(account)
     if (this._rpc) {
       await this._accounts[account.address].sync()
     } else {

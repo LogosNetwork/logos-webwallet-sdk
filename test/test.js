@@ -6,12 +6,11 @@ let create = async () => {
     password: 'password',
     fullSync: false,
     mqtt: 'ws:localhost:8883',
-    batchSends: false
+    batchSends: true
   })
   let account = await wallet.createAccount({
     privateKey: '872C745C3401354C6BF4BFD869CCC2B8382736DA68BF6D7A23AF01AAFDD67700'
   })
-
   // await account.createTokenIssuanceRequest({
   //   name: 'Railblocks',
   //   symbol: 'RAI',
