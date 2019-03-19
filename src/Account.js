@@ -279,6 +279,7 @@ class Account {
       }
     }
 
+    this._tokens = {}
     this._synced = false
   }
 
@@ -1034,8 +1035,10 @@ class Account {
     }
     this._pendingChain.push(request)
     if (this._rpc) {
+      console.log(request.toJSON(true))
       if (this._pendingChain.length === 1) {
         let response = await request.publish(this._rpc)
+        console.log(response)
         if (response.hash) {
           return request
         } else {
@@ -1143,9 +1146,14 @@ class Account {
     if (options.tokenAccount) tokenAccount = options.tokenAccount
     if (options.token_id) tokenAccount = Utils.accountFromHexKey(options.token_id)
     if (options.tokenID) tokenAccount = Utils.accountFromHexKey(options.tokenID)
-    const RPC = new Logos({ url: `http://${this._rpc.delegates[0]}:55000`, proxyURL: this._rpc.proxy })
-    let tokenAccountInfo = await RPC.accounts.info(tokenAccount)
-    return { info: tokenAccountInfo, publicKey: Utils.keyFromAccount(tokenAccount) }
+    if (this._tokens && this._tokens[tokenAccount]) {
+      return { info: this._tokens[tokenAccount], publicKey: Utils.keyFromAccount(tokenAccount) }
+    } else {
+      const RPC = new Logos({ url: `http://${this._rpc.delegates[0]}:55000`, proxyURL: this._rpc.proxy })
+      let tokenAccountInfo = await RPC.accounts.info(tokenAccount)
+      this._tokens[tokenAccount] = tokenAccountInfo
+      return { info: tokenAccountInfo, publicKey: Utils.keyFromAccount(tokenAccount) }
+    }
   }
 
   /**
@@ -1703,32 +1711,51 @@ class Account {
             // Combine if there are two of more pending transactions and the
             // Next transaction is a send with less than 8 transactions
             if (this._batchSends) {
+              console.log('batching')
               this.combineRequests(this._rpc)
             } else {
-              this._pendingChain[0].publish(this._rpc)
+              console.log('No batching just publishing')
+              let response = await this._pendingChain[0].publish(this._rpc)
+              console.log(response)
             }
           } else {
             this._pendingChain[0].publish(this._rpc)
           }
         }
       } else {
-        console.log('Someone is sending blocks from this account that is not us!!!')
-        // Add new request to chain
-        let request = this.addRequest(requestInfo)
+        if (requestInfo.type === 'send' ||
+          requestInfo.type === 'token_send' ||
+          requestInfo.type === 'issuance') {
+          console.log('Someone is sending blocks from this account that is not us!!!')
+          // Add new request to chain
+          let request = this.addRequest(requestInfo)
 
-        // Remove all pendings as they are now invalidated
-        this.removePendingRequests()
+          // Remove all pendings as they are now invalidated
+          this.removePendingRequests()
 
-        // Update balance for new block
-        if (this._fullSync) {
-          this.updateBalancesFromChain()
+          // Update balance for new block
+          if (this._fullSync) {
+            this.updateBalancesFromChain()
+          } else {
+            this.updateBalancesFromRequest(request)
+          }
+
+          // Clear sequence and previous
+          this._sequence = null
+          this._previous = null
         } else {
-          this.updateBalancesFromRequest(request)
+          // TODO Create Pending Token Stuff.
+          let tokenAccount = Utils.accountFromHexKey(requestInfo.token_id)
+          this._tokens[tokenAccount].sequence = parseInt(requestInfo.sequence) + 1
+          this._tokens[tokenAccount].balance = bigInt(this._tokens[tokenAccount].balance).minus(bigInt(requestInfo.fee))
+          this._tokens[tokenAccount].frontier = requestInfo.hash
+          if (requestInfo.fee_type) {
+            this._tokens[tokenAccount].fee_type = requestInfo.fee_type
+          }
+          if (requestInfo.fee_rate) {
+            this._tokens[tokenAccount].fee_rate = requestInfo.fee_rate
+          }
         }
-
-        // Clear sequence and previous
-        this._sequence = null
-        this._previous = null
       }
     }
 
@@ -1792,7 +1819,7 @@ class Account {
     this.removePendingRequests()
     this._previous = null
     this._sequence = null
-    const promises = transactionsToCombine.map(transactions => this.createSend(transactions, true, false))
+    const promises = transactionsToCombine.map(transactions => this.createSendRequest(transactions))
     await Promise.all(promises)
     if (this._rpc && this._pendingChain.length > 0) {
       this._pendingChain[0].publish(this._rpc)

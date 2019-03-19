@@ -116,7 +116,6 @@ class Send extends Request {
     obj.origin = this._origin
     obj.fee = this.fee
     obj.transactions = this.transactions
-    obj.number_transactions = this.transactions.length
     obj.hash = this.hash
     obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
     obj.work = this.work
