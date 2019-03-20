@@ -38,7 +38,6 @@ class Revoke extends TokenRequest {
   set transaction (transaction) {
     if (typeof transaction.destination === 'undefined') throw new Error('destination should be passed in transaction object')
     if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your token (e.g. satoshi)')
-    super.hash = null
     this._transaction = transaction
   }
 
@@ -51,7 +50,6 @@ class Revoke extends TokenRequest {
   }
 
   set source (revokee) {
-    super.hash = null
     this._source = revokee
   }
 
@@ -69,7 +67,10 @@ class Revoke extends TokenRequest {
    * @readonly
    */
   get type () {
-    return 'revoke'
+    return {
+      text: 'revoke',
+      value: 6
+    }
   }
 
   /**
@@ -80,38 +81,16 @@ class Revoke extends TokenRequest {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      if (this.fee === null) throw new Error('fee is not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (this.transaction === null) throw new Error('transaction is not set.')
-      if (!this.tokenID) throw new Error('TokenID is not set.')
-      if (!this.source) throw new Error('Source account is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(6, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
-
-      // TokenID
-      let tokenID = Utils.hexToUint8(this.tokenID)
-      blake.blake2bUpdate(context, tokenID)
-
-      // Token Revoke Properties
-      let source = Utils.hexToUint8(Utils.keyFromAccount(this.source))
-      blake.blake2bUpdate(context, source)
-      let account = Utils.hexToUint8(Utils.keyFromAccount(this.transaction.destination))
-      blake.blake2bUpdate(context, account)
-      let amount = Utils.hexToUint8(Utils.decToHex(this.transaction.amount, 16))
-      blake.blake2bUpdate(context, amount)
-
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
-    }
+    if (this.transaction === null) throw new Error('transaction is not set.')
+    if (!this.source) throw new Error('Source account is not set.')
+    const context = super.hash()
+    let source = Utils.hexToUint8(Utils.keyFromAccount(this.source))
+    blake.blake2bUpdate(context, source)
+    let account = Utils.hexToUint8(Utils.keyFromAccount(this.transaction.destination))
+    blake.blake2bUpdate(context, account)
+    let amount = Utils.hexToUint8(Utils.decToHex(this.transaction.amount, 16))
+    blake.blake2bUpdate(context, amount)
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -120,17 +99,7 @@ class Revoke extends TokenRequest {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.type = this.type
-    obj.origin = this._origin
-    obj.signature = this.signature
-    obj.previous = this.previous
-    obj.fee = this.fee
-    obj.hash = this.hash
-    obj.sequence = this.sequence.toString()
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.token_id = this.tokenID
-    obj.token_account = Utils.accountFromHexKey(this.tokenID)
+    const obj = JSON.parse(super.toJSON())
     obj.source = this.source
     obj.transaction = this.transaction
     if (pretty) return JSON.stringify(obj, null, 2)

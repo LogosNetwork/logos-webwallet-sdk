@@ -38,12 +38,14 @@ class UpdateController extends TokenRequest {
    * @readonly
    */
   get type () {
-    return 'update_controller'
+    return {
+      text: 'update_controller',
+      value: 10
+    }
   }
 
   set action (val) {
     if (typeof Actions[val] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
-    super.hash = null
     this._action = val
   }
 
@@ -64,7 +66,6 @@ class UpdateController extends TokenRequest {
   }
 
   set controller (val) {
-    super.hash = null
     this._controller = val
   }
 
@@ -97,38 +98,17 @@ class UpdateController extends TokenRequest {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      if (this.fee === null) throw new Error('fee is not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (!this.tokenID) throw new Error('TokenID is not set.')
-      if (!this.controller) throw new Error('Controller is not set.')
-      if (!this.action) throw new Error('action is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(10, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
+    if (!this.controller) throw new Error('Controller is not set.')
+    if (!this.action) throw new Error('action is not set.')
+    const context = super.hash()
+    let action = Utils.hexToUint8(Utils.decToHex(Actions[this.action], 1))
+    blake.blake2bUpdate(context, action)
+    let account = Utils.hexToUint8(Utils.keyFromAccount(this.controller.account))
+    blake.blake2bUpdate(context, account)
+    let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.controller), 2), 8)))
+    blake.blake2bUpdate(context, privileges)
 
-      // TokenID
-      let tokenID = Utils.hexToUint8(this.tokenID)
-      blake.blake2bUpdate(context, tokenID)
-
-      // Controller Properties
-      let action = Utils.hexToUint8(Utils.decToHex(Actions[this.action], 1))
-      blake.blake2bUpdate(context, action)
-      let account = Utils.hexToUint8(Utils.keyFromAccount(this.controller.account))
-      blake.blake2bUpdate(context, account)
-      let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.controller), 2), 8)))
-      blake.blake2bUpdate(context, privileges)
-
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
-    }
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -137,18 +117,7 @@ class UpdateController extends TokenRequest {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.type = this.type
-    obj.origin = this._origin
-    obj.signature = this.signature
-    obj.previous = this.previous
-    obj.fee = this.fee
-    obj.hash = this.hash
-    obj.sequence = this.sequence.toString()
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.token_id = this.tokenID
-    obj.token_account = Utils.accountFromHexKey(this.tokenID)
-    obj.issuer_info = this.issuerInfo
+    const obj = JSON.parse(super.toJSON())
     obj.action = this.action
     obj.controller = this.getControllerJSON()
     if (pretty) return JSON.stringify(obj, null, 2)

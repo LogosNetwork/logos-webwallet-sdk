@@ -43,7 +43,6 @@ class ChangeSetting extends TokenRequest {
 
   set value (val) {
     if (typeof val !== 'boolean') throw new Error('value must be a boolean')
-    super.hash = null
     this._value = val
   }
 
@@ -57,7 +56,6 @@ class ChangeSetting extends TokenRequest {
 
   set setting (val) {
     if (typeof Settings[val] !== 'number') throw new Error('Invalid setting option')
-    super.hash = null
     this._setting = val
   }
 
@@ -75,7 +73,10 @@ class ChangeSetting extends TokenRequest {
    * @readonly
    */
   get type () {
-    return 'change_setting'
+    return {
+      text: 'change_setting',
+      value: 4
+    }
   }
 
   /**
@@ -86,36 +87,15 @@ class ChangeSetting extends TokenRequest {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      if (this.fee === null) throw new Error('fee is not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (!this.tokenID) throw new Error('TokenID is not set.')
-      if (!this.setting) throw new Error('Settings is not set.')
-      if (this.value === null) throw new Error('Value is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(4, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
+    if (!this.setting) throw new Error('Settings is not set.')
+    if (this.value === null) throw new Error('Value is not set.')
+    const context = super.hash()
+    let setting = Utils.hexToUint8(Utils.decToHex(Settings[this.setting], 1))
+    blake.blake2bUpdate(context, setting)
+    let value = Utils.hexToUint8(Utils.decToHex((+this.value), 1))
+    blake.blake2bUpdate(context, value)
 
-      // TokenID
-      let tokenID = Utils.hexToUint8(this.tokenID)
-      blake.blake2bUpdate(context, tokenID)
-
-      // Token Change Settings Properties
-      let setting = Utils.hexToUint8(Utils.decToHex(Settings[this.setting], 1))
-      blake.blake2bUpdate(context, setting)
-      let value = Utils.hexToUint8(Utils.decToHex((+this.value), 1))
-      blake.blake2bUpdate(context, value)
-
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
-    }
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -124,17 +104,7 @@ class ChangeSetting extends TokenRequest {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.type = this.type
-    obj.origin = this._origin
-    obj.signature = this.signature
-    obj.previous = this.previous
-    obj.fee = this.fee
-    obj.hash = this.hash
-    obj.sequence = this.sequence.toString()
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.token_id = this.tokenID
-    obj.token_account = Utils.accountFromHexKey(this.tokenID)
+    const obj = JSON.parse(super.toJSON())
     obj.setting = this.setting
     obj.value = this.value
     if (pretty) return JSON.stringify(obj, null, 2)

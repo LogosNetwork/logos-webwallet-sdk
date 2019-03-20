@@ -3,3 +3,4 @@ node_modules
 *.DS_Store
 docs/docs.json
 webpack/
+.jsbeautifyrc

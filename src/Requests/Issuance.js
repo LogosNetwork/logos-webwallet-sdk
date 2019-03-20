@@ -205,7 +205,6 @@ class Issuance extends Request {
   }
 
   set tokenID (val) {
-    super.hash = null
     this._tokenID = val
   }
 
@@ -234,7 +233,6 @@ class Issuance extends Request {
   set symbol (val) {
     if (Utils.byteCount(val) > 8) throw new Error('Token Symbol - Invalid Size. Max Size 8 Bytes')
     if (!Utils.isAlphanumeric(val)) throw new Error('Token Symbol - Non-alphanumeric characters')
-    super.hash = null
     this._tokenID = null
     this._symbol = val
   }
@@ -250,7 +248,6 @@ class Issuance extends Request {
   set name (val) {
     if (Utils.byteCount(val) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
     if (!Utils.isAlphanumeric(val)) throw new Error('Token Name - Non-alphanumeric characters')
-    super.hash = null
     this._tokenID = null
     this._name = val
   }
@@ -273,7 +270,6 @@ class Issuance extends Request {
 
   set totalSupply (val) {
     if (bigInt(val).gt(bigInt('340282366920938463463374607431768210000'))) throw new Error('Invalid Total Supply - Maximum supply is 340282366920938463463374607431768210000')
-    super.hash = null
     this._totalSupply = val
   }
 
@@ -287,7 +283,6 @@ class Issuance extends Request {
 
   set feeType (val) {
     if (val !== 'flat' && val !== 'percentage') throw new Error('Token Fee Type - Invalid Fee Type use "flat" or "percentage"')
-    super.hash = null
     this._feeType = val
   }
 
@@ -300,7 +295,6 @@ class Issuance extends Request {
   }
 
   set feeRate (val) {
-    super.hash = null
     this._feeRate = val
   }
 
@@ -323,7 +317,6 @@ class Issuance extends Request {
     if (typeof val.modify_adjust_fee === 'undefined') throw new Error('modify_adjust_fee should be passed in token settings')
     if (typeof val.whitelist === 'undefined') throw new Error('whitelist should be passed in token settings')
     if (typeof val.modify_whitelist === 'undefined') throw new Error('modify_whitelist should be passed in token settings')
-    super.hash = null
     this._settings = val
   }
 
@@ -336,7 +329,6 @@ class Issuance extends Request {
   }
 
   set controllers (val) {
-    super.hash = null
     this._controllers = val
   }
 
@@ -350,7 +342,6 @@ class Issuance extends Request {
 
   set issuerInfo (val) {
     if (Utils.byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
-    super.hash = null
     this._issuerInfo = val
   }
 
@@ -360,7 +351,10 @@ class Issuance extends Request {
    * @readonly
    */
   get type () {
-    return 'issuance'
+    return {
+      text: 'issuance',
+      value: 2
+    }
   }
 
   /**
@@ -380,7 +374,7 @@ class Issuance extends Request {
     if (typeof controller.change_adjust_fee === 'undefined') throw new Error('change_adjust_fee should be passed: Change adjust fee allows the controller account to modify the fee of the token')
     if (typeof controller.change_modify_adjust_fee === 'undefined') throw new Error('change_modify_adjust_fee should be passed: Change modify fee allows the controller account to modify if the token fees can be adjusted')
     if (typeof controller.change_whitelist === 'undefined') throw new Error('change_whitelist should be passed: Change whitelist allows the controller account to add additional tokens')
-    if (typeof controller.change_modify_whitelisting === 'undefined') throw new Error('change_modify_whitelisting should be passed: Change modify whitelist allows the controller account to modify if this token has whitelisting')
+    if (typeof controller.change_modify_whitelist === 'undefined') throw new Error('change_modify_whitelist should be passed: Change modify whitelist allows the controller account to modify if this token has whitelisting')
     if (typeof controller.issuance === 'undefined') throw new Error('issuance should be passed')
     if (typeof controller.revoke === 'undefined') throw new Error('revoke should be passed')
     if (typeof controller.freeze === 'undefined') throw new Error('freeze should be passed')
@@ -391,7 +385,6 @@ class Issuance extends Request {
     if (typeof controller.burn === 'undefined') throw new Error('burn should be passed')
     if (typeof controller.distribute === 'undefined') throw new Error('distribute should be passed')
     if (typeof controller.withdraw_fee === 'undefined') throw new Error('withdraw_fee should be passed')
-    super.hash = null
     this._controllers.push(controller)
     return this._controllers
   }
@@ -435,9 +428,10 @@ class Issuance extends Request {
         newController.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
         newController.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
         newController.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
-        newController.change_modify_whitelisting = controller.privileges.indexOf('change_modify_whitelisting') > -1
+        newController.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
         newController.issuance = controller.privileges.indexOf('issuance') > -1
         newController.revoke = controller.privileges.indexOf('revoke') > -1
+        newController.freeze = controller.privileges.indexOf('freeze') > -1
         newController.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
         newController.whitelist = controller.privileges.indexOf('whitelist') > -1
         newController.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
@@ -485,65 +479,49 @@ class Issuance extends Request {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      if (this.fee === null) throw new Error('fee is not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (!this.symbol) throw new Error('Symbol is not set.')
-      if (!this.name) throw new Error('Name is not set.')
-      if (!this.totalSupply) throw new Error('Total Supply is not set.')
-      if (!this.feeType) throw new Error('Fee Type is not set.')
-      if (!this.feeRate) throw new Error('Fee Rate is not set.')
-      if (!this.settings) throw new Error('Settings is not set.')
-      if (!this.controllers) throw new Error('Controllers is not set.')
-      if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(2, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
+    if (!this.symbol) throw new Error('Symbol is not set.')
+    if (!this.name) throw new Error('Name is not set.')
+    if (!this.totalSupply) throw new Error('Total Supply is not set.')
+    if (!this.feeType) throw new Error('Fee Type is not set.')
+    if (!this.feeRate) throw new Error('Fee Rate is not set.')
+    if (!this.settings) throw new Error('Settings is not set.')
+    if (!this.controllers) throw new Error('Controllers is not set.')
+    if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
+    let context = super.hash()
 
-      // TokenID
-      let tokenID = Utils.hexToUint8(this.tokenID)
-      blake.blake2bUpdate(context, tokenID)
+    let tokenID = Utils.hexToUint8(this.tokenID)
+    blake.blake2bUpdate(context, tokenID)
 
-      // Token Issuance Properties
-      let symbol = Utils.hexToUint8(Utils.stringToHex(this.symbol))
-      blake.blake2bUpdate(context, symbol)
+    let symbol = Utils.hexToUint8(Utils.stringToHex(this.symbol))
+    blake.blake2bUpdate(context, symbol)
 
-      let name = Utils.hexToUint8(Utils.stringToHex(this.name))
-      blake.blake2bUpdate(context, name)
+    let name = Utils.hexToUint8(Utils.stringToHex(this.name))
+    blake.blake2bUpdate(context, name)
 
-      let totalSupply = Utils.hexToUint8(Utils.decToHex(this.totalSupply, 16))
-      blake.blake2bUpdate(context, totalSupply)
+    let totalSupply = Utils.hexToUint8(Utils.decToHex(this.totalSupply, 16))
+    blake.blake2bUpdate(context, totalSupply)
 
-      let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
-      blake.blake2bUpdate(context, feeType)
+    let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
+    blake.blake2bUpdate(context, feeType)
 
-      let feeRate = Utils.hexToUint8(Utils.decToHex(this.feeRate, 16))
-      blake.blake2bUpdate(context, feeRate)
+    let feeRate = Utils.hexToUint8(Utils.decToHex(this.feeRate, 16))
+    blake.blake2bUpdate(context, feeRate)
 
-      let settings = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.settings), 2), 8)))
-      blake.blake2bUpdate(context, settings)
+    let settings = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.settings), 2), 8)))
+    blake.blake2bUpdate(context, settings)
 
-      for (let controller of this.controllers) {
-        let account = Utils.hexToUint8(Utils.keyFromAccount(controller.account))
-        blake.blake2bUpdate(context, account)
+    for (let controller of this.controllers) {
+      let account = Utils.hexToUint8(Utils.keyFromAccount(controller.account))
+      blake.blake2bUpdate(context, account)
 
-        let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(controller), 2), 8)))
-        blake.blake2bUpdate(context, privileges)
-      }
-
-      let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
-      blake.blake2bUpdate(context, issuerInfo)
-
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
+      let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(controller), 2), 8)))
+      blake.blake2bUpdate(context, privileges)
     }
+
+    let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
+    blake.blake2bUpdate(context, issuerInfo)
+
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -552,16 +530,7 @@ class Issuance extends Request {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.work = this.work
-    obj.type = this.type
-    obj.origin = this._origin
-    obj.signature = this.signature
-    obj.previous = this.previous
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.fee = this.fee
-    obj.sequence = this.sequence.toString()
-    obj.hash = this.hash
+    const obj = JSON.parse(super.toJSON())
     obj.token_id = this.tokenID
     obj.token_account = Utils.accountFromHexKey(this.tokenID)
     obj.symbol = this.symbol

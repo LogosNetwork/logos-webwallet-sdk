@@ -15,10 +15,6 @@ const Distribute = require('./Requests/Distribute.js')
 const WithdrawFee = require('./Requests/WithdrawFee.js')
 const TokenSend = require('./Requests/TokenSend.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
-const minimumFee = '10000000000000000000000'
-const EMPTY_WORK = '0000000000000000'
-const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
-const officialRepresentative = 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'
 
 /**
  * The Accounts contain the keys, chains, and balances.
@@ -349,7 +345,7 @@ class Account {
    * @readonly
    */
   get representative () {
-    let rep = officialRepresentative
+    let rep = Utils.officialRepresentative
     if (this._representative) {
       rep = this._representative
     } else {
@@ -456,7 +452,7 @@ class Account {
       } else if (this._chain.length > 0) {
         this._previous = this._chain[this._chain.length - 1].hash
       } else {
-        this._previous = GENESIS_HASH
+        this._previous = Utils.GENESIS_HASH
       }
       return this._previous
     }
@@ -492,7 +488,10 @@ class Account {
       this._synced = false
       this._chain = []
       this._receiveChain = []
-      const RPC = new Logos({ url: `http://${this.wallet.rpc.delegates[0]}:55000`, proxyURL: this.wallet.rpc.proxy })
+      const RPC = new Logos({
+        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this.wallet.rpc.proxy
+      })
       if (this.wallet.fullSync) {
         RPC.accounts.history(this._address, -1, true).then((history) => {
           if (history) {
@@ -514,7 +513,7 @@ class Account {
         })
       } else {
         RPC.accounts.info(this._address).then(info => {
-          if (info && info.frontier && info.frontier !== GENESIS_HASH) {
+          if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
               this.addRequest(val)
               if (info.balance) {
@@ -729,7 +728,7 @@ class Account {
       this._receiveChain.push(request)
       return request
     } else if (requestInfo.type === 'revoke') {
-      let request = new Distribute(requestInfo)
+      let request = new Revoke(requestInfo)
       if (request.source === this._address) {
         this._chain.push(request)
       }
@@ -746,7 +745,7 @@ class Account {
    * @returns {boolean}
    */
   verifyChain () {
-    let last = GENESIS_HASH
+    let last = Utils.GENESIS_HASH
     this._chain.reverse().forEach(request => {
       if (request) {
         if (request.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
@@ -980,7 +979,7 @@ class Account {
       signature: null,
       work: null,
       previous: this.previous,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       transactions: transactions,
       sequence: this.sequence + 1,
       origin: this._address
@@ -994,14 +993,14 @@ class Account {
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
     this._pendingChain.push(request)
+    console.log(request.toJSON(true))
     if (this.wallet.rpc) {
-      console.log(request.toJSON(true))
       if (this._pendingChain.length === 1) {
         let response = await request.publish(this.wallet.rpc)
         console.log(response)
@@ -1035,7 +1034,7 @@ class Account {
       signature: null,
       work: null,
       previous: this.previous,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: this.sequence + 1,
       origin: this._address,
       name: options.name,
@@ -1068,7 +1067,7 @@ class Account {
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1113,12 +1112,22 @@ class Account {
     if (options.token_id) tokenAccount = Utils.accountFromHexKey(options.token_id)
     if (options.tokenID) tokenAccount = Utils.accountFromHexKey(options.tokenID)
     if (this._tokens && this._tokens[tokenAccount]) {
-      return { info: this._tokens[tokenAccount], publicKey: Utils.keyFromAccount(tokenAccount) }
+      return {
+        info: this._tokens[tokenAccount],
+        publicKey: Utils.keyFromAccount(tokenAccount)
+      }
     } else {
-      const RPC = new Logos({ url: `http://${this.wallet.rpc.delegates[0]}:55000`, proxyURL: this.wallet.rpc.proxy })
+      const RPC = new Logos({
+        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this.wallet.rpc.proxy
+      })
       let tokenAccountInfo = await RPC.accounts.info(tokenAccount)
+      tokenAccountInfo.address = tokenAccount
       this._tokens[tokenAccount] = tokenAccountInfo
-      return { info: tokenAccountInfo, publicKey: Utils.keyFromAccount(tokenAccount) }
+      return {
+        info: tokenAccountInfo,
+        publicKey: Utils.keyFromAccount(tokenAccount)
+      }
     }
   }
 
@@ -1139,7 +1148,7 @@ class Account {
       signature: null,
       work: null,
       previous: this.previous,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: this.sequence + 1,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1167,7 +1176,7 @@ class Account {
     this._pendingTokenBalances[tokenAccount.publicKey] = bigInt(this._pendingTokenBalances[tokenAccount.publicKey]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1205,7 +1214,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1217,7 +1226,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1245,7 +1254,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey
@@ -1258,7 +1267,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1286,7 +1295,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey
@@ -1298,7 +1307,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1328,7 +1337,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1341,7 +1350,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1370,7 +1379,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1383,7 +1392,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1413,7 +1422,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1426,7 +1435,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1455,7 +1464,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey
@@ -1467,7 +1476,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1497,7 +1506,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1510,7 +1519,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1539,7 +1548,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1551,7 +1560,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1580,7 +1589,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1592,7 +1601,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1621,7 +1630,7 @@ class Account {
       signature: null,
       work: null,
       previous: tokenAccount.info.frontier,
-      fee: minimumFee,
+      fee: Utils.minimumFee,
       sequence: tokenAccount.info.sequence,
       origin: this._address,
       tokenID: tokenAccount.publicKey,
@@ -1633,7 +1642,7 @@ class Account {
     request.sign(this._privateKey)
     if (request.work === null) {
       if (this.wallet.remoteWork) {
-        request.work = EMPTY_WORK
+        request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
@@ -1677,12 +1686,9 @@ class Account {
             // Combine if there are two of more pending transactions and the
             // Next transaction is a send with less than 8 transactions
             if (this.wallet.batchSends) {
-              console.log('batching')
               this.combineRequests(this.wallet.rpc)
             } else {
-              console.log('No batching just publishing')
-              let response = await this._pendingChain[0].publish(this.wallet.rpc)
-              console.log(response)
+              this._pendingChain[0].publish(this.wallet.rpc)
             }
           } else {
             this._pendingChain[0].publish(this.wallet.rpc)
@@ -1762,7 +1768,9 @@ class Account {
   async combineRequests () {
     // TODO Token Send Support
     let aggregate = 0
-    let transactionsToCombine = [[]]
+    let transactionsToCombine = [
+      []
+    ]
     for (let request of this._pendingChain) {
       if (request.type === 'send') {
         for (let transaction of request.transactions) {

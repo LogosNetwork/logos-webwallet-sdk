@@ -1,5 +1,6 @@
 const Utils = require('../Utils')
 const Request = require('./Request')
+const blake = require('blakejs')
 
 /**
  * The TokenRequest class.
@@ -29,7 +30,6 @@ class TokenRequest extends Request {
   }
 
   set tokenID (val) {
-    super.hash = null
     if (val.startsWith('lgs_')) {
       this._tokenID = Utils.keyFromAccount(val)
     } else {
@@ -43,6 +43,29 @@ class TokenRequest extends Request {
    */
   get tokenID () {
     return this._tokenID
+  }
+
+  /**
+   * Creates a Blake2b Context for the request
+   * @returns {context} - Blake2b Context
+   */
+  hash () {
+    if (!this.tokenID) throw new Error('TokenID is not set.')
+    let context = super.hash()
+    let tokenID = Utils.hexToUint8(this.tokenID)
+    blake.blake2bUpdate(context, tokenID)
+    return context
+  }
+
+  /**
+   * Returns the base TokenRequest JSON
+   * @returns {RequestJSON} JSON request
+   */
+  toJSON () {
+    const obj = JSON.parse(super.toJSON())
+    obj.token_id = this.tokenID
+    obj.token_account = Utils.accountFromHexKey(this.tokenID)
+    return JSON.stringify(obj)
   }
 }
 

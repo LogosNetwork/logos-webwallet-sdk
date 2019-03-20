@@ -49,7 +49,6 @@ class AdjustFee extends TokenRequest {
 
   set feeType (val) {
     if (val !== 'flat' && val !== 'percentage') throw new Error('Token Fee Type - Invalid Fee Type use "flat" or "percentage"')
-    super.hash = null
     this._feeType = val
   }
 
@@ -62,7 +61,6 @@ class AdjustFee extends TokenRequest {
   }
 
   set feeRate (val) {
-    super.hash = null
     this._feeRate = val
   }
 
@@ -72,7 +70,10 @@ class AdjustFee extends TokenRequest {
    * @readonly
    */
   get type () {
-    return 'adjust_fee'
+    return {
+      text: 'adjust_fee',
+      value: 8
+    }
   }
 
   /**
@@ -83,37 +84,14 @@ class AdjustFee extends TokenRequest {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      if (this.fee === null) throw new Error('fee is not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (!this.tokenID) throw new Error('TokenID is not set.')
-      if (!this.feeType) throw new Error('Fee Type is not set.')
-      if (!this.feeRate) throw new Error('Fee Rate is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(8, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
-
-      // TokenID
-      let tokenID = Utils.hexToUint8(this.tokenID)
-      blake.blake2bUpdate(context, tokenID)
-
-      // Token Fee Properties
-      let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
-      blake.blake2bUpdate(context, feeType)
-
-      let feeRate = Utils.hexToUint8(Utils.decToHex(this.feeRate, 16))
-      blake.blake2bUpdate(context, feeRate)
-
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
-    }
+    if (!this.feeType) throw new Error('Fee Type is not set.')
+    if (!this.feeRate) throw new Error('Fee Rate is not set.')
+    const context = super.hash()
+    let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
+    blake.blake2bUpdate(context, feeType)
+    let feeRate = Utils.hexToUint8(Utils.decToHex(this.feeRate, 16))
+    blake.blake2bUpdate(context, feeRate)
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -122,17 +100,7 @@ class AdjustFee extends TokenRequest {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.type = this.type
-    obj.origin = this._origin
-    obj.signature = this.signature
-    obj.previous = this.previous
-    obj.fee = this.fee
-    obj.hash = this.hash
-    obj.sequence = this.sequence.toString()
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.token_id = this.tokenID
-    obj.token_account = Utils.accountFromHexKey(this.tokenID)
+    const obj = JSON.parse(super.toJSON())
     obj.fee_type = this.feeType
     obj.fee_rate = this.feeRate
     if (pretty) return JSON.stringify(obj, null, 2)

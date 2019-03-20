@@ -1,6 +1,7 @@
 const Utils = require('../Utils')
 const nacl = require('tweetnacl/nacl')
 const Logos = require('@logosnetwork/logos-rpc-client')
+const blake = require('blakejs')
 /**
  * The base class for all Requests.
  */
@@ -80,17 +81,6 @@ class Request {
     }
 
     /**
-     * Hash of the request in the chain
-     * @type {Hexadecimal64Length}
-     * @private
-     */
-    if (options.hash !== undefined) {
-      this._hash = options.hash
-    } else {
-      this._hash = null
-    }
-
-    /**
      * Request version of webwallet SDK
      * @type {number}
      * @private
@@ -131,7 +121,6 @@ class Request {
 
   set previous (hex) {
     if (!/[0-9A-F]{64}/i.test(hex)) throw new Error('Invalid previous request hash.')
-    this._hash = null
     this._previous = hex
   }
 
@@ -144,7 +133,6 @@ class Request {
   }
 
   set fee (val) {
-    this._hash = null
     this._fee = val
   }
 
@@ -157,7 +145,6 @@ class Request {
   }
 
   set sequence (val) {
-    this._hash = null
     this._sequence = val
   }
 
@@ -169,20 +156,7 @@ class Request {
     return this._sequence
   }
 
-  set hash (val) {
-    this._hash = val
-  }
-
-  /**
-   * Return the hash of the request
-   * @type {Hexadecimal64Length}
-   */
-  get hash () {
-    return this._hash
-  }
-
   set origin (origin) {
-    this._hash = null
     this._origin = origin
   }
 
@@ -221,6 +195,25 @@ class Request {
   }
 
   /**
+   * Creates a Blake2b Context for the request
+   * @returns {context} - Blake2b Context
+   */
+  hash () {
+    if (!this.previous) throw new Error('Previous is not set.')
+    if (this.sequence === null) throw new Error('Sequence is not set.')
+    if (this.fee === null) throw new Error('Transaction fee is not set.')
+    if (!this.origin) throw new Error('Origin account is not set.')
+    if (!this.type) throw new Error('Request type is not defined.')
+    const context = blake.blake2bInit(32, null)
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.type.value, 1)))
+    blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
+    blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
+    return context
+  }
+
+  /**
    * Verifies the request's integrity
    * @returns {boolean}
    */
@@ -238,14 +231,35 @@ class Request {
    */
   async publish (options) {
     let delegateId = null
-    if (this.previous !== '0000000000000000000000000000000000000000000000000000000000000000') {
+    if (this.previous !== Utils.GENESIS_HASH) {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32
     } else {
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
-    const RPC = new Logos({ url: `http://${options.delegates[delegateId]}:55000`, proxyURL: options.proxy })
+    const RPC = new Logos({
+      url: `http://${options.delegates[delegateId]}:55000`,
+      proxyURL: options.proxy
+    })
     let hash = await RPC.requests.publish(this.toJSON())
     return hash
+  }
+
+  /**
+   * Returns the base request JSON
+   * @returns {RequestJSON} JSON request
+   */
+  toJSON () {
+    const obj = {}
+    obj.previous = this.previous
+    obj.sequence = this.sequence.toString()
+    obj.origin = this._origin
+    obj.fee = this.fee
+    obj.next = Utils.GENESIS_HASH
+    obj.work = this.work
+    obj.hash = this.hash
+    obj.type = this.type.text
+    obj.signature = this.signature
+    return JSON.stringify(obj)
   }
 }
 

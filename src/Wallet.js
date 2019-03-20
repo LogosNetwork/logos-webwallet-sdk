@@ -1,6 +1,7 @@
 const Utils = require('./Utils')
 const pbkdf2 = require('pbkdf2')
 const Account = require('./Account')
+const TokenAccount = require('./TokenAccount')
 const nacl = require('tweetnacl/nacl')
 const blake = require('blakejs')
 const bigInt = require('big-integer')
@@ -17,15 +18,13 @@ class Wallet {
     deterministicKeyIndex: 0,
     currentAccountAddress: null,
     accounts: {},
+    tokenAccounts: {},
     walletID: false,
     remoteWork: true,
     batchSends: true,
     fullSync: true,
-    mqtt: 'wss:pla.bs:8443',
-    rpc: {
-      proxy: 'https://pla.bs',
-      delegates: ['172.1.1.100', '172.1.1.101', '172.1.1.102', '172.1.1.103', '172.1.1.104', '172.1.1.105', '172.1.1.106', '172.1.1.107', '172.1.1.108', '172.1.1.109', '172.1.1.110', '172.1.1.111', '172.1.1.112', '172.1.1.113', '172.1.1.114', '172.1.1.115', '172.1.1.116', '172.1.1.117', '172.1.1.118', '172.1.1.119', '172.1.1.120', '172.1.1.121', '172.1.1.122', '172.1.1.123', '172.1.1.124', '172.1.1.125', '172.1.1.126', '172.1.1.127', '172.1.1.128', '172.1.1.129', '172.1.1.130', '172.1.1.131']
-    },
+    mqtt: Utils.defaultMQTT,
+    rpc: Utils.defaultRPC,
     version: 1
   }) {
     /**
@@ -70,6 +69,17 @@ class Wallet {
       this._accounts = options.accounts
     } else {
       this._accounts = {}
+    }
+
+    /**
+     * Array of accounts in this wallet
+     * @type {Map<LogosAddress, TokenAccount>}
+     * @private
+     */
+    if (options.tokenAccounts !== undefined) {
+      this._tokenAccounts = options.tokenAccounts
+    } else {
+      this._tokenAccounts = {}
     }
 
     /**
@@ -124,10 +134,7 @@ class Wallet {
     if (options.rpc !== undefined) {
       this._rpc = options.rpc
     } else {
-      this._rpc = {
-        proxy: 'https://pla.bs',
-        delegates: ['172.1.1.100', '172.1.1.101', '172.1.1.102', '172.1.1.103', '172.1.1.104', '172.1.1.105', '172.1.1.106', '172.1.1.107', '172.1.1.108', '172.1.1.109', '172.1.1.110', '172.1.1.111', '172.1.1.112', '172.1.1.113', '172.1.1.114', '172.1.1.115', '172.1.1.116', '172.1.1.117', '172.1.1.118', '172.1.1.119', '172.1.1.120', '172.1.1.121', '172.1.1.122', '172.1.1.123', '172.1.1.124', '172.1.1.125', '172.1.1.126', '172.1.1.127', '172.1.1.128', '172.1.1.129', '172.1.1.130', '172.1.1.131']
-      }
+      this._rpc = Utils.defaultRPC
     }
 
     /**
@@ -147,7 +154,7 @@ class Wallet {
     if (options.mqtt !== undefined) {
       this._mqtt = options.mqtt
     } else {
-      this._mqtt = 'wss:pla.bs:8443'
+      this._mqtt = Utils.defaultMQTT
     }
     this._mqttConnected = false
     this._mqttConnect()
@@ -220,11 +227,16 @@ class Wallet {
    * @readonly
    */
   get accounts () {
-    let accounts = []
-    Object.keys(this._accounts).forEach(account => {
-      accounts.push(this._accounts[account])
-    })
-    return accounts
+    return Array.from(this._accounts.values())
+  }
+
+  /**
+   * List all the TokenAccounts in the wallet
+   * @type {TokenAccount[]}
+   * @readonly
+   */
+  get tokenAccounts () {
+    return Array.from(this._tokenAccounts.values())
   }
 
   /**
@@ -338,7 +350,7 @@ class Wallet {
   }
 
   /**
-   * Sets a random seed for the wallet
+   * Adds a account to the wallet
    *
    * @param {Account} account - the account you wish to add
    * @returns {Account}
@@ -347,6 +359,28 @@ class Wallet {
     this._accounts[account.address] = account
     if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
     return this._accounts[account.address]
+  }
+
+  /**
+   * Add a TokenAccount
+   *
+   * You are allowed to add a tokenAccount using the address
+   *
+   * @param {LogosAddress} address - address of the token account.
+   * @returns {Promise<Account>}
+   */
+  async addTokenAccount (address) {
+    let accountOptions = null
+    accountOptions.wallet = this
+    const tokenAccount = new TokenAccount(address)
+    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
+    this._tokenAccounts[tokenAccount.address] = tokenAccount
+    if (this._rpc) {
+      await this.tokenAccounts[tokenAccount.address].sync()
+    } else {
+      this._tokenAccounts[tokenAccount.address].synced = true
+    }
+    return this._tokenAccounts[tokenAccount.address]
   }
 
   /**
@@ -377,7 +411,6 @@ class Wallet {
     }
     accountOptions.wallet = this
     const account = new Account(accountOptions)
-    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
     this.addAccount(account)
     if (this._rpc) {
       await this._accounts[account.address].sync()
@@ -469,7 +502,10 @@ class Wallet {
     const salt = Buffer.from(nacl.randomBytes(16))
     const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha512')
 
-    const options = { mode: Utils.AES.CBC, padding: Utils.Iso10126 }
+    const options = {
+      mode: Utils.AES.CBC,
+      padding: Utils.Iso10126
+    }
     const encryptedBytes = Utils.AES.encrypt(encryptedWallet, key, salt, options)
 
     const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
@@ -657,13 +693,16 @@ class Wallet {
         this._mqttConnected = false
         console.log('Webwallet SDK disconnected from MQTT')
       })
-      this._mqttClient.on('message', (topic, message) => {
-        const accountMqttRegex = mqttRegex('account/+account').exec
-        message = JSON.parse(message.toString())
+      this._mqttClient.on('message', (topic, request) => {
+        const accountMqttRegex = mqttRegex('account/+address').exec
+        request = JSON.parse(request.toString())
         let params = accountMqttRegex(topic)
         if (params) {
-          let account = this._accounts[params.account]
-          account.processRequest(message)
+          if (this._accounts[params.address]) {
+            this._accounts[params.address].processRequest(request)
+          } else if (this._tokenAccounts[params.address]) {
+            this._tokenAccount[params.address].processRequest(request)
+          }
         }
       })
     }

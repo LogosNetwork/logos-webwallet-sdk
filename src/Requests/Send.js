@@ -25,7 +25,6 @@ class Send extends Request {
   }
 
   set transactions (transactions) {
-    super.hash = null
     this._transactions = transactions
   }
 
@@ -52,11 +51,14 @@ class Send extends Request {
 
   /**
    * Returns the type of this request
-   * @type {string}
+   * @type {Object}
    * @readonly
    */
   get type () {
-    return 'send'
+    return {
+      text: 'send',
+      value: 0
+    }
   }
 
   /**
@@ -67,27 +69,13 @@ class Send extends Request {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.transactions) throw new Error('Transactions are not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (this.fee === null) throw new Error('Transaction fee is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(0, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
-      for (let transaction of this.transactions) {
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
-        blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
-      }
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
+    if (!this.transactions) throw new Error('Transactions are not set.')
+    let context = super.hash()
+    for (let transaction of this.transactions) {
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
+      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
     }
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -98,7 +86,6 @@ class Send extends Request {
   addTransaction (transaction) {
     if (this.transactions.length === 8) throw new Error('Can only fit 8 transactions per send request!')
     if (!transaction.destination || !transaction.amount) throw new Error('Send destination and amount')
-    super.hash = null
     this.transactions.push(transaction)
     return this.transactions
   }
@@ -109,17 +96,8 @@ class Send extends Request {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.previous = this.previous
-    obj.sequence = this.sequence.toString()
-    obj.type = 'send'
-    obj.origin = this._origin
-    obj.fee = this.fee
+    const obj = JSON.parse(super.toJSON())
     obj.transactions = this.transactions
-    obj.hash = this.hash
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.work = this.work
-    obj.signature = this.signature
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }

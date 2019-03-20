@@ -43,7 +43,6 @@ class Change extends Request {
   }
 
   set client (val) {
-    super.hash = null
     this._client = val
   }
 
@@ -56,7 +55,6 @@ class Change extends Request {
   }
 
   set representative (val) {
-    super.hash = null
     this._representative = val
   }
 
@@ -74,11 +72,10 @@ class Change extends Request {
    * @readonly
    */
   get type () {
-    return 'change'
-  }
-
-  set hash (hash) {
-    super.hash = hash
+    return {
+      text: 'change',
+      value: 1
+    }
   }
 
   /**
@@ -89,27 +86,10 @@ class Change extends Request {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.transactions) throw new Error('Transactions are not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (this.fee === null) throw new Error('Transaction fee is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(1, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
-
-      // Change Properties
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(this.client)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(this.representative)))
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
-    }
+    const context = super.hash()
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(this.client)))
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(this.representative)))
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -118,17 +98,7 @@ class Change extends Request {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.type = this.type
-    obj.previous = this.previous
-    obj.origin = this._origin
-    obj.fee = this.fee
-    obj.sequence = this.sequence.toString()
-    obj.hash = this.hash
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.work = this.work
-    obj.signature = this.signature
-    obj.client = this.client
+    const obj = JSON.parse(super.toJSON())
     obj.representative = this.representative
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)

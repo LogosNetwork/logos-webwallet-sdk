@@ -35,7 +35,6 @@ class UpdateIssuerInfo extends TokenRequest {
 
   set issuerInfo (val) {
     if (Utils.byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
-    super.hash = null
     this._issuerInfo = val
   }
 
@@ -45,7 +44,10 @@ class UpdateIssuerInfo extends TokenRequest {
    * @readonly
    */
   get type () {
-    return 'update_issuer_info'
+    return {
+      text: 'update_issuer_info',
+      value: 9
+    }
   }
 
   /**
@@ -56,33 +58,11 @@ class UpdateIssuerInfo extends TokenRequest {
    * @readonly
    */
   get hash () {
-    if (super.hash) {
-      return super.hash
-    } else {
-      if (!this.previous) throw new Error('Previous is not set.')
-      if (!this.origin) throw new Error('Origin account is not set.')
-      if (this.fee === null) throw new Error('fee is not set.')
-      if (this.sequence === null) throw new Error('Sequence is not set.')
-      if (!this.tokenID) throw new Error('TokenID is not set.')
-      if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(9, 1)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
-
-      // TokenID
-      let tokenID = Utils.hexToUint8(this.tokenID)
-      blake.blake2bUpdate(context, tokenID)
-
-      // Issuer Info Properties
-      let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
-      blake.blake2bUpdate(context, issuerInfo)
-
-      super.hash = Utils.uint8ToHex(blake.blake2bFinal(context))
-      return super.hash
-    }
+    if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
+    const context = super.hash()
+    let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
+    blake.blake2bUpdate(context, issuerInfo)
+    return Utils.uint8ToHex(blake.blake2bFinal(context))
   }
 
   /**
@@ -91,17 +71,7 @@ class UpdateIssuerInfo extends TokenRequest {
    * @returns {RequestJSON} JSON request
    */
   toJSON (pretty = false) {
-    const obj = {}
-    obj.type = this.type
-    obj.origin = this._origin
-    obj.signature = this.signature
-    obj.previous = this.previous
-    obj.fee = this.fee
-    obj.hash = this.hash
-    obj.sequence = this.sequence.toString()
-    obj.next = '0000000000000000000000000000000000000000000000000000000000000000'
-    obj.token_id = this.tokenID
-    obj.token_account = Utils.accountFromHexKey(this.tokenID)
+    const obj = JSON.parse(super.toJSON())
     obj.new_info = this.issuerInfo
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)

@@ -1,13 +1,19 @@
-// TODO create this as a class with static methods
 const MAIN_NET_WORK_THRESHOLD = 'ffffffc000000000'
 const TEST_NET_WORK_THRESHOLD = 'ff00000000000000'
 const BLOCK_BIT_LEN = 128
-
+const minimumFee = '10000000000000000000000'
+const EMPTY_WORK = '0000000000000000'
+const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
+const officialRepresentative = 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'
 const blake = require('blakejs')
 const crypto = require('crypto')
 const alphabet = '13456789abcdefghijkmnopqrstuwxyz'
 const assert = require('assert')
-
+const defaultRPC = {
+  proxy: 'https://pla.bs',
+  delegates: ['172.1.1.100', '172.1.1.101', '172.1.1.102', '172.1.1.103', '172.1.1.104', '172.1.1.105', '172.1.1.106', '172.1.1.107', '172.1.1.108', '172.1.1.109', '172.1.1.110', '172.1.1.111', '172.1.1.112', '172.1.1.113', '172.1.1.114', '172.1.1.115', '172.1.1.116', '172.1.1.117', '172.1.1.118', '172.1.1.119', '172.1.1.120', '172.1.1.121', '172.1.1.122', '172.1.1.123', '172.1.1.124', '172.1.1.125', '172.1.1.126', '172.1.1.127', '172.1.1.128', '172.1.1.129', '172.1.1.130', '172.1.1.131']
+}
+const defaultMQTT = 'wss:pla.bs:8443'
 const Iso10126 = {
   /*
    *   Fills remaining block space with random byte values, except for the
@@ -380,21 +386,27 @@ const isAlphanumeric = (s) => {
 }
 
 module.exports = {
-  Iso10126: Iso10126,
-  AES: AES,
-  stringFromHex: stringFromHex,
-  stringToHex: stringToHex,
-  accountFromHexKey: accountFromHexKey,
-  parseAccount: parseAccount,
-  decToHex: decToHex,
-  hexToDec: hexToDec,
-  hexToUint8: hexToUint8,
-  uint8ToHex: uint8ToHex,
-  uint4ToHex: uint4ToHex,
-  checkWork: checkWork,
-  generateWork: generateWork,
-  keyFromAccount: keyFromAccount,
-  changeEndianness: changeEndianness,
-  byteCount: byteCount,
-  isAlphanumeric: isAlphanumeric
+  Iso10126,
+  AES,
+  stringFromHex,
+  stringToHex,
+  accountFromHexKey,
+  parseAccount,
+  decToHex,
+  hexToDec,
+  hexToUint8,
+  uint8ToHex,
+  uint4ToHex,
+  checkWork,
+  generateWork,
+  keyFromAccount,
+  changeEndianness,
+  byteCount,
+  isAlphanumeric,
+  minimumFee,
+  EMPTY_WORK,
+  GENESIS_HASH,
+  officialRepresentative,
+  defaultRPC,
+  defaultMQTT
 }
