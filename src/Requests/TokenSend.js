@@ -36,6 +36,11 @@ class TokenSend extends TokenRequest {
     } else {
       this._tokenFee = '0'
     }
+
+    this._type = {
+      text: 'token_send',
+      value: 14
+    }
   }
 
   set transactions (transactions) {
@@ -81,10 +86,16 @@ class TokenSend extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'token_send',
-      value: 14
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

@@ -30,6 +30,11 @@ class UpdateController extends TokenRequest {
     } else {
       this._controller = null
     }
+
+    this._type = {
+      text: 'update_controller',
+      value: 10
+    }
   }
 
   /**
@@ -38,10 +43,16 @@ class UpdateController extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'update_controller',
-      value: 10
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   set action (val) {

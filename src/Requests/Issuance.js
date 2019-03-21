@@ -202,6 +202,11 @@ class Issuance extends Request {
     } else {
       this._issuerInfo = ''
     }
+
+    this._type = {
+      text: 'issuance',
+      value: 2
+    }
   }
 
   set tokenID (val) {
@@ -351,10 +356,16 @@ class Issuance extends Request {
    * @readonly
    */
   get type () {
-    return {
-      text: 'issuance',
-      value: 2
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

@@ -27,6 +27,11 @@ class ImmuteSetting extends TokenRequest {
     } else {
       this._setting = null
     }
+
+    this._type = {
+      text: 'immute_setting',
+      value: 5
+    }
   }
 
   set setting (val) {
@@ -48,10 +53,16 @@ class ImmuteSetting extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'immute_setting',
-      value: 5
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

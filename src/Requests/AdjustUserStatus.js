@@ -38,6 +38,11 @@ class AdjustUserStatus extends TokenRequest {
     } else {
       this._status = null
     }
+
+    this._type = {
+      text: 'adjust_user_status',
+      value: 7
+    }
   }
 
   set status (val) {
@@ -71,10 +76,16 @@ class AdjustUserStatus extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'adjust_user_status',
-      value: 7
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

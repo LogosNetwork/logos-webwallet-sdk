@@ -21,6 +21,11 @@ class Burn extends TokenRequest {
     } else {
       this._amount = '0'
     }
+
+    this._type = {
+      text: 'burn',
+      value: 11
+    }
   }
 
   set amount (amount) {
@@ -42,10 +47,16 @@ class Burn extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'burn',
-      value: 11
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

@@ -37,6 +37,11 @@ class AdjustFee extends TokenRequest {
     } else {
       this._feeRate = '0'
     }
+
+    this._type = {
+      text: 'adjust_fee',
+      value: 8
+    }
   }
 
   /**
@@ -70,10 +75,16 @@ class AdjustFee extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'adjust_fee',
-      value: 8
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

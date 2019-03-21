@@ -21,6 +21,11 @@ class WithdrawFee extends TokenRequest {
     } else {
       this._transaction = null
     }
+
+    this._type = {
+      text: 'withdraw_fee',
+      value: 13
+    }
   }
 
   set transaction (transaction) {
@@ -43,10 +48,16 @@ class WithdrawFee extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'withdraw_fee',
-      value: 13
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

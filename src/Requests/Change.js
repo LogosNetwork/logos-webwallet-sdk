@@ -34,12 +34,10 @@ class Change extends Request {
       this._representative = null
     }
 
-    /**
-     * Request version of webwallet SDK
-     * @type {number}
-     * @private
-     */
-    this._version = 1
+    this._type = {
+      text: 'change',
+      value: 1
+    }
   }
 
   set client (val) {
@@ -72,10 +70,16 @@ class Change extends Request {
    * @readonly
    */
   get type () {
-    return {
-      text: 'change',
-      value: 1
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

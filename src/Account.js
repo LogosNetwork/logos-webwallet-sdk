@@ -1027,6 +1027,7 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createTokenIssuanceRequest (options) {
+    console.log('hello')
     if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
     if (!options.symbol) throw new Error('You must pass symbol as a part of the TokenOptions')
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
@@ -1062,6 +1063,7 @@ class Account {
       throw new Error('Invalid Request: Not Enough Logos to afford the fee to issue a token')
     }
     request.sign(this._privateKey)
+    console.log('signed')
     this._previous = request.hash
     this._sequence = request.sequence
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()

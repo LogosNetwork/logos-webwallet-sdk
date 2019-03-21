@@ -35,9 +35,14 @@ class ChangeSetting extends TokenRequest {
      * @private
      */
     if (options.value !== undefined) {
-      this._value = options.value
+      this._value = Boolean(options.value)
     } else {
       this._value = null
+    }
+
+    this._type = {
+      text: 'change_setting',
+      value: 4
     }
   }
 
@@ -47,7 +52,7 @@ class ChangeSetting extends TokenRequest {
   }
 
   /**
-   * Return the previous request as hash
+   * Return the value of the changed setting
    * @type {boolean}
    */
   get value () {
@@ -73,10 +78,16 @@ class ChangeSetting extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'change_setting',
-      value: 4
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

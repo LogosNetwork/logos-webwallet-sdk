@@ -33,6 +33,11 @@ class Revoke extends TokenRequest {
     } else {
       this._source = null
     }
+
+    this._type = {
+      text: 'revoke',
+      value: 6
+    }
   }
 
   set transaction (transaction) {
@@ -67,10 +72,16 @@ class Revoke extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'revoke',
-      value: 6
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

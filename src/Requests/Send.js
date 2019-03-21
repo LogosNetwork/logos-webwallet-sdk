@@ -22,6 +22,11 @@ class Send extends Request {
     } else {
       this._transactions = []
     }
+
+    this._type = {
+      text: 'send',
+      value: 0
+    }
   }
 
   set transactions (transactions) {
@@ -51,14 +56,20 @@ class Send extends Request {
 
   /**
    * Returns the type of this request
-   * @type {Object}
+   * @type {string}
    * @readonly
    */
   get type () {
-    return {
-      text: 'send',
-      value: 0
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

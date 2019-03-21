@@ -1,12 +1,26 @@
 const Utils = require('./Utils')
+const bigInt = require('big-integer')
 const Send = require('./Requests/Send.js')
+const IssueAdditional = require('./Requests/IssueAdditional.js')
+const ChangeSetting = require('./Requests/ChangeSetting.js')
+const ImmuteSetting = require('./Requests/ImmuteSetting.js')
+const Revoke = require('./Requests/Revoke.js')
+const AdjustUserStatus = require('./Requests/AdjustUserStatus.js')
+const AdjustFee = require('./Requests/AdjustFee.js')
+const UpdateIssuerInfo = require('./Requests/UpdateIssuerInfo.js')
+const UpdateController = require('./Requests/UpdateController.js')
+const Burn = require('./Requests/Burn.js')
+const Distribute = require('./Requests/Distribute.js')
+const WithdrawFee = require('./Requests/WithdrawFee.js')
+const Logos = require('@logosnetwork/logos-rpc-client')
 
 /**
  * TokenAccount contain the keys, chains, and balances.
  */
 class TokenAccount {
-  constructor (address) {
-    if (!address) throw new Error('You must initalize a token account with an address')
+  constructor (address, wallet) {
+    if (!address) throw new Error('You must initalize a token account with a address')
+    if (!wallet) throw new Error('You must initalize a token account with a wallet')
     this._tokenID = Utils.keyFromAccount(address)
     this._address = address
     this._tokenBalance = null
@@ -28,7 +42,7 @@ class TokenAccount {
     this._chain = []
     this._receiveChain = []
     this._pendingChain = []
-    this._wallet = null
+    this._wallet = wallet
     this._synced = false
   }
 
@@ -220,26 +234,120 @@ class TokenAccount {
    */
   sync () {
     return new Promise((resolve, reject) => {
-      // TODO Sync Token Account
+      this._synced = false
+      this._chain = []
+      this._receiveChain = []
+      const RPC = new Logos({
+        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this.wallet.rpc.proxy
+      })
+
+      RPC.accounts.info(this._address).then(info => {
+        if (!info || !info.type || info.type !== 'TokenAccount') {
+          throw new Error('Invalid Address - This is not a valid token account')
+        }
+        this._tokenBalance = info.token_balance
+        this._pendingTokenBalance = info.token_balance
+        this._totalSupply = info.total_supply
+        this._pendingTotalSupply = info.total_supply
+        this._tokenFeeBalance = info.token_fee_balance
+        this._symbol = info.symbol
+        this._name = info._name
+        this._issuerInfo = info.issuer_info
+        this._feeRate = info.fee_rate
+        this._feeType = info.fee_type
+        this._controllers = this._getControllerFromJSON(info.controllers)
+        this._settings = this._getSettingsFromJSON(info.settings)
+        this._sequence = info.sequence
+        this._previous = info.frontier
+        this._balance = info.balance
+        this._pendingBalance = info.balance
+        if (this.wallet.fullSync) {
+          RPC.accounts.history(this._address, -1, true).then((history) => {
+            if (history) {
+              for (const requestInfo of history) {
+                this.addRequest(requestInfo)
+              }
+              this._sequence = null
+              this._previous = null
+              if (this.verifyChain() && this.verifyReceiveChain()) {
+                this._synced = true
+                resolve(this)
+              }
+            } else {
+              this._synced = true
+              console.log(`${this._address} is empty and therefore valid`)
+              resolve(this)
+            }
+          })
+        } else {
+          if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
+            RPC.requests.info(info.frontier).then(val => {
+              this.addRequest(val)
+              this._sequence = null
+              this._previous = null
+              this._synced = true
+              resolve(this)
+            })
+          } else {
+            this._sequence = null
+            this._previous = null
+            this._synced = true
+            console.log(`${this._address} is empty and therefore valid`)
+            resolve(this)
+          }
+        }
+      })
     })
   }
 
   /**
-   * Updates the balances of the Token Account by traversing the chain
-   * @returns {void}
-   */
-  updateBalancesFromChain () {
-    // TODO
-  }
-
-  /**
-   * Updates the balances of the token account by doing math on the previous balance when given a new request
+   * Updates the token account by comparing the RPC token account info with the changes in a new request
    * Also updates the pending balance based on the new balance and the pending chain
    * @param {Request} request - request that is being calculated on
    * @returns {void}
    */
-  updateBalancesFromRequest (request) {
-    // TODO
+  updateTokenInfoFromRequest (request) {
+    if (request.type === 'issue_additional') {
+      this.totalSupply = bigInt(this.totalSupply).plus(bigInt(request.amount)).toString()
+    } else if (request.type === 'change_setting') {
+      this.settings[request.setting] = request.value
+    } else if (request.type === 'immute_setting') {
+      this.settings[`modify_${request.setting}`] = false
+    } else if (request.type === 'revoke') {
+      if (request.transaction.destination === this.address) {
+        this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.transaction.amount)).toString()
+      }
+    } else if (request.type === 'adjust_user_status') {
+      // Nothing to update here :)
+    } else if (request.type === 'adjust_fee') {
+      this.feeRate = request.feeRate
+      this.feeType = request.feeType
+    } else if (request.type === 'update_issuer_info') {
+      this.issuerInfo = request.issuerInfo
+    } else if (request.type === 'update_controller') {
+      this.controllers = this.controllers.filter(controller => controller.account !== request.controller.account)
+      if (request.action === 'add') this.controllers.push(request.controller)
+    } else if (request.type === 'burn') {
+      this.totalSupply = bigInt(this.totalSupply).minus(bigInt(request.amount)).toString()
+    } else if (request.type === 'distribute') {
+      this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.transaction.amount)).toString()
+    } else if (request.type === 'withdraw_fee') {
+      this.tokenFeeBalance = bigInt(this.tokenFeeBalance).minus(bigInt(request.transaction.amount)).toString()
+    } else if (request.type === 'withdraw_logos') {
+      this.balance = bigInt(this.balance).minus(bigInt(request.transaction.amount)).toString()
+    } else if (request.type === 'send') {
+      for (let transaction of request.transactions) {
+        if (transaction.destination === this.address) {
+          this.balance = bigInt(this.balance).plus(bigInt(transaction.amount)).toString()
+        }
+      }
+    } else if (request.type === 'issuance') {
+      // Never should see this
+    }
+    if (request.type !== 'send' && request.type !== 'issuance') {
+      this.balance = bigInt(this.balance).minus(bigInt(request.fee)).toString()
+    }
   }
 
   /**
@@ -249,7 +357,52 @@ class TokenAccount {
    * @returns {Request}
    */
   addRequest (requestInfo) {
-    // TODO
+    let request = null
+    if (requestInfo.type === 'send') {
+      let request = new Send(requestInfo)
+      if (requestInfo.transactions && requestInfo.transactions.length > 0) {
+        for (let trans of requestInfo.transactions) {
+          if (trans.destination === this._address &&
+            !this.getRecieveRequest(requestInfo.hash)) {
+            this._receiveChain.push(request)
+          }
+        }
+      }
+    } else if (requestInfo.type === 'issue_additional') {
+      request = new IssueAdditional(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'change_setting') {
+      request = new ChangeSetting(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'immute_setting') {
+      request = new ImmuteSetting(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'revoke') {
+      request = new Revoke(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'adjust_user_status') {
+      request = new AdjustUserStatus(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'adjust_fee') {
+      request = new AdjustFee(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'update_issuer_info') {
+      request = new UpdateIssuerInfo(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'update_controller') {
+      request = new UpdateController(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'burn') {
+      request = new Burn(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'distribute') {
+      request = new Distribute(requestInfo)
+      this._chain.push(request)
+    } else if (requestInfo.type === 'withdraw_fee') {
+      request = new WithdrawFee(requestInfo)
+      this._chain.push(request)
+    }
+    return request
   }
 
   /**
@@ -493,16 +646,12 @@ class TokenAccount {
       if (request) {
         this._chain.push(request)
         this.removePendingRequest(requestInfo.hash)
-        if (this.wallet.fullSync) {
-          this.updateBalancesFromChain()
-        } else {
-          this.updateBalancesFromRequest(request)
-        }
+        this.updateTokenInfoFromRequest(request)
         // Publish the next request in the pending as the previous request has been confirmed
         if (this.wallet.rpc && this._pendingChain.length > 0) {
           this._pendingChain[0].publish(this.wallet.rpc)
         }
-      } else if (requestInfo.type !== 'send') {
+      } else {
         console.log('Someone is performing token account that is not us!!!')
         // Add new request to chain
         let request = this.addRequest(requestInfo)
@@ -510,12 +659,8 @@ class TokenAccount {
         // Remove all pendings as they are now invalidated
         this.removePendingRequests()
 
-        // Update balance for new block
-        if (this.wallet.fullSync) {
-          this.updateBalancesFromChain()
-        } else {
-          this.updateBalancesFromRequest(request)
-        }
+        // Update Token Account for new block
+        this.updateTokenInfoFromRequest(request)
 
         // Clear sequence and previous
         this._sequence = null
@@ -557,12 +702,56 @@ class TokenAccount {
     })
     if (!request.verify()) throw new Error('Invalid Recieve Request!')
     this._receiveChain.push(request)
-    if (this.wallet.fullSync) {
-      this.updateBalancesFromChain()
-    } else {
-      this.updateBalancesFromRequest(request)
-    }
+    this.updateTokenInfoFromRequest(request)
     return request
+  }
+
+  _getControllerFromJSON (controllers) {
+    let newControllers = []
+    for (let controller of controllers) {
+      let newController = {}
+      newController.account = controller.account
+      newController.privileges = {}
+      if (controller.privileges && controller.privileges.length > 0) {
+        newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
+        newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
+        newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
+        newController.privileges.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
+        newController.privileges.change_freeze = controller.privileges.indexOf('change_freeze') > -1
+        newController.privileges.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
+        newController.privileges.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
+        newController.privileges.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
+        newController.privileges.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
+        newController.privileges.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
+        newController.privileges.issuance = controller.privileges.indexOf('issuance') > -1
+        newController.privileges.revoke = controller.privileges.indexOf('revoke') > -1
+        newController.privileges.freeze = controller.privileges.indexOf('freeze') > -1
+        newController.privileges.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
+        newController.privileges.whitelist = controller.privileges.indexOf('whitelist') > -1
+        newController.privileges.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
+        newController.privileges.update_controller = controller.privileges.indexOf('update_controller') > -1
+        newController.privileges.burn = controller.privileges.indexOf('burn') > -1
+        newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
+        newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
+      }
+      newControllers.push(newController)
+    }
+    return newControllers
+  }
+  _getSettingsFromJSON (settings) {
+    let newSettings = {
+      issuance: settings.indexOf('issuance') > -1,
+      modify_issuance: settings.indexOf('modify_issuance') > -1,
+      revoke: settings.indexOf('revoke') > -1,
+      modify_revoke: settings.indexOf('modify_revoke') > -1,
+      freeze: settings.indexOf('freeze') > -1,
+      modify_freeze: settings.indexOf('modify_freeze') > -1,
+      adjust_fee: settings.indexOf('adjust_fee') > -1,
+      modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
+      whitelist: settings.indexOf('whitelist') > -1,
+      modify_whitelist: settings.indexOf('modify_whitelist') > -1
+    }
+    return newSettings
   }
 }
 

@@ -21,6 +21,10 @@ class Distribute extends TokenRequest {
     } else {
       this._transaction = null
     }
+    this._type = {
+      text: 'distribute',
+      value: 12
+    }
   }
 
   set transaction (transaction) {
@@ -43,10 +47,16 @@ class Distribute extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'distribute',
-      value: 12
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

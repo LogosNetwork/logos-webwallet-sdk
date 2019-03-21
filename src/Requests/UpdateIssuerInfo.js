@@ -18,10 +18,15 @@ class UpdateIssuerInfo extends TokenRequest {
      */
     if (options.issuerInfo !== undefined) {
       this._issuerInfo = options.issuerInfo
-    } else if (options.issuer_info) {
-      this._issuerInfo = options.issuer_info
+    } else if (options.new_info) {
+      this._issuerInfo = options.new_info
     } else {
       this._issuerInfo = ''
+    }
+
+    this._type = {
+      text: 'update_issuer_info',
+      value: 9
     }
   }
 
@@ -44,10 +49,16 @@ class UpdateIssuerInfo extends TokenRequest {
    * @readonly
    */
   get type () {
-    return {
-      text: 'update_issuer_info',
-      value: 9
-    }
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
   }
 
   /**

@@ -205,7 +205,7 @@ class Request {
     if (!this.origin) throw new Error('Origin account is not set.')
     if (!this.type) throw new Error('Request type is not defined.')
     const context = blake.blake2bInit(32, null)
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.type.value, 1)))
+    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.typeValue, 1)))
     blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
     blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
     blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
@@ -257,7 +257,7 @@ class Request {
     obj.next = Utils.GENESIS_HASH
     obj.work = this.work
     obj.hash = this.hash
-    obj.type = this.type.text
+    obj.type = this.type
     obj.signature = this.signature
     return JSON.stringify(obj)
   }
