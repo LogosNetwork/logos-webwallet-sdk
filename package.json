@@ -64,7 +64,6 @@
     "assert": "^1.4.1",
     "big-integer": "^1.6.39",
     "blakejs": "^1.1.0",
-    "buffer": "^5.2.1",
     "mqtt": "^2.18.8",
     "mqtt-regex": "^1.0.5",
     "pbkdf2": "^3.0.17",
