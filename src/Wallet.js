@@ -223,7 +223,7 @@ class Wallet {
 
   /**
    * List all the accounts in the wallet
-   * @type {Account[]}
+   * @type {Map<LogosAddress, Account>}
    * @readonly
    */
   get accounts () {
@@ -231,12 +231,12 @@ class Wallet {
   }
 
   /**
-   * List all the TokenAccounts in the wallet
-   * @type {TokenAccount[]}
+   * Map of all the TokenAccounts in the wallet
+   * @type {Map<LogosAddress, TokenAccount>}
    * @readonly
    */
   get tokenAccounts () {
-    return Array.from(this._tokenAccounts.values())
+    return this._tokenAccounts
   }
 
   /**
@@ -362,25 +362,41 @@ class Wallet {
   }
 
   /**
-   * Add a TokenAccount
+   * Adds a tokenAccount to the wallet
+   *
+   * @param {TokenAccount} tokenAccount - the tokenAccount you wish to add
+   * @returns {TokenAccount}
+   */
+  addTokenAccount (tokenAccount) {
+    this._tokenAccounts[tokenAccount.address] = tokenAccount
+    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
+    return this._tokenAccounts[tokenAccount.address]
+  }
+
+  /**
+   * Create a TokenAccount
    *
    * You are allowed to add a tokenAccount using the address
    *
    * @param {LogosAddress} address - address of the token account.
    * @returns {Promise<Account>}
    */
-  async addTokenAccount (address) {
-    let accountOptions = null
-    accountOptions.wallet = this
-    const tokenAccount = new TokenAccount(address)
-    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
-    this._tokenAccounts[tokenAccount.address] = tokenAccount
-    if (this._rpc) {
-      await this.tokenAccounts[tokenAccount.address].sync()
+  async createTokenAccount (address) {
+    if (this._tokenAccounts[address]) {
+      return this._tokenAccounts[address]
     } else {
-      this._tokenAccounts[tokenAccount.address].synced = true
+      const tokenAccount = new TokenAccount(address, this)
+      if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
+      this._tokenAccounts[tokenAccount.address] = tokenAccount
+      if (this._rpc) {
+        await this._tokenAccounts[tokenAccount.address].sync()
+      } else {
+        console.log('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
+        this._tokenAccounts[tokenAccount.address].synced = true
+      }
+      console.log(this._tokenAccounts[tokenAccount.address])
+      return this._tokenAccounts[tokenAccount.address]
     }
-    return this._tokenAccounts[tokenAccount.address]
   }
 
   /**

@@ -25,8 +25,6 @@ class Account {
     address: null,
     publicKey: null,
     privateKey: null,
-    previous: null,
-    sequence: null,
     balance: '0',
     pendingBalance: '0',
     tokenBalances: {},
@@ -194,22 +192,14 @@ class Account {
      * @type {Hexadecimal64Length}
      * @private
      */
-    if (options.previous !== undefined) {
-      this._previous = options.previous
-    } else {
-      this._previous = null
-    }
+    this._previous = null
 
     /**
-     * Sequence number of the last confirmed or pending request
+     * Sequence number of the last confirmed or pending request plus one
      * @type {number}
      * @private
      */
-    if (options.sequence !== undefined) {
-      this._sequence = options.sequence
-    } else {
-      this._sequence = null
-    }
+    this._sequence = null
 
     /**
      * Account version of webwallet SDK
@@ -233,7 +223,6 @@ class Account {
       this._wallet = null
     }
 
-    this._tokens = {}
     this._synced = false
   }
 
@@ -444,39 +433,31 @@ class Account {
    * @readonly
    */
   get previous () {
-    if (this._previous !== null) {
-      return this._previous
+    if (this._pendingChain.length > 0) {
+      this._previous = this._pendingChain[this.pendingChain.length - 1].hash
+    } else if (this._chain.length > 0) {
+      this._previous = this._chain[this._chain.length - 1].hash
     } else {
-      if (this._pendingChain.length > 0) {
-        this._previous = this._pendingChain[this.pendingChain.length - 1].hash
-      } else if (this._chain.length > 0) {
-        this._previous = this._chain[this._chain.length - 1].hash
-      } else {
-        this._previous = Utils.GENESIS_HASH
-      }
-      return this._previous
+      this._previous = Utils.GENESIS_HASH
     }
+    return this._previous
   }
 
   /**
    * Return the sequence value
    * @type {number}
-   * @returns {number} sequence of the previous transaction
+   * @returns {number} sequence of for the next transaction
    * @readonly
    */
   get sequence () {
-    if (this._sequence !== null) {
-      return this._sequence
+    if (this._pendingChain.length > 0) {
+      this._sequence = this._pendingChain[this.pendingChain.length - 1].sequence
+    } else if (this._chain.length > 0) {
+      this._sequence = this._chain[this._chain.length - 1].sequence
     } else {
-      if (this._pendingChain.length > 0) {
-        this._sequence = this._pendingChain[this.pendingChain.length - 1].sequence
-      } else if (this._chain.length > 0) {
-        this._sequence = this._chain[this._chain.length - 1].sequence
-      } else {
-        this._sequence = -1
-      }
-      return parseInt(this._sequence)
+      this._sequence = -1
     }
+    return parseInt(this._sequence) + 1
   }
 
   /**
@@ -493,26 +474,24 @@ class Account {
         proxyURL: this.wallet.rpc.proxy
       })
       if (this.wallet.fullSync) {
-        RPC.accounts.history(this._address, -1, true).then((history) => {
+        RPC.accounts.history(this.address, -1, true).then((history) => {
           if (history) {
             for (const requestInfo of history) {
               this.addRequest(requestInfo)
             }
             this.updateBalancesFromChain()
-            this._sequence = null
-            this._previous = null
             if (this.verifyChain() && this.verifyReceiveChain()) {
               this._synced = true
               resolve(this)
             }
           } else {
             this._synced = true
-            console.log(`${this._address} is empty and therefore valid`)
+            console.log(`${this.address} is empty and therefore valid`)
             resolve(this)
           }
         })
       } else {
-        RPC.accounts.info(this._address).then(info => {
+        RPC.accounts.info(this.address).then(info => {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
               this.addRequest(val)
@@ -527,8 +506,6 @@ class Account {
                 this._tokenBalances = info.tokens
                 this._pendingTokenBalances = info.tokens
               }
-              this._sequence = null
-              this._previous = null
               this._synced = true
               resolve(this)
             })
@@ -546,10 +523,8 @@ class Account {
                 this._pendingTokenBalances = info.tokens
               }
             }
-            this._sequence = null
-            this._previous = null
             this._synced = true
-            console.log(`${this._address} is empty and therefore valid`)
+            console.log(`${this.address} is empty and therefore valid`)
             resolve(this)
           }
         })
@@ -568,19 +543,22 @@ class Account {
     this._receiveChain.forEach(request => {
       if (request.type === 'send') {
         for (let transaction of request.transactions) {
-          if (transaction.destination === this._address) {
+          if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
       } else if (request.type === 'token_send') {
         for (let transaction of request.transactions) {
-          if (transaction.destination === this._address) {
+          if (transaction.destination === this.address) {
             tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
           }
         }
       } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
-        if (request.transaction.destination === this._address) {
+        if (request.transaction.destination === this.address) {
           tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount))
+        }
+        if (request.type === 'revoke' && request.source === this.address) {
+          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount))
         }
       }
     })
@@ -592,8 +570,6 @@ class Account {
         sum = sum.minus(bigInt(request.fee))
       } else if (request.type === 'issuance') {
         sum = sum.minus(bigInt(request.fee))
-      } else if (request.type === 'revoke') {
-        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount))
       }
     })
     this._balance = sum.toString()
@@ -602,7 +578,7 @@ class Account {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
         for (let transaction of pendingRequest.transactions) {
-          if (transaction.destination === this._address) {
+          if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
@@ -610,11 +586,11 @@ class Account {
         sum = sum.minus(bigInt(pendingRequest.fee))
         tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee))
         for (let transaction of pendingRequest.transactions) {
-          if (transaction.destination === this._address) {
+          if (transaction.destination === this.address) {
             tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].plus(bigInt(transaction.amount))
           }
         }
-      } else {
+      } else if (pendingRequest.type === 'issuance') {
         sum = sum.minus(bigInt(pendingRequest.fee))
       }
     })
@@ -630,28 +606,35 @@ class Account {
    */
   updateBalancesFromRequest (request) {
     let sum = bigInt(this._balance)
-    let tokenSums = {}
+    let tokenSums = this.tokenBalances
     if (request.type === 'send') {
-      if (request.origin === this._address) {
+      if (request.origin === this.address) {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
       }
       for (let transaction of request.transactions) {
-        if (transaction.destination === this._address) {
+        if (transaction.destination === this.address) {
           sum = sum.plus(bigInt(transaction.amount))
         }
       }
     } else if (request.type === 'token_send') {
       sum = sum.minus(bigInt(request.fee))
-      if (request.origin === this._address) {
+      if (request.origin === this.address) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
       }
       for (let transaction of request.transactions) {
-        if (transaction.destination === this._address) {
+        if (transaction.destination === this.address) {
           tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
         }
       }
-    } else {
+    } else if (request.type === 'issuance') {
       sum = sum.minus(bigInt(request.fee))
+    } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
+      if (request.transaction.destination === this.address) {
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount))
+      }
+      if (request.type === 'revoke' && request.source === this.address) {
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount))
+      }
     }
     this._balance = sum.toString()
     this._tokenBalances = tokenSums
@@ -659,26 +642,24 @@ class Account {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
         for (let transaction of pendingRequest.transactions) {
-          if (transaction.destination === this._address) {
+          if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
       } else if (pendingRequest.type === 'token_send') {
         sum = sum.minus(bigInt(pendingRequest.fee))
-        if (request.origin === this._address) {
-          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
-        }
-        for (let transaction of request.transactions) {
-          if (transaction.destination === this._address) {
-            tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
+        tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee))
+        for (let transaction of pendingRequest.transactions) {
+          if (transaction.destination === this.address) {
+            tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].plus(bigInt(transaction.amount))
           }
         }
-      } else {
+      } else if (pendingRequest.type === 'issuance') {
         sum = sum.minus(bigInt(pendingRequest.fee))
       }
     })
-    this._pendingTokenBalances = tokenSums
     this._pendingBalance = sum.toString()
+    this._pendingTokenBalances = tokenSums
   }
 
   /**
@@ -698,7 +679,7 @@ class Account {
       // If this request was created by us AND
       // we do not currently have that request THEN
       // add the request to confirmed chain
-      if (requestInfo.origin === this._address &&
+      if (requestInfo.origin === this.address &&
         !this.getChainRequest(requestInfo.hash)) {
         this._chain.push(request)
       }
@@ -708,7 +689,7 @@ class Account {
       // add the request to the receive chain
       if (requestInfo.transactions && requestInfo.transactions.length > 0) {
         for (let trans of requestInfo.transactions) {
-          if (trans.destination === this._address &&
+          if (trans.destination === this.address &&
             !this.getRecieveRequest(requestInfo.hash)) {
             this._receiveChain.push(request)
           }
@@ -729,12 +710,7 @@ class Account {
       return request
     } else if (requestInfo.type === 'revoke') {
       let request = new Revoke(requestInfo)
-      if (request.source === this._address) {
-        this._chain.push(request)
-      }
-      if (request.transaction.destination === this._address) {
-        this._receiveChain.push(request)
-      }
+      this._receiveChain.push(request)
       return request
     }
   }
@@ -981,15 +957,13 @@ class Account {
       previous: this.previous,
       fee: Utils.minimumFee,
       transactions: transactions,
-      sequence: this.sequence + 1,
-      origin: this._address
+      sequence: this.sequence,
+      origin: this.address
     })
     if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
     }
     request.sign(this._privateKey)
-    this._previous = request.hash
-    this._sequence = request.sequence
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
     if (request.work === null) {
       if (this.wallet.remoteWork) {
@@ -1027,7 +1001,6 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createTokenIssuanceRequest (options) {
-    console.log('hello')
     if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
     if (!options.symbol) throw new Error('You must pass symbol as a part of the TokenOptions')
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
@@ -1036,8 +1009,8 @@ class Account {
       work: null,
       previous: this.previous,
       fee: Utils.minimumFee,
-      sequence: this.sequence + 1,
-      origin: this._address,
+      sequence: this.sequence,
+      origin: this.address,
       name: options.name,
       symbol: options.symbol
     })
@@ -1063,9 +1036,6 @@ class Account {
       throw new Error('Invalid Request: Not Enough Logos to afford the fee to issue a token')
     }
     request.sign(this._privateKey)
-    console.log('signed')
-    this._previous = request.hash
-    this._sequence = request.sequence
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     if (request.work === null) {
       if (this.wallet.remoteWork) {
@@ -1098,84 +1068,65 @@ class Account {
   }
 
   /**
-   * Gets tokenAccount info from the rpc
+   * Gets tokenAccount
    *
    * @param {TokenRequest} options - Object contained the tokenID or tokenAccount
-   * @throws An exception if no RPC
    * @throws An exception if no tokenID or tokenAccount
-   * @returns {Promise<TokenAccountInfo>} the token account info object
+   * @returns {Promise<TokenAccount>} the token account info object
    */
-  async tokenAccountInfo (options) {
-    if (!this.wallet.rpc) throw new Error('You must have RPC enabled to perform token account requests')
+  async getTokenAccount (options) {
     if (!options.tokenID && !options.token_id && !options.token_account && !options.tokenAccount) throw new Error('You must pass tokenID, token_id, token_account, or tokenAccount in options')
     let tokenAccount = null
     if (options.token_account) tokenAccount = options.token_account
     if (options.tokenAccount) tokenAccount = options.tokenAccount
     if (options.token_id) tokenAccount = Utils.accountFromHexKey(options.token_id)
     if (options.tokenID) tokenAccount = Utils.accountFromHexKey(options.tokenID)
-    if (this._tokens && this._tokens[tokenAccount]) {
-      return {
-        info: this._tokens[tokenAccount],
-        publicKey: Utils.keyFromAccount(tokenAccount)
-      }
+    if (this.wallet.tokenAccounts[tokenAccount]) {
+      return this.wallet.tokenAccounts[tokenAccount]
     } else {
-      const RPC = new Logos({
-        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this.wallet.rpc.proxy
-      })
-      let tokenAccountInfo = await RPC.accounts.info(tokenAccount)
-      tokenAccountInfo.address = tokenAccount
-      this._tokens[tokenAccount] = tokenAccountInfo
-      return {
-        info: tokenAccountInfo,
-        publicKey: Utils.keyFromAccount(tokenAccount)
-      }
+      return this.wallet.createTokenAccount(tokenAccount)
     }
   }
 
   /**
    * Creates a request from the specified information
    *
-   * @param {TokenSendOptions} options - The account destinations and amounts you wish to send them
+   * @param {string} token - The token address or token id
+   * @param {Transaction} transactions - The account destinations and amounts you wish to send them
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
    * @throws An exception if the request is rejected by the RPC
    * @returns {Promise<Request>} the request object
    */
-  async createTokenSendRequest (options) {
+  async createTokenSendRequest (token, transactions) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
-    if (!options.transactions) throw new Error('You must pass transaction in the token send options')
-    let tokenAccount = await this.tokenAccountInfo(options)
+    if (!transactions) throw new Error('You must pass transaction in the token send options')
+    if (!token) throw new Error('You must pass token which is either tokenID or tokenAddress')
+    let tokenAccount = await this.getTokenAccount(token)
     let request = new TokenSend({
       signature: null,
       work: null,
       previous: this.previous,
       fee: Utils.minimumFee,
-      sequence: this.sequence + 1,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
-      transactions: options.transactions
+      sequence: this.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
+      transactions: transactions
     })
-    if (options.tokenFee) {
-      request.tokenFee = options.tokenFee
+    if (tokenAccount.feeType === 'Flat') {
+      request.tokenFee = tokenAccount.feeRate
     } else {
-      if (tokenAccount.info.fee_type === 'Flat') {
-        request.tokenFee = tokenAccount.info.fee_rate
-      } else {
-        request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.info.fee_rate).divide(100))
-      }
+      request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.feeRate)).divide(100)
     }
     if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Logos to pay the logos fee for token sends')
     }
-    if (bigInt(this._pendingTokenBalances[tokenAccount.publicKey]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
+    if (bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Token to pay the Logos fee for token sends')
     }
     request.sign(this._privateKey)
-    this._previous = request.hash
-    this._sequence = request.sequence
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
-    this._pendingTokenBalances[tokenAccount.publicKey] = bigInt(this._pendingTokenBalances[tokenAccount.publicKey]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
+    this._pendingTokenBalances[tokenAccount.tokenID] = bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
     if (request.work === null) {
       if (this.wallet.remoteWork) {
         request.work = Utils.EMPTY_WORK
@@ -1210,37 +1161,21 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createIssueAdditionalRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (options.amount === undefined) throw new Error('You must pass amount in options')
     let request = new IssueAdditional({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       amount: options.amount
     })
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to issue additional tokens')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1251,37 +1186,21 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createChangeSettingRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     let request = new ChangeSetting({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID
     })
     request.setting = options.setting
     request.value = options.value
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to change the token settings')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1292,36 +1211,20 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createImmuteSettingRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     let request = new ImmuteSetting({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID
     })
     request.setting = options.setting
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to immute setting')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1332,39 +1235,23 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createRevokeRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in the options')
     if (!options.source) throw new Error('You must source in the options')
     let request = new Revoke({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       source: options.source,
       transaction: options.transaction
     })
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to revoke tokens')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1375,38 +1262,22 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createAdjustUserStatusRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (!options.account) throw new Error('You must pass account in options')
     let request = new AdjustUserStatus({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.frontier,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       account: options.account
     })
     request.status = options.status
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to adjust that users status')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1417,39 +1288,23 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createAdjustFeeRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (!options.feeRate) throw new Error('You must pass feeRate in options')
     if (!options.feeType) throw new Error('You must pass feeType in options')
     let request = new AdjustFee({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.frontier,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       feeRate: options.feeRate,
       feeType: options.feeType
     })
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to distribute tokens')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1460,37 +1315,21 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createUpdateIssuerInfoRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (!options.issuerInfo) throw new Error('You must pass issuerInfo in the options')
     let request = new UpdateIssuerInfo({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.frontier,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID
     })
     request.issuerInfo = options.issuerInfo
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to update issuer info')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1501,39 +1340,23 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createUpdateControllerRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (!options.controller) throw new Error('You must pass controller in the options')
     if (!options.action) throw new Error('You must pass action in the options')
     let request = new UpdateController({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.frontier,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       controller: options.controller
     })
     request.action = options.action
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to update controller')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1544,37 +1367,21 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createBurnRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (options.amount === undefined) throw new Error('You must pass amount in options')
     let request = new Burn({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.frontier,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       amount: options.amount
     })
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to burn tokens')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1585,37 +1392,21 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createDistributeRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
     let request = new Distribute({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.frontier,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       transaction: options.transaction
     })
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to distribute tokens')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1626,37 +1417,21 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createWithdrawFeeRequest (options) {
-    let tokenAccount = await this.tokenAccountInfo(options)
+    let tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
     let request = new WithdrawFee({
       signature: null,
       work: null,
-      previous: tokenAccount.info.frontier,
+      previous: tokenAccount.frontier,
       fee: Utils.minimumFee,
-      sequence: tokenAccount.info.sequence,
-      origin: this._address,
-      tokenID: tokenAccount.publicKey,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
       transaction: options.transaction
     })
-    if (bigInt(tokenAccount.info.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to withdraw the token fees')
-    }
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    console.log(request.toJSON(true))
-    let response = await request.publish(this.wallet.rpc)
-    console.log(response)
-    if (response.hash) {
-      return request
-    } else {
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-    }
+    let result = await tokenAccount.publishRequest(request)
+    return result
   }
 
   /**
@@ -1669,8 +1444,11 @@ class Account {
    * @returns {Promise<void>}
    */
   async processRequest (requestInfo) {
-    // Confirm the request add it to the confirmed chain and remove from pending.
-    if (requestInfo.origin === this._address) {
+    // Confirm the requests we authored and add move the request to the confirmed chain
+    if (requestInfo.origin === this.address &&
+      (requestInfo.type === 'send' ||
+      requestInfo.type === 'token_send' ||
+      requestInfo.type === 'issuance')) {
       let request = this.getPendingRequest(requestInfo.hash)
       if (request) {
         this._chain.push(request)
@@ -1697,68 +1475,29 @@ class Account {
           }
         }
       } else {
-        if (requestInfo.type === 'send' ||
-          requestInfo.type === 'token_send' ||
-          requestInfo.type === 'issuance') {
-          console.log('Someone is sending blocks from this account that is not us!!!')
-          // Add new request to chain
-          let request = this.addRequest(requestInfo)
+        console.log('Someone is sending blocks from this account that is not us!!!')
+        // Add new request to chain
+        let request = this.addRequest(requestInfo)
 
-          // Remove all pendings as they are now invalidated
-          this.removePendingRequests()
+        // Remove all pendings as they are now invalidated
+        this.removePendingRequests()
 
-          // Update balance for new block
-          if (this.wallet.fullSync) {
-            this.updateBalancesFromChain()
-          } else {
-            this.updateBalancesFromRequest(request)
-          }
-
-          // Clear sequence and previous
-          this._sequence = null
-          this._previous = null
+        // Update balance for new block
+        if (this.wallet.fullSync) {
+          this.updateBalancesFromChain()
         } else {
-          // TODO Create Pending Token Stuff.
-          let tokenAccount = Utils.accountFromHexKey(requestInfo.token_id)
-          this._tokens[tokenAccount].sequence = parseInt(requestInfo.sequence) + 1
-          this._tokens[tokenAccount].balance = bigInt(this._tokens[tokenAccount].balance).minus(bigInt(requestInfo.fee))
-          this._tokens[tokenAccount].frontier = requestInfo.hash
-          if (requestInfo.fee_type) {
-            this._tokens[tokenAccount].fee_type = requestInfo.fee_type
-          }
-          if (requestInfo.fee_rate) {
-            this._tokens[tokenAccount].fee_rate = requestInfo.fee_rate
-          }
+          this.updateBalancesFromRequest(request)
         }
       }
     }
 
-    // Add block to receive chain if it is a recieve
-    if (requestInfo.type === 'send') {
-      if (requestInfo.transactions && requestInfo.transactions.length > 0) {
-        for (let trans of requestInfo.transactions) {
-          if (trans.destination === this._address) {
-            let request = new Send({
-              origin: requestInfo.origin,
-              signature: requestInfo.signature,
-              work: requestInfo.work,
-              sequence: requestInfo.sequence,
-              transactions: requestInfo.transactions,
-              previous: requestInfo.previous,
-              fee: requestInfo.fee
-            })
-            if (!request.verify()) throw new Error('Invalid Recieve Request!')
-            this._receiveChain.push(request)
-            if (this.wallet.fullSync) {
-              this.updateBalancesFromChain()
-            } else if (requestInfo.origin !== this._address) {
-              // This block was already processed if we sent it.
-              this.updateBalancesFromRequest(request)
-            }
-            break
-          }
-        }
-      }
+    // Handle Receives
+    let request = this.addRequest(requestInfo)
+    if (!request.verify()) throw new Error('Invalid Logos Request!')
+    if (this.wallet.fullSync) {
+      this.updateBalancesFromChain()
+    } else if (requestInfo.origin !== this.address || requestInfo.tokenID) {
+      this.updateBalancesFromRequest(request)
     }
   }
 
@@ -1768,35 +1507,65 @@ class Account {
    * @returns {Promise<void>}
    */
   async combineRequests () {
-    // TODO Token Send Support
     let aggregate = 0
-    let transactionsToCombine = [
+    let logosTransactionsToCombine = [
       []
     ]
+    let issuances = []
+    let tokenTransactionsToCombine = new Map()
     for (let request of this._pendingChain) {
       if (request.type === 'send') {
         for (let transaction of request.transactions) {
-          if (transactionsToCombine[aggregate].length < 8) {
-            transactionsToCombine[aggregate].push(transaction)
+          if (logosTransactionsToCombine[aggregate].length < 8) {
+            logosTransactionsToCombine[aggregate].push(transaction)
           } else {
             aggregate++
-            transactionsToCombine[aggregate] = [transaction]
+            logosTransactionsToCombine[aggregate] = [transaction]
           }
         }
-      } else {
-        // This isn't all sends lets just abort and send normally
-        // There is probably a better way to handle this edge case
-        if (this.wallet.rpc && this._pendingChain.length > 0) {
-          this._pendingChain[0].publish(this.wallet.rpc)
+      } else if (request.type === 'token_send') {
+        let tokenAggregates = [[]]
+        if (tokenTransactionsToCombine.has(request.tokenID)) {
+          tokenAggregates = tokenTransactionsToCombine.get(request.tokenID)
         }
-        return
+        for (let transaction of request.transactions) {
+          if (tokenAggregates[aggregate].length < 8) {
+            tokenAggregates[aggregate].push(transaction)
+          } else {
+            aggregate++
+            tokenAggregates[aggregate] = [transaction]
+          }
+        }
+        tokenTransactionsToCombine.set(request.tokenID, tokenAggregates)
+      } else if (request.type === 'issuance') {
+        issuances.push(request)
       }
     }
+
+    // Clear Receive Chain
     this.removePendingRequests()
-    this._previous = null
-    this._sequence = null
-    const promises = transactionsToCombine.map(transactions => this.createSendRequest(transactions))
-    await Promise.all(promises)
+
+    // Add Issuances
+    if (issuances.length > 0) {
+      for (let issuance of issuances) {
+        issuance.previous = this.previous
+        issuance.sequence = this.sequence
+        issuance.sign(this._privateKey)
+        this._pendingChain.push(issuance)
+      }
+    }
+
+    // Add Token Sends
+    for (let [tokenID, tokenTransactions] of tokenTransactionsToCombine) {
+      const tokenPromises = tokenTransactions.map(transactions => this.createTokenSendRequest(tokenID, transactions))
+      await Promise.all(tokenPromises)
+    }
+
+    // Normal Sends
+    const sendPromises = logosTransactionsToCombine.map(transactions => this.createSendRequest(transactions))
+    await Promise.all(sendPromises)
+
+    // Publish next block
     if (this.wallet.rpc && this._pendingChain.length > 0) {
       this._pendingChain[0].publish(this.wallet.rpc)
     }

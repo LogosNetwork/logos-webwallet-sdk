@@ -11,6 +11,7 @@ const UpdateIssuerInfo = require('./Requests/UpdateIssuerInfo.js')
 const UpdateController = require('./Requests/UpdateController.js')
 const Burn = require('./Requests/Burn.js')
 const Distribute = require('./Requests/Distribute.js')
+const Issuance = require('./Requests/Issuance.js')
 const WithdrawFee = require('./Requests/WithdrawFee.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 
@@ -61,6 +62,7 @@ class TokenAccount {
   /**
    * The wallet this account belongs to
    * @type {boolean}
+   * @readonly
    */
   get wallet () {
     return this._wallet
@@ -93,6 +95,10 @@ class TokenAccount {
     return this._balance
   }
 
+  set balance (val) {
+    this._balance = val
+  }
+
   /**
    * The pending balance of the token account in reason
    *
@@ -105,6 +111,10 @@ class TokenAccount {
     return this._pendingBalance
   }
 
+  set pendingBalance (val) {
+    this._pendingBalance = val
+  }
+
   /**
    * The balance of the token in the base token unit
    * @type {string}
@@ -112,6 +122,10 @@ class TokenAccount {
    */
   get tokenBalance () {
     return this._tokenBalance
+  }
+
+  set tokenBalance (val) {
+    this._tokenBalance = val
   }
 
   /**
@@ -124,6 +138,136 @@ class TokenAccount {
    */
   get pendingTokenBalance () {
     return this._pendingTokenBalance
+  }
+
+  set pendingTokenBalance (val) {
+    this._pendingTokenBalance = val
+  }
+
+  /**
+   * The total supply of the token in base token
+   * @type {string}
+   * @readonly
+   */
+  get totalSupply () {
+    return this._totalSupply
+  }
+
+  set totalSupply (val) {
+    this._totalSupply = val
+  }
+
+  /**
+   * The pending total supply of the token in base token
+   *
+   * pending total supply is the total supply we are expecting after the pending blocks are confirmed
+   *
+   * @type {string}
+   * @readonly
+   */
+  get pendingTotalSupply () {
+    return this._pendingTotalSupply
+  }
+
+  set pendingTotalSupply (val) {
+    this._pendingTotalSupply = val
+  }
+
+  /**
+   * The total supply of the token in base token
+   * @type {string}
+   * @readonly
+   */
+  get tokenFeeBalance () {
+    return this._tokenFeeBalance
+  }
+
+  set tokenFeeBalance (val) {
+    this._tokenFeeBalance = val
+  }
+
+  /**
+   * The issuer info of the token
+   * @type {string}
+   */
+  get issuerInfo () {
+    return this._issuerInfo
+  }
+
+  set issuerInfo (val) {
+    this._issuerInfo = val
+  }
+
+  /**
+   * The symbol of the token
+   * @type {string}
+   */
+  get symbol () {
+    return this._symbol
+  }
+
+  set symbol (val) {
+    this._symbol = val
+  }
+
+  /**
+   * The name of the token
+   * @type {string}
+   */
+  get name () {
+    return this._name
+  }
+
+  set name (val) {
+    this._name = val
+  }
+
+  /**
+   * The fee rate of the token
+   * @type {string}
+   */
+  get feeRate () {
+    return this._feeRate
+  }
+
+  set feeRate (val) {
+    this._feeRate = val
+  }
+
+  /**
+   * The fee type of the token
+   * @type {string}
+   */
+  get feeType () {
+    return this._feeType
+  }
+
+  set feeType (val) {
+    this._feeType = val
+  }
+
+  /**
+   * The settings of the token
+   * @type {Object}
+   */
+  get settings () {
+    return this._settings
+  }
+
+  set settings (val) {
+    this._settings = val
+  }
+
+  /**
+   * The controllers of the token
+   * @type {Object[]}
+   */
+  get controllers () {
+    return this._controllers
+  }
+
+  set controllers (val) {
+    this._controllers = val
   }
 
   /**
@@ -193,39 +337,31 @@ class TokenAccount {
    * @readonly
    */
   get previous () {
-    if (this._previous !== null) {
-      return this._previous
+    if (this._pendingChain.length > 0) {
+      this._previous = this._pendingChain[this.pendingChain.length - 1].hash
+    } else if (this._chain.length > 0) {
+      this._previous = this._chain[this._chain.length - 1].hash
     } else {
-      if (this._pendingChain.length > 0) {
-        this._previous = this._pendingChain[this.pendingChain.length - 1].hash
-      } else if (this._chain.length > 0) {
-        this._previous = this._chain[this._chain.length - 1].hash
-      } else {
-        this._previous = Utils.GENESIS_HASH
-      }
-      return this._previous
+      this._previous = Utils.GENESIS_HASH
     }
+    return this._previous
   }
 
   /**
    * Return the sequence value
    * @type {number}
-   * @returns {number} sequence of the previous transaction
+   * @returns {number} sequence for the next transactions
    * @readonly
    */
   get sequence () {
-    if (this._sequence !== null) {
-      return this._sequence
+    if (this._pendingChain.length > 0) {
+      this._sequence = this._pendingChain[this.pendingChain.length - 1].sequence
+    } else if (this._chain.length > 0) {
+      this._sequence = this._chain[this._chain.length - 1].sequence
     } else {
-      if (this._pendingChain.length > 0) {
-        this._sequence = this._pendingChain[this.pendingChain.length - 1].sequence
-      } else if (this._chain.length > 0) {
-        this._sequence = this._chain[this._chain.length - 1].sequence
-      } else {
-        this._sequence = -1
-      }
-      return parseInt(this._sequence)
+      this._sequence = -1
     }
+    return parseInt(this._sequence) + 1
   }
 
   /**
@@ -258,8 +394,6 @@ class TokenAccount {
         this._feeType = info.fee_type
         this._controllers = this._getControllerFromJSON(info.controllers)
         this._settings = this._getSettingsFromJSON(info.settings)
-        this._sequence = info.sequence
-        this._previous = info.frontier
         this._balance = info.balance
         this._pendingBalance = info.balance
         if (this.wallet.fullSync) {
@@ -268,8 +402,6 @@ class TokenAccount {
               for (const requestInfo of history) {
                 this.addRequest(requestInfo)
               }
-              this._sequence = null
-              this._previous = null
               if (this.verifyChain() && this.verifyReceiveChain()) {
                 this._synced = true
                 resolve(this)
@@ -284,14 +416,10 @@ class TokenAccount {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
               this.addRequest(val)
-              this._sequence = null
-              this._previous = null
               this._synced = true
               resolve(this)
             })
           } else {
-            this._sequence = null
-            this._previous = null
             this._synced = true
             console.log(`${this._address} is empty and therefore valid`)
             resolve(this)
@@ -343,10 +471,60 @@ class TokenAccount {
         }
       }
     } else if (request.type === 'issuance') {
-      // Never should see this
+      this.tokenBalance = request.totalSupply
+      this.pendingTokenBalance = request.totalSupply
+      this.totalSupply = request.totalSupply
+      this.pendingTotalSupply = request.totalSupply
+      this.tokenFeeBalance = '0'
+      this.symbol = request.symbol
+      this.name = request.name
+      this.issuerInfo = request.issuerInfo
+      this.feeRate = request.feeRate
+      this.feeType = request.feeType
+      this.controllers = request.controllers
+      this.settings = request.settings
+      this.balance = '0'
+      this.pendingBalance = '0'
     }
     if (request.type !== 'send' && request.type !== 'issuance') {
       this.balance = bigInt(this.balance).minus(bigInt(request.fee)).toString()
+    }
+  }
+
+  /**
+   * Adds the request to the pending chain and publishes it
+   *
+   * @param {Request} request - Request information from the RPC or MQTT
+   * @throws An exception if the pending balance is less than the required amount to adjust a users status
+   * @returns {Request}
+   */
+  async publishRequest (request) {
+    if (bigInt(this.balance).minus(request.fee).lesser(0)) {
+      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to issue additional tokens')
+    }
+    if (request.work === null) {
+      if (this.wallet.remoteWork) {
+        request.work = Utils.EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    this._pendingChain.push(request)
+    console.log(request.toJSON(true))
+    if (this.wallet.rpc) {
+      if (this._pendingChain.length === 1) {
+        let response = await request.publish(this.wallet.rpc)
+        console.log(response)
+        if (response.hash) {
+          return request
+        } else {
+          throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
+        }
+      } else {
+        return request
+      }
+    } else {
+      return request
     }
   }
 
@@ -401,6 +579,9 @@ class TokenAccount {
     } else if (requestInfo.type === 'withdraw_fee') {
       request = new WithdrawFee(requestInfo)
       this._chain.push(request)
+    } else if (requestInfo.issuance === 'issuance') {
+      request = new Issuance(requestInfo)
+      this._receiveChain.push(request)
     }
     return request
   }
@@ -641,7 +822,13 @@ class TokenAccount {
    */
   async processRequest (requestInfo) {
     // Confirm the request add it to the confirmed chain and remove from pending.
-    if (requestInfo.token_id === this._tokenID) {
+    if (requestInfo.type === 'send' || requestInfo.type === 'issuance') {
+      // Handle Recieves (make sure withdraw_logos isnt sendable to a token account)
+      let request = this.addRequest(requestInfo)
+      if (!request.verify()) throw new Error('Invalid Logos Request!')
+      this.updateTokenInfoFromRequest(request)
+    } else if (requestInfo.token_id === this._tokenID) {
+      // Handle Sends
       let request = this.getPendingRequest(requestInfo.hash)
       if (request) {
         this._chain.push(request)
@@ -661,25 +848,6 @@ class TokenAccount {
 
         // Update Token Account for new block
         this.updateTokenInfoFromRequest(request)
-
-        // Clear sequence and previous
-        this._sequence = null
-        this._previous = null
-      }
-    }
-
-    // Add block to receive chain if it is a recieve
-    if (requestInfo.type === 'send') {
-      // Verifying token account is a reciever shouldn't be necessary
-      // with token accounts since mqtt only sends recieves to token accounts
-      // but this is an added safety for poor mqtt implementation
-      if (requestInfo.transactions && requestInfo.transactions.length > 0) {
-        for (let trans of requestInfo.transactions) {
-          if (trans.destination === this._address) {
-            this.addReceiveRequest(requestInfo)
-            break
-          }
-        }
       }
     }
   }
