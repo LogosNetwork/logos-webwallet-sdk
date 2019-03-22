@@ -1,6 +1,5 @@
 const LogosWallet = require('../')
 const Wallet = LogosWallet.Wallet
-
 let create = async () => {
   let wallet = new Wallet({
     password: 'password',
@@ -8,6 +7,7 @@ let create = async () => {
     mqtt: 'ws:localhost:8883',
     batchSends: true
   })
+
   let account = await wallet.createAccount({
     privateKey: '872C745C3401354C6BF4BFD869CCC2B8382736DA68BF6D7A23AF01AAFDD67700'
   })
@@ -61,11 +61,21 @@ let create = async () => {
   //   }
   // })
 
-  // await account.createSendRequest([{
-  //   destination: 'lgs_34i1uyene47uksqp7t8wes3aib5e9yf5kfkz7xy7nmowmmoffr4s39xrq1zj',
-  //   amount: '1000000000000000000000000000000'
-  // }])
-
+  for (let i = 0; i < 100; i++) {
+    await account.createSendRequest([{
+      destination: 'lgs_34i1uyene47uksqp7t8wes3aib5e9yf5kfkz7xy7nmowmmoffr4s39xrq1zj',
+      amount: '1000000000000000000000000000000'
+    }])
+    await account.createTokenSendRequest(
+      'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
+      [
+        {
+          destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+          amount: '100000'
+        }
+      ]
+    )
+  }
   // await account.createAdjustUserStatusRequest({
   //   tokenAccount: 'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
   //   account: 'lgs_17cb9nxouwcd16dfr53xd3km8aheko3taf6zhyqu18j59ng786yoprb8gqns',
@@ -73,17 +83,16 @@ let create = async () => {
   // })
 
   // for (let i = 0; i < 10; i++) {
+  //   await account.createTokenSendRequest(
+  //     'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
+  //     [
+  //       {
+  //         destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+  //         amount: '100000'
+  //       }
+  //     ]
+  //   )
   // }
-
-  // await account.createTokenSendRequest({
-  //   tokenAccount: 'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
-  //   transactions: [
-  //     {
-  //       destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
-  //       amount: '10000'
-  //     }
-  //   ]
-  // })
 
   // Invalid to send to token account?
   // await account.createTokenSendRequest({

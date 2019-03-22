@@ -550,15 +550,15 @@ class Account {
       } else if (request.type === 'token_send') {
         for (let transaction of request.transactions) {
           if (transaction.destination === this.address) {
-            tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
+            tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount)).toString()
           }
         }
       } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
         if (request.transaction.destination === this.address) {
-          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount))
+          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount)).toString()
         }
         if (request.type === 'revoke' && request.source === this.address) {
-          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount))
+          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount)).toString()
         }
       }
     })
@@ -566,7 +566,7 @@ class Account {
       if (request.type === 'send') {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
       } else if (request.type === 'token_send') {
-        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).toString()
         sum = sum.minus(bigInt(request.fee))
       } else if (request.type === 'issuance') {
         sum = sum.minus(bigInt(request.fee))
@@ -584,10 +584,10 @@ class Account {
         }
       } else if (pendingRequest.type === 'token_send') {
         sum = sum.minus(bigInt(pendingRequest.fee))
-        tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee))
+        tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee)).toString()
         for (let transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
-            tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].plus(bigInt(transaction.amount))
+            tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).plus(bigInt(transaction.amount)).toString()
           }
         }
       } else if (pendingRequest.type === 'issuance') {
@@ -619,21 +619,21 @@ class Account {
     } else if (request.type === 'token_send') {
       sum = sum.minus(bigInt(request.fee))
       if (request.origin === this.address) {
-        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee))
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).toString()
       }
       for (let transaction of request.transactions) {
         if (transaction.destination === this.address) {
-          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount))
+          tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount)).toString()
         }
       }
     } else if (request.type === 'issuance') {
       sum = sum.minus(bigInt(request.fee))
     } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
       if (request.transaction.destination === this.address) {
-        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount))
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount)).toString()
       }
       if (request.type === 'revoke' && request.source === this.address) {
-        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount))
+        tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount)).toString()
       }
     }
     this._balance = sum.toString()
@@ -648,10 +648,10 @@ class Account {
         }
       } else if (pendingRequest.type === 'token_send') {
         sum = sum.minus(bigInt(pendingRequest.fee))
-        tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee))
+        tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee)).toString()
         for (let transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
-            tokenSums[pendingRequest.tokenID] = tokenSums[pendingRequest.tokenID].plus(bigInt(transaction.amount))
+            tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).plus(bigInt(transaction.amount)).toString()
           }
         }
       } else if (pendingRequest.type === 'issuance') {
@@ -973,15 +973,13 @@ class Account {
       }
     }
     this._pendingChain.push(request)
-    console.log(request.toJSON(true))
     if (this.wallet.rpc) {
       if (this._pendingChain.length === 1) {
-        let response = await request.publish(this.wallet.rpc)
-        console.log(response)
-        if (response.hash) {
+        try {
+          request.publish(this.wallet.rpc)
           return request
-        } else {
-          throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
+        } catch (error) {
+          console.log(error)
         }
       } else {
         return request
@@ -1048,14 +1046,8 @@ class Account {
     if (this.wallet.rpc) {
       if (this._pendingChain.length === 1) {
         try {
-          console.log(request.toJSON(true))
-          let response = await request.publish(this.wallet.rpc)
-          console.log(response)
-          if (response.hash) {
-            return request
-          } else {
-            throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-          }
+          request.publish(this.wallet.rpc)
+          return request
         } catch (error) {
           console.log(error)
         }
@@ -1074,18 +1066,16 @@ class Account {
    * @throws An exception if no tokenID or tokenAccount
    * @returns {Promise<TokenAccount>} the token account info object
    */
-  async getTokenAccount (options) {
-    if (!options.tokenID && !options.token_id && !options.token_account && !options.tokenAccount) throw new Error('You must pass tokenID, token_id, token_account, or tokenAccount in options')
-    let tokenAccount = null
-    if (options.token_account) tokenAccount = options.token_account
-    if (options.tokenAccount) tokenAccount = options.tokenAccount
-    if (options.token_id) tokenAccount = Utils.accountFromHexKey(options.token_id)
-    if (options.tokenID) tokenAccount = Utils.accountFromHexKey(options.tokenID)
-    if (this.wallet.tokenAccounts[tokenAccount]) {
-      return this.wallet.tokenAccounts[tokenAccount]
-    } else {
-      return this.wallet.createTokenAccount(tokenAccount)
+  async getTokenAccount (token) {
+    if (typeof token === 'object') {
+      if (token.token_id) token = token.token_id
+      if (token.tokenID) token = token.tokenID
+      if (token.tokenAccount) token = token.tokenAccount
+      if (token.token_account) token = token.token_account
     }
+    if (!token || typeof token === 'object') throw new Error('You must pass a token id or token account address for token actions')
+    let tokenAccount = await this.wallet.createTokenAccount(Utils.parseAccount(token))
+    return tokenAccount
   }
 
   /**
@@ -1137,13 +1127,11 @@ class Account {
     this._pendingChain.push(request)
     if (this.wallet.rpc) {
       if (this._pendingChain.length === 1) {
-        console.log(request.toJSON(true))
-        let response = await request.publish(this.wallet.rpc)
-        console.log(response)
-        if (response.hash) {
+        try {
+          request.publish(this.wallet.rpc)
           return request
-        } else {
-          throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
+        } catch (error) {
+          console.log(error)
         }
       } else {
         return request
@@ -1507,7 +1495,8 @@ class Account {
    * @returns {Promise<void>}
    */
   async combineRequests () {
-    let aggregate = 0
+    let sendCounter = 0
+    let tokenCounter = 0
     let logosTransactionsToCombine = [
       []
     ]
@@ -1516,11 +1505,11 @@ class Account {
     for (let request of this._pendingChain) {
       if (request.type === 'send') {
         for (let transaction of request.transactions) {
-          if (logosTransactionsToCombine[aggregate].length < 8) {
-            logosTransactionsToCombine[aggregate].push(transaction)
+          if (logosTransactionsToCombine[sendCounter].length < 8) {
+            logosTransactionsToCombine[sendCounter].push(transaction)
           } else {
-            aggregate++
-            logosTransactionsToCombine[aggregate] = [transaction]
+            sendCounter++
+            logosTransactionsToCombine[sendCounter] = [transaction]
           }
         }
       } else if (request.type === 'token_send') {
@@ -1529,11 +1518,11 @@ class Account {
           tokenAggregates = tokenTransactionsToCombine.get(request.tokenID)
         }
         for (let transaction of request.transactions) {
-          if (tokenAggregates[aggregate].length < 8) {
-            tokenAggregates[aggregate].push(transaction)
+          if (tokenAggregates[tokenCounter].length < 8) {
+            tokenAggregates[tokenCounter].push(transaction)
           } else {
-            aggregate++
-            tokenAggregates[aggregate] = [transaction]
+            tokenCounter++
+            tokenAggregates[tokenCounter] = [transaction]
           }
         }
         tokenTransactionsToCombine.set(request.tokenID, tokenAggregates)
@@ -1562,13 +1551,10 @@ class Account {
     }
 
     // Normal Sends
-    const sendPromises = logosTransactionsToCombine.map(transactions => this.createSendRequest(transactions))
+    const sendPromises = logosTransactionsToCombine.map(transactions => {
+      if (transactions.length > 0) this.createSendRequest(transactions)
+    })
     await Promise.all(sendPromises)
-
-    // Publish next block
-    if (this.wallet.rpc && this._pendingChain.length > 0) {
-      this._pendingChain[0].publish(this.wallet.rpc)
-    }
   }
 
   /**

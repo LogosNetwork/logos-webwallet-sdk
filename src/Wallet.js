@@ -394,7 +394,6 @@ class Wallet {
         console.log('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
         this._tokenAccounts[tokenAccount.address].synced = true
       }
-      console.log(this._tokenAccounts[tokenAccount.address])
       return this._tokenAccounts[tokenAccount.address]
     }
   }
@@ -717,7 +716,7 @@ class Wallet {
           if (this._accounts[params.address]) {
             this._accounts[params.address].processRequest(request)
           } else if (this._tokenAccounts[params.address]) {
-            this._tokenAccount[params.address].processRequest(request)
+            this._tokenAccounts[params.address].processRequest(request)
           }
         }
       })

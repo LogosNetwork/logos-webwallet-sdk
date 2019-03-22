@@ -227,7 +227,7 @@ class Request {
   /**
    * Publishes the request
    * @param {RPCOptions} options - rpc options
-   * @returns {Promise<Hexadecimal64Length>} hash of transcation
+   * @returns {Promise<Object>} response of transcation publish
    */
   async publish (options) {
     let delegateId = null
@@ -240,8 +240,12 @@ class Request {
       url: `http://${options.delegates[delegateId]}:55000`,
       proxyURL: options.proxy
     })
-    let hash = await RPC.requests.publish(this.toJSON())
-    return hash
+    let response = await RPC.requests.publish(this.toJSON())
+    if (response.hash) {
+      return response
+    } else {
+      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
+    }
   }
 
   /**

@@ -510,16 +510,9 @@ class TokenAccount {
       }
     }
     this._pendingChain.push(request)
-    console.log(request.toJSON(true))
     if (this.wallet.rpc) {
       if (this._pendingChain.length === 1) {
-        let response = await request.publish(this.wallet.rpc)
-        console.log(response)
-        if (response.hash) {
-          return request
-        } else {
-          throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-        }
+        await request.publish(this.wallet.rpc)
       } else {
         return request
       }
@@ -827,7 +820,7 @@ class TokenAccount {
       let request = this.addRequest(requestInfo)
       if (!request.verify()) throw new Error('Invalid Logos Request!')
       this.updateTokenInfoFromRequest(request)
-    } else if (requestInfo.token_id === this._tokenID) {
+    } else if (requestInfo.token_id === this._tokenID && requestInfo.type !== 'token_send') {
       // Handle Sends
       let request = this.getPendingRequest(requestInfo.hash)
       if (request) {
@@ -880,7 +873,7 @@ class TokenAccount {
       let newController = {}
       newController.account = controller.account
       newController.privileges = {}
-      if (controller.privileges && controller.privileges.length > 0) {
+      if (controller.privileges instanceof Array) {
         newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
         newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
         newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
@@ -901,25 +894,30 @@ class TokenAccount {
         newController.privileges.burn = controller.privileges.indexOf('burn') > -1
         newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
         newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
+      } else {
+        newController.privileges = controller.privileges
       }
       newControllers.push(newController)
     }
     return newControllers
   }
   _getSettingsFromJSON (settings) {
-    let newSettings = {
-      issuance: settings.indexOf('issuance') > -1,
-      modify_issuance: settings.indexOf('modify_issuance') > -1,
-      revoke: settings.indexOf('revoke') > -1,
-      modify_revoke: settings.indexOf('modify_revoke') > -1,
-      freeze: settings.indexOf('freeze') > -1,
-      modify_freeze: settings.indexOf('modify_freeze') > -1,
-      adjust_fee: settings.indexOf('adjust_fee') > -1,
-      modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
-      whitelist: settings.indexOf('whitelist') > -1,
-      modify_whitelist: settings.indexOf('modify_whitelist') > -1
+    if (settings instanceof Array) {
+      return {
+        issuance: settings.indexOf('issuance') > -1,
+        modify_issuance: settings.indexOf('modify_issuance') > -1,
+        revoke: settings.indexOf('revoke') > -1,
+        modify_revoke: settings.indexOf('modify_revoke') > -1,
+        freeze: settings.indexOf('freeze') > -1,
+        modify_freeze: settings.indexOf('modify_freeze') > -1,
+        adjust_fee: settings.indexOf('adjust_fee') > -1,
+        modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
+        whitelist: settings.indexOf('whitelist') > -1,
+        modify_whitelist: settings.indexOf('modify_whitelist') > -1
+      }
+    } else {
+      return settings
     }
-    return newSettings
   }
 }
 
