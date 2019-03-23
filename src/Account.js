@@ -1255,7 +1255,7 @@ class Account {
     let request = new AdjustUserStatus({
       signature: null,
       work: null,
-      previous: tokenAccount.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
       origin: this.address,
@@ -1282,7 +1282,7 @@ class Account {
     let request = new AdjustFee({
       signature: null,
       work: null,
-      previous: tokenAccount.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
       origin: this.address,
@@ -1308,7 +1308,7 @@ class Account {
     let request = new UpdateIssuerInfo({
       signature: null,
       work: null,
-      previous: tokenAccount.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
       origin: this.address,
@@ -1334,7 +1334,7 @@ class Account {
     let request = new UpdateController({
       signature: null,
       work: null,
-      previous: tokenAccount.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
       origin: this.address,
@@ -1360,7 +1360,7 @@ class Account {
     let request = new Burn({
       signature: null,
       work: null,
-      previous: tokenAccount.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
       origin: this.address,
@@ -1385,7 +1385,7 @@ class Account {
     let request = new Distribute({
       signature: null,
       work: null,
-      previous: tokenAccount.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
       origin: this.address,
@@ -1410,7 +1410,7 @@ class Account {
     let request = new WithdrawFee({
       signature: null,
       work: null,
-      previous: tokenAccount.frontier,
+      previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
       origin: this.address,
@@ -1481,11 +1481,13 @@ class Account {
 
     // Handle Receives
     let request = this.addRequest(requestInfo)
-    if (!request.verify()) throw new Error('Invalid Logos Request!')
-    if (this.wallet.fullSync) {
-      this.updateBalancesFromChain()
-    } else if (requestInfo.origin !== this.address || requestInfo.tokenID) {
-      this.updateBalancesFromRequest(request)
+    if (request) {
+      if (!request.verify()) throw new Error('Invalid Logos Request!')
+      if (this.wallet.fullSync) {
+        this.updateBalancesFromChain()
+      } else if (requestInfo.origin !== this.address || requestInfo.tokenID) {
+        this.updateBalancesFromRequest(request)
+      }
     }
   }
 
@@ -1534,16 +1536,6 @@ class Account {
     // Clear Receive Chain
     this.removePendingRequests()
 
-    // Add Issuances
-    if (issuances.length > 0) {
-      for (let issuance of issuances) {
-        issuance.previous = this.previous
-        issuance.sequence = this.sequence
-        issuance.sign(this._privateKey)
-        this._pendingChain.push(issuance)
-      }
-    }
-
     // Add Token Sends
     for (let [tokenID, tokenTransactions] of tokenTransactionsToCombine) {
       const tokenPromises = tokenTransactions.map(transactions => this.createTokenSendRequest(tokenID, transactions))
@@ -1555,6 +1547,19 @@ class Account {
       if (transactions.length > 0) this.createSendRequest(transactions)
     })
     await Promise.all(sendPromises)
+
+    // Add Issuances
+    if (issuances.length > 0) {
+      for (let issuance of issuances) {
+        issuance.previous = this.previous
+        issuance.sequence = this.sequence
+        issuance.sign(this._privateKey)
+        this._pendingChain.push(issuance)
+      }
+      if (this.wallet.rpc && this._pendingChain.length === 1) {
+        this._pendingChain[0].publish(this.wallet.rpc)
+      }
+    }
   }
 
   /**

@@ -240,6 +240,7 @@ class Request {
       url: `http://${options.delegates[delegateId]}:55000`,
       proxyURL: options.proxy
     })
+    console.log(`Publishing ${this.sequence}`)
     let response = await RPC.requests.publish(this.toJSON())
     if (response.hash) {
       return response
