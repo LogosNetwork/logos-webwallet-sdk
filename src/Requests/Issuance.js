@@ -262,7 +262,7 @@ class Issuance extends Request {
   }
 
   /**
-   * The total supply of the token (340282366920938463463374607431768210000 is Max)
+   * The total supply of the token (340282366920938463463374607431768211455 is Max)
    * @type {string}
    */
   get totalSupply () {
@@ -399,7 +399,7 @@ class Issuance extends Request {
   getObjectBits (obj) {
     let bits = ''
     for (let val in obj) {
-      if (typeof val === 'boolean') bits = (+val) + bits
+      if (typeof obj[val] === 'boolean') bits = (+obj[val]) + bits
     }
     return bits
   }
@@ -426,6 +426,7 @@ class Issuance extends Request {
       let newController = {}
       newController.account = controller.account
       if (controller.privileges instanceof Array) {
+        newController.privileges = {}
         newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
         newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
         newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
@@ -526,7 +527,7 @@ class Issuance extends Request {
       let account = Utils.hexToUint8(Utils.keyFromAccount(controller.account))
       blake.blake2bUpdate(context, account)
 
-      let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(controller), 2), 8)))
+      let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(controller.privileges), 2), 8)))
       blake.blake2bUpdate(context, privileges)
     }
 

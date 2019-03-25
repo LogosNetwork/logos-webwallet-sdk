@@ -381,17 +381,17 @@ class Wallet {
    * @param {LogosAddress} address - address of the token account.
    * @returns {Promise<Account>}
    */
-  async createTokenAccount (address) {
+  async createTokenAccount (address, issuance) {
     if (this._tokenAccounts[address]) {
       return this._tokenAccounts[address]
     } else {
-      const tokenAccount = new TokenAccount(address, this)
+      const tokenAccount = new TokenAccount(address, this, issuance)
       if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
       this._tokenAccounts[tokenAccount.address] = tokenAccount
-      if (this._rpc) {
+      if (this._rpc && !issuance) {
         await this._tokenAccounts[tokenAccount.address].sync()
       } else {
-        console.log('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
+        if (!this._rpc) console.log('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
         this._tokenAccounts[tokenAccount.address].synced = true
       }
       return this._tokenAccounts[tokenAccount.address]

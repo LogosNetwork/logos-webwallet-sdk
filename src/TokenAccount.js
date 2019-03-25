@@ -17,18 +17,21 @@ const Logos = require('@logosnetwork/logos-rpc-client')
 
 /**
  * TokenAccount contain the keys, chains, and balances.
+ * TODO add pending blocks?
  */
 class TokenAccount {
-  constructor (address, wallet) {
+  constructor (address, wallet, issuance) {
     if (!address) throw new Error('You must initalize a token account with a address')
     if (!wallet) throw new Error('You must initalize a token account with a wallet')
     this._tokenID = Utils.keyFromAccount(address)
     this._address = address
+    this._wallet = wallet
     this._tokenBalance = null
     this._pendingTokenBalance = null
     this._totalSupply = null
     this._pendingTotalSupply = null
     this._tokenFeeBalance = null
+    this._pendingTokenFeeBalance = null
     this._symbol = null
     this._name = null
     this._issuerInfo = null
@@ -43,8 +46,31 @@ class TokenAccount {
     this._chain = []
     this._receiveChain = []
     this._pendingChain = []
-    this._wallet = wallet
     this._synced = false
+
+    if (issuance) {
+      this._tokenBalance = issuance.totalSupply
+      this._pendingTokenBalance = issuance.totalSupply
+      this._totalSupply = issuance.totalSupply
+      this._pendingTotalSupply = issuance.totalSupply
+      this._tokenFeeBalance = '0'
+      this._pendingTokenFeeBalance = '0'
+      this._symbol = issuance.symbol
+      this._name = issuance.name
+      this._issuerInfo = issuance.issuerInfo
+      this._feeRate = issuance.feeRate
+      this._feeType = issuance.feeType
+      this._controllers = issuance.controllers
+      this._settings = issuance.settings
+      this._sequence = 0
+      this._previous = null
+      this._balance = '0'
+      this._pendingBalance = '0'
+      this._chain = []
+      this._receiveChain = []
+      this._pendingChain = []
+      this._synced = true
+    }
   }
 
   /**
@@ -539,44 +565,58 @@ class TokenAccount {
           }
         }
       }
+      return request
     } else if (requestInfo.type === 'issue_additional') {
       request = new IssueAdditional(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'change_setting') {
       request = new ChangeSetting(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'immute_setting') {
       request = new ImmuteSetting(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'revoke') {
       request = new Revoke(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'adjust_user_status') {
       request = new AdjustUserStatus(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'adjust_fee') {
       request = new AdjustFee(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'update_issuer_info') {
       request = new UpdateIssuerInfo(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'update_controller') {
       request = new UpdateController(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'burn') {
       request = new Burn(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'distribute') {
       request = new Distribute(requestInfo)
       this._chain.push(request)
+      return request
     } else if (requestInfo.type === 'withdraw_fee') {
       request = new WithdrawFee(requestInfo)
       this._chain.push(request)
-    } else if (requestInfo.issuance === 'issuance') {
+      return request
+    } else if (requestInfo.type === 'issuance') {
       request = new Issuance(requestInfo)
       this._receiveChain.push(request)
+      return request
+    } else {
+      return null
     }
-    return request
   }
 
   /**
@@ -816,9 +856,10 @@ class TokenAccount {
   async processRequest (requestInfo) {
     // Confirm the request add it to the confirmed chain and remove from pending.
     if (requestInfo.type === 'send' || requestInfo.type === 'issuance') {
-      // Handle Recieves (make sure withdraw_logos isnt sendable to a token account)
+      // Handle Recieves (TODO make sure withdraw_logos isnt sendable to a token account)
+      console.log(requestInfo.type)
       let request = this.addRequest(requestInfo)
-      if (!request.verify()) throw new Error('Invalid Logos Request!')
+      if (!request.verify()) throw new Error(`Invalid Logos Request! \n ${request.toJSON(true)}`)
       this.updateTokenInfoFromRequest(request)
     } else if (requestInfo.token_id === this._tokenID && requestInfo.type !== 'token_send') {
       // Handle Sends

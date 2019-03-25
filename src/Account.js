@@ -1046,7 +1046,8 @@ class Account {
     if (this.wallet.rpc) {
       if (this._pendingChain.length === 1) {
         try {
-          request.publish(this.wallet.rpc)
+          await this.wallet.createTokenAccount(Utils.parseAccount(request.tokenID), request)
+          await request.publish(this.wallet.rpc)
           return request
         } catch (error) {
           console.log(error)
