@@ -477,7 +477,7 @@ class Account {
         RPC.accounts.history(this.address, -1, true).then((history) => {
           if (history) {
             for (const requestInfo of history) {
-              this.addRequest(requestInfo)
+              this.addConfirmedRequest(requestInfo)
             }
             this.updateBalancesFromChain()
             if (this.verifyChain() && this.verifyReceiveChain()) {
@@ -494,7 +494,7 @@ class Account {
         RPC.accounts.info(this.address).then(info => {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
-              this.addRequest(val)
+              this.addConfirmedRequest(val)
               if (info.balance) {
                 this._balance = info.balance
                 this._pendingBalance = info.balance
@@ -663,12 +663,12 @@ class Account {
   }
 
   /**
-   * Adds a request to the appropriate chain
+   * Creates a request object from the mqtt info and adds the request to the appropriate chain
    *
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
    * @returns {Request}
    */
-  addRequest (requestInfo) {
+  addConfirmedRequest (requestInfo) {
     if (requestInfo.type === 'send' || requestInfo.type === 'token_send') {
       let request = null
       if (requestInfo.type === 'send') {
@@ -941,6 +941,55 @@ class Account {
   }
 
   /**
+   * Broadcasts the first pending request
+   *
+   * @returns {Request}
+   */
+  async broadcastRequest () {
+    if (this.wallet.rpc && this._pendingChain.length > 0) {
+      let request = this._pendingChain[0]
+      if (!request.published && this.validateRequest(request)) {
+        request.published = true
+        try {
+          await request.publish(this.wallet.rpc)
+        } catch (err) {
+          request.published = false
+          // Wallet setting to reject the request and clear the invalid request?
+        }
+        return request
+      } else {
+        // Wallet setting to reject the request and clear the invalid request?
+      }
+    } else {
+      return null
+    }
+  }
+
+  /**
+   * Adds the request to the pending chain and publishes it
+   *
+   * @param {Request} request - Request information from the RPC or MQTT
+   * @throws An exception if the pending balance is less than the required amount to adjust a users status
+   * @returns {Request}
+   */
+  async addRequest (request) {
+    request.sign(this._privateKey)
+    if (request.work === null) {
+      if (this.wallet.remoteWork) {
+        request.work = Utils.EMPTY_WORK
+      } else {
+        request.work = await request.createWork(true)
+      }
+    }
+    console.log(`Added Request: ${request.sequence} to Pending Chain`)
+    this._pendingChain.push(request)
+    if (this._pendingChain.length === 1) {
+      this.broadcastRequest()
+    }
+    return request
+  }
+
+  /**
    * Creates a request from the specified information
    *
    * @param {Transaction[]} transactions - The account destinations and amounts you wish to send them
@@ -963,30 +1012,9 @@ class Account {
     if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
     }
-    request.sign(this._privateKey)
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    this._pendingChain.push(request)
-    if (this.wallet.rpc) {
-      if (this._pendingChain.length === 1) {
-        try {
-          request.publish(this.wallet.rpc)
-          return request
-        } catch (error) {
-          console.log(error)
-        }
-      } else {
-        return request
-      }
-    } else {
-      return request
-    }
+    let result = await this.addRequest(request)
+    return result
   }
 
   /**
@@ -1033,31 +1061,10 @@ class Account {
     if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Logos to afford the fee to issue a token')
     }
-    request.sign(this._privateKey)
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    this._pendingChain.push(request)
-    if (this.wallet.rpc) {
-      if (this._pendingChain.length === 1) {
-        try {
-          await this.wallet.createTokenAccount(Utils.parseAccount(request.tokenID), request)
-          await request.publish(this.wallet.rpc)
-          return request
-        } catch (error) {
-          console.log(error)
-        }
-      } else {
-        return request
-      }
-    } else {
-      return request
-    }
+    await this.wallet.createTokenAccount(Utils.parseAccount(request.tokenID), request)
+    let result = await this.addRequest(request)
+    return result
   }
 
   /**
@@ -1115,31 +1122,10 @@ class Account {
     if (bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
       throw new Error('Invalid Request: Not Enough Token to pay the Logos fee for token sends')
     }
-    request.sign(this._privateKey)
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     this._pendingTokenBalances[tokenAccount.tokenID] = bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
-    this._pendingChain.push(request)
-    if (this.wallet.rpc) {
-      if (this._pendingChain.length === 1) {
-        try {
-          request.publish(this.wallet.rpc)
-          return request
-        } catch (error) {
-          console.log(error)
-        }
-      } else {
-        return request
-      }
-    } else {
-      return request
-    }
+    let result = await this.addRequest(request)
+    return result
   }
 
   /**
@@ -1163,7 +1149,7 @@ class Account {
       amount: options.amount
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1188,7 +1174,7 @@ class Account {
     request.setting = options.setting
     request.value = options.value
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1212,7 +1198,7 @@ class Account {
     })
     request.setting = options.setting
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1239,7 +1225,7 @@ class Account {
       transaction: options.transaction
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1265,7 +1251,7 @@ class Account {
     })
     request.status = options.status
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1292,7 +1278,7 @@ class Account {
       feeType: options.feeType
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1317,7 +1303,7 @@ class Account {
     })
     request.issuerInfo = options.issuerInfo
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1344,7 +1330,7 @@ class Account {
     })
     request.action = options.action
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1369,7 +1355,7 @@ class Account {
       amount: options.amount
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1394,7 +1380,7 @@ class Account {
       transaction: options.transaction
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1419,7 +1405,7 @@ class Account {
       transaction: options.transaction
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.publishRequest(request)
+    let result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1457,16 +1443,16 @@ class Account {
             if (this.wallet.batchSends) {
               this.combineRequests(this.wallet.rpc)
             } else {
-              this._pendingChain[0].publish(this.wallet.rpc)
+              this.broadcastRequest()
             }
           } else {
-            this._pendingChain[0].publish(this.wallet.rpc)
+            this.broadcastRequest()
           }
         }
       } else {
         console.log('Someone is sending blocks from this account that is not us!!!')
         // Add new request to chain
-        let request = this.addRequest(requestInfo)
+        let request = this.addConfirmedRequest(requestInfo)
 
         // Remove all pendings as they are now invalidated
         this.removePendingRequests()
@@ -1481,7 +1467,7 @@ class Account {
     }
 
     // Handle Receives
-    let request = this.addRequest(requestInfo)
+    let request = this.addConfirmedRequest(requestInfo)
     if (request) {
       if (!request.verify()) throw new Error('Invalid Logos Request!')
       if (this.wallet.fullSync) {
@@ -1557,8 +1543,8 @@ class Account {
         issuance.sign(this._privateKey)
         this._pendingChain.push(issuance)
       }
-      if (this.wallet.rpc && this._pendingChain.length === 1) {
-        this._pendingChain[0].publish(this.wallet.rpc)
+      if (this._pendingChain.length === 1) {
+        this.broadcastRequest()
       }
     }
   }

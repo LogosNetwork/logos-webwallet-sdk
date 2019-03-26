@@ -86,6 +86,15 @@ class Request {
      * @private
      */
     this._version = 1
+    this._published = false
+  }
+
+  set published (val) {
+    this._published = val
+  }
+
+  get published () {
+    return this._published
   }
 
   set signature (hex) {

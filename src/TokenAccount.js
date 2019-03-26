@@ -17,7 +17,6 @@ const Logos = require('@logosnetwork/logos-rpc-client')
 
 /**
  * TokenAccount contain the keys, chains, and balances.
- * TODO add pending blocks?
  */
 class TokenAccount {
   constructor (address, wallet, issuance) {
@@ -426,7 +425,7 @@ class TokenAccount {
           RPC.accounts.history(this._address, -1, true).then((history) => {
             if (history) {
               for (const requestInfo of history) {
-                this.addRequest(requestInfo)
+                this.addConfirmedRequest(requestInfo)
               }
               if (this.verifyChain() && this.verifyReceiveChain()) {
                 this._synced = true
@@ -441,7 +440,7 @@ class TokenAccount {
         } else {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
-              this.addRequest(val)
+              this.addConfirmedRequest(val)
               this._synced = true
               resolve(this)
             })
@@ -518,16 +517,54 @@ class TokenAccount {
   }
 
   /**
+   * Validates that the account has enough funds at the current time to publish the request
+   *
+   * @param {Request} request - Request information from the RPC or MQTT
+   * @returns {Boolean}
+   */
+  validateRequest (request) {
+    // TODO Better validation then just fee!
+    if (bigInt(this.balance).minus(request.fee).lesser(0)) {
+      console.log('Invalid Request: Token Account does not have enough Logos to afford the fee to issue additional tokens')
+      return false
+    } else {
+      return true
+    }
+  }
+
+  /**
+   * Broadcasts the first pending request
+   *
+   * @returns {Request}
+   */
+  async broadcastRequest () {
+    if (this.wallet.rpc && this._pendingChain.length > 0) {
+      let request = this._pendingChain[0]
+      if (!request.published && this.validateRequest(request)) {
+        request.published = true
+        try {
+          await request.publish(this.wallet.rpc)
+        } catch (err) {
+          request.published = false
+          // Wallet setting to reject the request and clear the invalid request?
+        }
+        return request
+      } else {
+        // Wallet setting to reject the request and clear the invalid request?
+      }
+    } else {
+      return null
+    }
+  }
+
+  /**
    * Adds the request to the pending chain and publishes it
    *
    * @param {Request} request - Request information from the RPC or MQTT
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
    * @returns {Request}
    */
-  async publishRequest (request) {
-    if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Token Account does not have enough Logos to afford the fee to issue additional tokens')
-    }
+  async addRequest (request) {
     if (request.work === null) {
       if (this.wallet.remoteWork) {
         request.work = Utils.EMPTY_WORK
@@ -536,15 +573,10 @@ class TokenAccount {
       }
     }
     this._pendingChain.push(request)
-    if (this.wallet.rpc) {
-      if (this._pendingChain.length === 1) {
-        await request.publish(this.wallet.rpc)
-      } else {
-        return request
-      }
-    } else {
-      return request
+    if (this._pendingChain.length === 1) {
+      this.broadcastRequest()
     }
+    return request
   }
 
   /**
@@ -553,7 +585,7 @@ class TokenAccount {
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
    * @returns {Request}
    */
-  addRequest (requestInfo) {
+  addConfirmedRequest (requestInfo) {
     let request = null
     if (requestInfo.type === 'send') {
       let request = new Send(requestInfo)
@@ -857,10 +889,10 @@ class TokenAccount {
     // Confirm the request add it to the confirmed chain and remove from pending.
     if (requestInfo.type === 'send' || requestInfo.type === 'issuance') {
       // Handle Recieves (TODO make sure withdraw_logos isnt sendable to a token account)
-      console.log(requestInfo.type)
-      let request = this.addRequest(requestInfo)
+      let request = this.addConfirmedRequest(requestInfo)
       if (!request.verify()) throw new Error(`Invalid Logos Request! \n ${request.toJSON(true)}`)
       this.updateTokenInfoFromRequest(request)
+      this.broadcastRequest()
     } else if (requestInfo.token_id === this._tokenID && requestInfo.type !== 'token_send') {
       // Handle Sends
       let request = this.getPendingRequest(requestInfo.hash)
@@ -868,14 +900,11 @@ class TokenAccount {
         this._chain.push(request)
         this.removePendingRequest(requestInfo.hash)
         this.updateTokenInfoFromRequest(request)
-        // Publish the next request in the pending as the previous request has been confirmed
-        if (this.wallet.rpc && this._pendingChain.length > 0) {
-          this._pendingChain[0].publish(this.wallet.rpc)
-        }
+        this.broadcastRequest()
       } else {
         console.log('Someone is performing token account that is not us!!!')
         // Add new request to chain
-        let request = this.addRequest(requestInfo)
+        let request = this.addConfirmedRequest(requestInfo)
 
         // Remove all pendings as they are now invalidated
         this.removePendingRequests()
