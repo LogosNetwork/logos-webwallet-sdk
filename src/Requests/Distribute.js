@@ -68,6 +68,8 @@ class Distribute extends TokenRequest {
    */
   get hash () {
     if (this.transaction === null) throw new Error('transaction is not set.')
+    if (!this.transaction.destination) throw new Error('transaction destination is not set.')
+    if (!this.transaction.amount) throw new Error('transaction amount is not set.')
     const context = super.hash()
     let account = Utils.hexToUint8(Utils.keyFromAccount(this.transaction.destination))
     blake.blake2bUpdate(context, account)

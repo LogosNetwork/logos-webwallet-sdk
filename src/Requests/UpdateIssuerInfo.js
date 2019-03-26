@@ -70,6 +70,7 @@ class UpdateIssuerInfo extends TokenRequest {
    */
   get hash () {
     if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
+    if (Utils.byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
     const context = super.hash()
     let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
     blake.blake2bUpdate(context, issuerInfo)

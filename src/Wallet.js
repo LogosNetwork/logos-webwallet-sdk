@@ -22,7 +22,8 @@ class Wallet {
     walletID: false,
     remoteWork: true,
     batchSends: true,
-    fullSync: true,
+    fullSync: false,
+    lazyErrors: false,
     mqtt: Utils.defaultMQTT,
     rpc: Utils.defaultRPC,
     version: 1
@@ -123,7 +124,21 @@ class Wallet {
     if (options.fullSync !== undefined) {
       this._fullSync = options.fullSync
     } else {
-      this._fullSync = true
+      this._fullSync = false
+    }
+
+    /**
+     * Lazy Errors - Do not reject invalid requests when adding to pending chain
+     *
+     * Lazy errors will not prevent you from creating blocks but only from broadcasting them
+     *
+     * @type {boolean}
+     * @private
+     */
+    if (options.lazyErrors !== undefined) {
+      this._lazyErrors = options.lazyErrors
+    } else {
+      this._lazyErrors = false
     }
 
     /**
@@ -219,6 +234,18 @@ class Wallet {
 
   set fullSync (val) {
     this._fullSync = val
+  }
+
+  /**
+   * Lazy Errors allows you to add request that are not valid for the current pending balances to the pending chain
+   * @type {boolean}
+   */
+  get lazyErrors () {
+    return this._lazyErrors
+  }
+
+  set lazyErrors (val) {
+    this._lazyErrors = val
   }
 
   /**
@@ -713,6 +740,7 @@ class Wallet {
         request = JSON.parse(request.toString())
         let params = accountMqttRegex(topic)
         if (params) {
+          console.log(`Confirmed ${request.type} - ${request.sequence} from MQTT`)
           if (this._accounts[params.address]) {
             this._accounts[params.address].processRequest(request)
           } else if (this._tokenAccounts[params.address]) {

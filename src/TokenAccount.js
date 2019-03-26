@@ -26,11 +26,8 @@ class TokenAccount {
     this._address = address
     this._wallet = wallet
     this._tokenBalance = null
-    this._pendingTokenBalance = null
     this._totalSupply = null
-    this._pendingTotalSupply = null
     this._tokenFeeBalance = null
-    this._pendingTokenFeeBalance = null
     this._symbol = null
     this._name = null
     this._issuerInfo = null
@@ -41,7 +38,6 @@ class TokenAccount {
     this._sequence = null
     this._previous = null
     this._balance = '0'
-    this._pendingBalance = '0'
     this._chain = []
     this._receiveChain = []
     this._pendingChain = []
@@ -49,11 +45,8 @@ class TokenAccount {
 
     if (issuance) {
       this._tokenBalance = issuance.totalSupply
-      this._pendingTokenBalance = issuance.totalSupply
       this._totalSupply = issuance.totalSupply
-      this._pendingTotalSupply = issuance.totalSupply
       this._tokenFeeBalance = '0'
-      this._pendingTokenFeeBalance = '0'
       this._symbol = issuance.symbol
       this._name = issuance.name
       this._issuerInfo = issuance.issuerInfo
@@ -64,7 +57,6 @@ class TokenAccount {
       this._sequence = 0
       this._previous = null
       this._balance = '0'
-      this._pendingBalance = '0'
       this._chain = []
       this._receiveChain = []
       this._pendingChain = []
@@ -125,22 +117,6 @@ class TokenAccount {
   }
 
   /**
-   * The pending balance of the token account in reason
-   *
-   * pending balance is balance we are expecting to see after blocks are confirmed
-   *
-   * @type {string}
-   * @readonly
-   */
-  get pendingBalance () {
-    return this._pendingBalance
-  }
-
-  set pendingBalance (val) {
-    this._pendingBalance = val
-  }
-
-  /**
    * The balance of the token in the base token unit
    * @type {string}
    * @readonly
@@ -154,22 +130,6 @@ class TokenAccount {
   }
 
   /**
-   * The pending token balance of the account in base token
-   *
-   * pending token balance is balance we are expecting to see after blocks are confirmed
-   *
-   * @type {string}
-   * @readonly
-   */
-  get pendingTokenBalance () {
-    return this._pendingTokenBalance
-  }
-
-  set pendingTokenBalance (val) {
-    this._pendingTokenBalance = val
-  }
-
-  /**
    * The total supply of the token in base token
    * @type {string}
    * @readonly
@@ -180,22 +140,6 @@ class TokenAccount {
 
   set totalSupply (val) {
     this._totalSupply = val
-  }
-
-  /**
-   * The pending total supply of the token in base token
-   *
-   * pending total supply is the total supply we are expecting after the pending blocks are confirmed
-   *
-   * @type {string}
-   * @readonly
-   */
-  get pendingTotalSupply () {
-    return this._pendingTotalSupply
-  }
-
-  set pendingTotalSupply (val) {
-    this._pendingTotalSupply = val
   }
 
   /**
@@ -408,9 +352,7 @@ class TokenAccount {
           throw new Error('Invalid Address - This is not a valid token account')
         }
         this._tokenBalance = info.token_balance
-        this._pendingTokenBalance = info.token_balance
         this._totalSupply = info.total_supply
-        this._pendingTotalSupply = info.total_supply
         this._tokenFeeBalance = info.token_fee_balance
         this._symbol = info.symbol
         this._name = info._name
@@ -420,7 +362,6 @@ class TokenAccount {
         this._controllers = this._getControllerFromJSON(info.controllers)
         this._settings = this._getSettingsFromJSON(info.settings)
         this._balance = info.balance
-        this._pendingBalance = info.balance
         if (this.wallet.fullSync) {
           RPC.accounts.history(this._address, -1, true).then((history) => {
             if (history) {
@@ -440,7 +381,10 @@ class TokenAccount {
         } else {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
-              this.addConfirmedRequest(val)
+              let request = this.addConfirmedRequest(val)
+              if (request !== null && !request.verify()) {
+                throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
+              }
               this._synced = true
               resolve(this)
             })
@@ -517,30 +461,267 @@ class TokenAccount {
   }
 
   /**
+   * Validates if the token account contains the controller
+   *
+   * @param {LogosAddress} address - Address of the controller you are checking
+   * @returns {Boolean}
+   */
+  isController (address) {
+    for (let controller of this.controllers) {
+      if (controller.account === address) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Validates if the token has the setting
+   *
+   * @param {Setting} setting - Token setting you are checking
+   * @returns {Boolean}
+   */
+  hasSetting (setting) {
+    return Boolean(this.settings[setting])
+  }
+
+  /**
+   * Validates if the token account contains the controller and the controller has the specified privilege
+   *
+   * @param {LogosAddress} address - Address of the controller you are checking
+   * @param {privilege} privilege - Privilege you are checking for
+   * @returns {Boolean}
+   */
+  controllerPrivilege (address, privilege) {
+    for (let controller of this.controllers) {
+      if (controller.account === address) {
+        return controller.privileges[privilege]
+      }
+    }
+    return false
+  }
+
+  /**
+   * Validates if the account has enough token funds to complete the transaction
+   *
+   * @param {LogosAddress} address - Address of the controller you are checking
+   * @param {string} amount - Amount you are checking for
+   * @returns {Promise<Boolean>}
+   */
+  async accountHasFunds (address, amount) {
+    if (!this.wallet.rpc) {
+      console.log('Cannot client-side validate if an account has funds without RPC enabled')
+      return true
+    } else {
+      const RPC = new Logos({
+        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this.wallet.rpc.proxy
+      })
+      let info = await RPC.accounts.info(address)
+      return bigInt(info.tokens[this.tokenID].balance).greaterOrEquals(bigInt(amount))
+    }
+  }
+
+  /**
+   * Validates if the account is a valid destination to send token funds to
+   *
+   * @param {LogosAddress} address - Address of the controller you are checking
+   * @returns {Promise<Boolean>}
+   */
+  async validTokenDestination (address) {
+    // TODO 104 - This token account is a valid destiantion
+    if (!this.wallet.rpc) {
+      console.log('Cannot client-side validate destination without RPC enabled')
+      return true
+    } else {
+      const RPC = new Logos({
+        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this.wallet.rpc.proxy
+      })
+      let info = await RPC.accounts.info(address)
+      if (info.type !== 'LogosAccount') return false
+      let tokenInfo = info.tokens[this.tokenID]
+      if (this.hasSetting('whitelist') && tokenInfo.whitelisted === 'false') {
+        return false
+      } else if (tokenInfo.frozen === 'true') {
+        return false
+      } else {
+        return true
+      }
+    }
+  }
+
+  /**
    * Validates that the account has enough funds at the current time to publish the request
    *
    * @param {Request} request - Request information from the RPC or MQTT
    * @returns {Boolean}
    */
-  validateRequest (request) {
-    // TODO Better validation then just fee!
+  async validateRequest (request) {
     if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-      console.log('Invalid Request: Token Account does not have enough Logos to afford the fee to issue additional tokens')
+      console.log('Invalid Request: Token Account does not have enough Logos to afford the fee perform token opperation')
       return false
     } else {
-      return true
+      if (request.type === 'issue_additional') {
+        if (bigInt(this.totalSupply).plus(bigInt(request.amount)).greater(bigInt(Utils.MAXUINT128))) {
+          console.log('Invalid Issue Additional Request: Total Supply would exceed MAXUINT128')
+          return false
+        } else if (!this.hasSetting('issuance')) {
+          console.log('Invalid Issue Additional Request: Token does not allow issuance')
+          return false
+        } else if (!this.controllerPrivilege(request.originAddress, 'issuance')) {
+          console.log('Invalid Issue Additional Request: Controller does not have permission to issue additional tokens')
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'change_setting') {
+        if (!this.hasSetting(`modify_${request.setting}`)) {
+          console.log(`Invalid Change Setting Request: ${this.name} does not allow changing ${request.setting}`)
+          return false
+        } else if (!this.controllerPrivilege(request.originAddress, `change_${request.setting}`)) {
+          console.log(`Invalid Change Setting Request: Controller does not have permission to change ${request.setting}`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'immute_setting') {
+        if (!this.hasSetting(`modify_${request.setting}`)) {
+          console.log(`Invalid Immute Setting Request: ${request.setting} is already immuatable`)
+          return false
+        } else if (!this.controllerPrivilege(request.originAddress, `change_modify_${request.setting}`)) {
+          console.log(`Invalid Immute Setting Request: Controller does not have permission to immute ${request.setting}`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'revoke') {
+        if (!this.hasSetting(`revoke`)) {
+          console.log(`Invalid Revoke Request: ${this.name} does not support revoking accounts`)
+          return false
+        } else if (!this.controllerPrivilege(request.originAddress, `revoke`)) {
+          console.log(`Invalid Revoke Request: Controller does not have permission to issue revoke requests`)
+          return false
+        } else if (await !this.accountHasFunds(request.source, request.transaction.amount)) {
+          console.log(`Invalid Revoke Request: Source account does not have sufficient ${this.symbol} to complete this request`)
+          return false
+        } else if (await !this.validTokenDestination(request.transaction.destination)) {
+          console.log(`Invalid Revoke Request: Destination does not have permission to receive ${this.symbol}`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'adjust_user_status') {
+        if (request.status === 'frozen' || request.status === 'unfrozen') {
+          if (!this.hasSetting(`freeze`)) {
+            console.log(`Invalid Adjust User Status: ${this.name} does not support freezing accounts`)
+            return false
+          } else if (!this.controllerPrivilege(request.originAddress, `freeze`)) {
+            console.log(`Invalid Adjust User Status Request: Controller does not have permission to freeze accounts`)
+            return false
+          } else {
+            return true
+          }
+        } else if (request.status === 'whitelisted' || request.status === 'not_whitelisted') {
+          if (!this.hasSetting(`whitelist`)) {
+            console.log(`Invalid Adjust User Status: ${this.name} does not require whitelisting accounts`)
+            return false
+          } else if (!this.controllerPrivilege(request.originAddress, `revoke`)) {
+            console.log(`Invalid Adjust User Status Request: Controller does not have permission to whitelist accounts`)
+            return false
+          } else {
+            return true
+          }
+        } else {
+          console.log(`Invalid Adjust User Status: ${request.status} is not a valid status`)
+          return false
+        }
+      } else if (request.type === 'adjust_fee') {
+        if (!this.hasSetting(`adjust_fee`)) {
+          console.log(`Invalid Adjust Fee Request: ${this.name} does not allow changing the fee type or fee rate`)
+          return false
+        } else if (!this.controllerPrivilege(request.originAddress, `adjust_fee`)) {
+          console.log(`Invalid Adjust Fee Request: Controller does not have permission to freeze accounts`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'update_issuer_info') {
+        if (!this.controllerPrivilege(request.originAddress, `update_issuer_info`)) {
+          console.log(`Invalid Update Issuer Info Request: Controller does not have permission to update the issuer info`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'update_controller') {
+        if (!this.controllerPrivilege(request.originAddress, `update_controller`)) {
+          console.log(`Invalid Update Controller Request: Controller does not have permission to update controllers`)
+          return false
+        } else if (this.controllers.length === 10 && request.action === 'add' && !this.isController(request.controller.account)) {
+          console.log(`Invalid Update Controller Request: ${this.name} already has 10 controllers you must remove one first`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'burn') {
+        if (!this.controllerPrivilege(request.originAddress, `burn`)) {
+          console.log(`Invalid Burn Request: Controller does not have permission to burn tokens`)
+          return false
+        } else if (bigInt(this.tokenBalance).lesser(bigInt(request.amount))) {
+          console.log(`Invalid Burn Request: the token balance of the token account is less than the amount of tokens you are trying to burn`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'distribute') {
+        if (!this.controllerPrivilege(request.originAddress, `distribute`)) {
+          console.log(`Invalid Distribute Request: Controller does not have permission to distribute tokens`)
+          return false
+        } else if (bigInt(this.tokenBalance).lesser(bigInt(request.transaction.amount))) {
+          console.log(`Invalid Distribute Request: Token account does not have sufficient ${this.symbol} to distribute`)
+          return false
+        } else if (await !this.validTokenDestination(request.transaction.destination)) {
+          console.log(`Invalid Distribute Request: Destination does not have permission to receive ${this.symbol}`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'withdraw_fee') {
+        if (!this.controllerPrivilege(request.originAddress, `withdraw_fee`)) {
+          console.log(`Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee`)
+          return false
+        } else if (bigInt(this.tokenFeeBalance).lesser(bigInt(request.transaction.amount))) {
+          console.log(`Invalid Withdraw Fee Request: Token account does not have a sufficient token fee balance to withdraw the specified amount`)
+          return false
+        } else if (await !this.validTokenDestination(request.transaction.destination)) {
+          console.log(`Invalid Withdraw Fee Request: Destination does not have permission to receive ${this.symbol}`)
+          return false
+        } else {
+          return true
+        }
+      } else if (request.type === 'withdraw_logos') {
+        if (!this.controllerPrivilege(request.originAddress, `withdraw_logos`)) {
+          console.log(`Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos`)
+          return false
+        } else if (bigInt(this.balance).lesser(bigInt(request.transaction.amount))) {
+          console.log(`Invalid Withdraw Logos Request: Token account does not have sufficient balance to withdraw the specified amount`)
+          return false
+        } else {
+          return true
+        }
+      }
     }
   }
 
   /**
    * Broadcasts the first pending request
    *
-   * @returns {Request}
+   * @returns {Promise<Request>}
    */
   async broadcastRequest () {
     if (this.wallet.rpc && this._pendingChain.length > 0) {
       let request = this._pendingChain[0]
-      if (!request.published && this.validateRequest(request)) {
+      if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
           await request.publish(this.wallet.rpc)
@@ -647,7 +828,7 @@ class TokenAccount {
       this._receiveChain.push(request)
       return request
     } else {
-      return null
+      return request
     }
   }
 
@@ -787,8 +968,6 @@ class TokenAccount {
    */
   removePendingRequests () {
     this._pendingChain = []
-    this._pendingBalance = this._balance
-    this._pendingTokenBalance = this._tokenBalance
   }
 
   /**
@@ -886,32 +1065,27 @@ class TokenAccount {
    * @returns {Promise<void>}
    */
   async processRequest (requestInfo) {
-    // Confirm the request add it to the confirmed chain and remove from pending.
-    if (requestInfo.type === 'send' || requestInfo.type === 'issuance') {
-      // Handle Recieves (TODO make sure withdraw_logos isnt sendable to a token account)
-      let request = this.addConfirmedRequest(requestInfo)
-      if (!request.verify()) throw new Error(`Invalid Logos Request! \n ${request.toJSON(true)}`)
+    // Confirm the requests / updates balances / broadcasts next block
+    let request = this.addConfirmedRequest(requestInfo)
+    if (request !== null) {
+      if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
+      // Todo 104 - revoke, token_send, distribute, withdraw_Fee, withdraw_logos
+      // could be recieved by TokenAccount???
+      if (request.tokenID === this._tokenID &&
+        request.type !== 'token_send' &&
+        request.type !== 'issuance') {
+        if (this.getPendingRequest(requestInfo.hash)) {
+          this.removePendingRequest(requestInfo.hash)
+        } else {
+          console.log('Someone is performing token account requests that is not us!!!')
+          // Remove all pendings as they are now invalidated
+          // It is possible to update the pending blocks but this could
+          // lead to unintended consequences so its best to just reset IMO
+          this.removePendingRequests()
+        }
+      }
       this.updateTokenInfoFromRequest(request)
       this.broadcastRequest()
-    } else if (requestInfo.token_id === this._tokenID && requestInfo.type !== 'token_send') {
-      // Handle Sends
-      let request = this.getPendingRequest(requestInfo.hash)
-      if (request) {
-        this._chain.push(request)
-        this.removePendingRequest(requestInfo.hash)
-        this.updateTokenInfoFromRequest(request)
-        this.broadcastRequest()
-      } else {
-        console.log('Someone is performing token account that is not us!!!')
-        // Add new request to chain
-        let request = this.addConfirmedRequest(requestInfo)
-
-        // Remove all pendings as they are now invalidated
-        this.removePendingRequests()
-
-        // Update Token Account for new block
-        this.updateTokenInfoFromRequest(request)
-      }
     }
   }
 

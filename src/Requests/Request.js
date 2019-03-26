@@ -179,6 +179,15 @@ class Request {
   }
 
   /**
+   * The origin account address
+   * @type {LogosAddress}
+   * @readonly
+   */
+  get originAccount () {
+    return this._origin
+  }
+
+  /**
    * Creates a work for the request.
    * @param {boolean} [testNet] generate PoW for test net instead of real network
    * @returns {Hexadecimal16Length}
@@ -249,8 +258,9 @@ class Request {
       url: `http://${options.delegates[delegateId]}:55000`,
       proxyURL: options.proxy
     })
-    console.log(`Publishing ${this.sequence}`)
+    console.log(`Publishing ${this.type} ${this.sequence}`)
     let response = await RPC.requests.publish(this.toJSON())
+    console.log(response)
     if (response.hash) {
       return response
     } else {

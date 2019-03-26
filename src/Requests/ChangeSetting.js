@@ -24,7 +24,7 @@ class ChangeSetting extends TokenRequest {
      * @private
      */
     if (options.setting !== undefined) {
-      this._setting = options.setting
+      this._setting = options.setting.toLowerCase()
     } else {
       this._setting = null
     }
@@ -60,8 +60,8 @@ class ChangeSetting extends TokenRequest {
   }
 
   set setting (val) {
-    if (typeof Settings[val] !== 'number') throw new Error('Invalid setting option')
-    this._setting = val
+    if (typeof Settings[val.toLowerCase()] !== 'number') throw new Error('Invalid setting option')
+    this._setting = val.toLowerCase()
   }
 
   /**

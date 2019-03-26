@@ -93,6 +93,8 @@ class Revoke extends TokenRequest {
    */
   get hash () {
     if (this.transaction === null) throw new Error('transaction is not set.')
+    if (!this.transaction.destination) throw new Error('transaction destination is not set.')
+    if (!this.transaction.amount) throw new Error('transaction amount is not set.')
     if (!this.source) throw new Error('Source account is not set.')
     const context = super.hash()
     let source = Utils.hexToUint8(Utils.keyFromAccount(this.source))

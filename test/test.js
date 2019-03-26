@@ -4,7 +4,7 @@ const Utils = LogosWallet.Utils
 let create = async () => {
   let wallet = new Wallet({
     password: 'password',
-    fullSync: false,
+    lazyErrors: true,
     mqtt: 'ws:localhost:8883',
     batchSends: false
   })
@@ -12,7 +12,7 @@ let create = async () => {
   let account = await wallet.createAccount({
     privateKey: '872C745C3401354C6BF4BFD869CCC2B8382736DA68BF6D7A23AF01AAFDD67700'
   })
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 1; i++) {
     let request = await account.createTokenIssuanceRequest({
       name: `TestCoin`,
       symbol: `TC`,
@@ -56,25 +56,25 @@ let create = async () => {
         }
       }]
     })
-    let tokenAccount = Utils.accountFromHexKey(request.tokenID)
+    let tokenAddress = Utils.accountFromHexKey(request.tokenID)
     await account.createSendRequest([{
-      destination: tokenAccount,
+      destination: tokenAddress,
       amount: '500000000000000000000000000000'
     }])
     await account.createDistributeRequest({
-      tokenAccount: tokenAccount,
+      tokenAccount: tokenAddress,
       transaction: {
         destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
         amount: '10000000000'
       }
     })
     await account.createAdjustFeeRequest({
-      tokenAccount: tokenAccount,
+      tokenAccount: tokenAddress,
       feeRate: '1000000',
       feeType: 'flat'
     })
     await account.createTokenSendRequest(
-      tokenAccount,
+      tokenAddress,
       [
         {
           destination: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
@@ -83,15 +83,15 @@ let create = async () => {
       ]
     )
     await account.createBurnRequest({
-      tokenAccount,
+      tokenAccount: tokenAddress,
       amount: '100000000000'
     })
     await account.createIssueAdditionalRequest({
-      tokenAccount,
+      tokenAccount: tokenAddress,
       amount: '50000000000'
     })
     await account.createWithdrawFeeRequest({
-      tokenAccount,
+      tokenAccount: tokenAddress,
       transaction: {
         destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
         amount: '10000'

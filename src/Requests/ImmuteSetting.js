@@ -23,7 +23,7 @@ class ImmuteSetting extends TokenRequest {
      * @private
      */
     if (options.setting !== undefined) {
-      this._setting = options.setting
+      this._setting = options.setting.toLowerCase()
     } else {
       this._setting = null
     }
@@ -35,8 +35,8 @@ class ImmuteSetting extends TokenRequest {
   }
 
   set setting (val) {
-    if (typeof Settings[val] !== 'number') throw new Error('Invalid setting option')
-    this._setting = val
+    if (typeof Settings[val.toLowerCase()] !== 'number') throw new Error('Invalid setting option')
+    this._setting = val.toLowerCase()
   }
 
   /**
@@ -74,6 +74,7 @@ class ImmuteSetting extends TokenRequest {
    */
   get hash () {
     if (!this.setting) throw new Error('setting is not set.')
+    if (typeof Settings[this.setting] !== 'number') throw new Error('Invalid setting option')
     const context = super.hash()
     let setting = Utils.hexToUint8(Utils.decToHex(Settings[this.setting], 1))
     blake.blake2bUpdate(context, setting)

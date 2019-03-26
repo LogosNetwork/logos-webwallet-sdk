@@ -17,7 +17,7 @@ class UpdateController extends TokenRequest {
     super(options)
 
     /**
-     * Controllers of the token
+     * Controller of the token
      * @type {Controller}
      * @private
      */
@@ -25,6 +25,17 @@ class UpdateController extends TokenRequest {
       this._controller = this.getControllerFromJSON(options.controller)
     } else {
       this._controller = null
+    }
+
+    /**
+     * Action of Update Controller Request
+     * @type {string}
+     * @private
+     */
+    if (options.action !== undefined) {
+      this._action = options.action.toLowerCase()
+    } else {
+      this._action = null
     }
 
     this._type = {
@@ -52,8 +63,8 @@ class UpdateController extends TokenRequest {
   }
 
   set action (val) {
-    if (typeof Actions[val] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
-    this._action = val
+    if (typeof Actions[val.toLowerCase()] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
+    this._action = val.toLowerCase()
   }
 
   /**
@@ -137,6 +148,7 @@ class UpdateController extends TokenRequest {
   get hash () {
     if (!this.controller) throw new Error('Controller is not set.')
     if (!this.action) throw new Error('action is not set.')
+    if (typeof Actions[this.action] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
     const context = super.hash()
     let action = Utils.hexToUint8(Utils.decToHex(Actions[this.action], 1))
     blake.blake2bUpdate(context, action)

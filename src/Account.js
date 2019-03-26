@@ -494,7 +494,10 @@ class Account {
         RPC.accounts.info(this.address).then(info => {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
-              this.addConfirmedRequest(val)
+              let request = this.addConfirmedRequest(val)
+              if (request !== null && !request.verify()) {
+                throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
+              }
               if (info.balance) {
                 this._balance = info.balance
                 this._pendingBalance = info.balance
@@ -608,7 +611,7 @@ class Account {
     let sum = bigInt(this._balance)
     let tokenSums = this.tokenBalances
     if (request.type === 'send') {
-      if (request.origin === this.address) {
+      if (request.originAccount === this.address) {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
       }
       for (let transaction of request.transactions) {
@@ -618,7 +621,7 @@ class Account {
       }
     } else if (request.type === 'token_send') {
       sum = sum.minus(bigInt(request.fee))
-      if (request.origin === this.address) {
+      if (request.originAccount === this.address) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).toString()
       }
       for (let transaction of request.transactions) {
@@ -669,48 +672,49 @@ class Account {
    * @returns {Request}
    */
   addConfirmedRequest (requestInfo) {
+    let request = null
     if (requestInfo.type === 'send' || requestInfo.type === 'token_send') {
-      let request = null
       if (requestInfo.type === 'send') {
         request = new Send(requestInfo)
       } else {
         request = new TokenSend(requestInfo)
       }
-      // If this request was created by us AND
-      // we do not currently have that request THEN
+      // If this request was created by us
       // add the request to confirmed chain
-      if (requestInfo.origin === this.address &&
-        !this.getChainRequest(requestInfo.hash)) {
+      if (request.originAccount === this.address) {
         this._chain.push(request)
       }
       // If the request is a send AND
-      // has transactions pointed to us AND
-      // we do not currently have that request THEN
+      // has transactions pointed to us
       // add the request to the receive chain
-      if (requestInfo.transactions && requestInfo.transactions.length > 0) {
-        for (let trans of requestInfo.transactions) {
-          if (trans.destination === this.address &&
-            !this.getRecieveRequest(requestInfo.hash)) {
+      if (request.transactions && request.transactions.length > 0) {
+        for (let trans of request.transactions) {
+          if (trans.destination === this.address) {
             this._receiveChain.push(request)
+            break
           }
         }
       }
       return request
     } else if (requestInfo.type === 'issuance') {
-      let request = new Issuance(requestInfo)
+      request = new Issuance(requestInfo)
       this._chain.push(request)
       return request
     } else if (requestInfo.type === 'distribute') {
-      let request = new Distribute(requestInfo)
+      request = new Distribute(requestInfo)
       this._receiveChain.push(request)
       return request
     } else if (requestInfo.type === 'withdraw_fee') {
-      let request = new WithdrawFee(requestInfo)
+      request = new WithdrawFee(requestInfo)
       this._receiveChain.push(request)
       return request
     } else if (requestInfo.type === 'revoke') {
-      let request = new Revoke(requestInfo)
+      request = new Revoke(requestInfo)
       this._receiveChain.push(request)
+      return request
+    } else if (requestInfo.type === 'withdraw_logos') {
+      // TODO
+    } else {
       return request
     }
   }
@@ -941,6 +945,40 @@ class Account {
   }
 
   /**
+   * Validates that the account has enough funds at the current time to publish the request
+   *
+   * @param {Request} request - Request information from the RPC or MQTT
+   * @returns {Boolean}
+   */
+  async validateRequest (request) {
+    // Validate current values are appropriate for sends
+    if (request.type === 'send') {
+      if (bigInt(this._balance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
+        console.log(`Invalid Request: Not Enough Funds including fee to send that amount`)
+        return false
+      }
+      return true
+    } else if (request.type === 'token_send') {
+      let tokenAccount = await this.getTokenAccount(request.tokenID)
+      if (bigInt(this._balance).minus(request.fee).lesser(0)) {
+        console.log(`Invalid Request ${request.type} ${request.sequence}: Not Enough Logos to pay the logos fee for token sends`)
+        return false
+      }
+      if (bigInt(this._tokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
+        console.log(`Invalid Request ${request.type} ${request.sequence}: Not Enough Token to pay the token fee for token sends`)
+        return false
+      }
+      return true
+    } else if (request.type === 'issuance') {
+      if (bigInt(this.balance).minus(request.fee).lesser(0)) {
+        console.log(`Invalid Request ${request.type} ${request.sequence}: Token Account does not have enough Logos to afford the fee to broadcast an issuance`)
+        return false
+      }
+      return true
+    }
+  }
+
+  /**
    * Broadcasts the first pending request
    *
    * @returns {Request}
@@ -981,7 +1019,7 @@ class Account {
         request.work = await request.createWork(true)
       }
     }
-    console.log(`Added Request: ${request.sequence} to Pending Chain`)
+    console.log(`Added Request: ${request.type} ${request.sequence} to Pending Chain`)
     this._pendingChain.push(request)
     if (this._pendingChain.length === 1) {
       this.broadcastRequest()
@@ -1009,8 +1047,10 @@ class Account {
       sequence: this.sequence,
       origin: this.address
     })
-    if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
+    if (!this.wallet.lazyErrors) {
+      if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
+        throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
+      }
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
     let result = await this.addRequest(request)
@@ -1058,8 +1098,10 @@ class Account {
     if (options.issuerInfo) {
       request.issuerInfo = options.issuerInfo
     }
-    if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Not Enough Logos to afford the fee to issue a token')
+    if (!this.wallet.lazyErrors) {
+      if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
+        throw new Error('Invalid Request: Not Enough Logos to afford the fee to issue a token')
+      }
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     await this.wallet.createTokenAccount(Utils.parseAccount(request.tokenID), request)
@@ -1116,11 +1158,13 @@ class Account {
     } else {
       request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.feeRate)).divide(100)
     }
-    if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
-      throw new Error('Invalid Request: Not Enough Logos to pay the logos fee for token sends')
-    }
-    if (bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
-      throw new Error('Invalid Request: Not Enough Token to pay the Logos fee for token sends')
+    if (!this.wallet.lazyErrors) {
+      if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
+        throw new Error('Invalid Request: Not Enough Logos to pay the logos fee for token sends')
+      }
+      if (bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
+        throw new Error('Invalid Request: Not Enough Token to pay the Logos fee for token sends')
+      }
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     this._pendingTokenBalances[tokenAccount.tokenID] = bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
@@ -1413,68 +1457,65 @@ class Account {
    * Confirms the request in the local chain
    *
    * @param {MQTTRequestOptions} requestInfo The request from MQTT
-   * @throws An exception if the request is not found in the pending requests array
-   * @throws An exception if the previous request does not match the last chain request
-   * @throws An exception if the request amount is greater than your balance minus the transaction fee
    * @returns {Promise<void>}
    */
   async processRequest (requestInfo) {
-    // Confirm the requests we authored and add move the request to the confirmed chain
-    if (requestInfo.origin === this.address &&
-      (requestInfo.type === 'send' ||
-      requestInfo.type === 'token_send' ||
-      requestInfo.type === 'issuance')) {
-      let request = this.getPendingRequest(requestInfo.hash)
-      if (request) {
-        this._chain.push(request)
-        this.removePendingRequest(requestInfo.hash)
-        if (this.wallet.fullSync) {
-          this.updateBalancesFromChain()
+    // Confirm the requests / updates balances / broadcasts next block
+    let request = this.addConfirmedRequest(requestInfo)
+    if (request !== null) {
+      if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
+      if (request.originAccount === this._address &&
+        (request.type === 'send' || request.type === 'token_send' || request.type === 'issuance')) {
+        if (this.getPendingRequest(requestInfo.hash)) {
+          this.removePendingRequest(requestInfo.hash)
         } else {
-          this.updateBalancesFromRequest(request)
-        }
-        // Publish the next request in the pending as the previous request has been confirmed
-        if (this.wallet.rpc && this._pendingChain.length > 0) {
-          if (this._pendingChain.length > 1 &&
-            (this._pendingChain[0].type === 'send' || this._pendingChain[0].type === 'token_send') &&
-            this._pendingChain[0].transactions.length < 8) {
-            // Combine if there are two of more pending transactions and the
-            // Next transaction is a send with less than 8 transactions
-            if (this.wallet.batchSends) {
-              this.combineRequests(this.wallet.rpc)
-            } else {
-              this.broadcastRequest()
-            }
-          } else {
-            this.broadcastRequest()
-          }
-        }
-      } else {
-        console.log('Someone is sending blocks from this account that is not us!!!')
-        // Add new request to chain
-        let request = this.addConfirmedRequest(requestInfo)
-
-        // Remove all pendings as they are now invalidated
-        this.removePendingRequests()
-
-        // Update balance for new block
-        if (this.wallet.fullSync) {
-          this.updateBalancesFromChain()
-        } else {
-          this.updateBalancesFromRequest(request)
+          console.log('Someone is sending blocks from this account that is not us!!!')
+          // Remove all pendings as they are now invalidated
+          // It is possible to update the pending blocks but this could
+          // lead to unintended consequences so its best to just reset IMO
+          this.removePendingRequests()
         }
       }
-    }
-
-    // Handle Receives
-    let request = this.addConfirmedRequest(requestInfo)
-    if (request) {
-      if (!request.verify()) throw new Error('Invalid Logos Request!')
       if (this.wallet.fullSync) {
         this.updateBalancesFromChain()
-      } else if (requestInfo.origin !== this.address || requestInfo.tokenID) {
+      } else {
         this.updateBalancesFromRequest(request)
       }
+      if (this.shouldCombine()) {
+        this.combineRequests()
+      } else {
+        this.broadcastRequest()
+      }
+    }
+  }
+
+  /**
+   * Determines if you shold combine requests
+   *
+   * Returns true if the pending chain has x sends and
+   * the count of total transactions is <= (x-minimumSaved) * 8
+   *
+   * @param {Number} minimumSaved The minimum amount of requests saved in order to combine defaults to 1
+   * @returns {Boolean}
+   */
+  shouldCombine (minimumSaved = 1) {
+    if (this.wallet.batchSends) {
+      let sendTxCount = 0
+      let sendCount = 0
+      let tokenTxCount = 0
+      let tokenCount = 0
+      for (let request of this._pendingChain) {
+        if (request.type === 'send') {
+          sendCount++
+          sendTxCount += request.transactions.length
+        } else if (request.type === 'token_send') {
+          tokenCount++
+          tokenTxCount += request.transactions.length
+        }
+      }
+      return ((sendTxCount <= (sendCount - minimumSaved) * 8) || (tokenTxCount <= (tokenCount - minimumSaved) * 8))
+    } else {
+      return false
     }
   }
 
@@ -1520,7 +1561,7 @@ class Account {
       }
     }
 
-    // Clear Receive Chain
+    // Clear Pending Chain
     this.removePendingRequests()
 
     // Add Token Sends
@@ -1546,35 +1587,6 @@ class Account {
       if (this._pendingChain.length === 1) {
         this.broadcastRequest()
       }
-    }
-  }
-
-  /**
-   * Adds a receive request to the local chain
-   *
-   * @param {MQTTRequestOptions} request The mqtt request options
-   * @returns {Request | boolean} request if it is valid
-   */
-  addReceiveRequest (request) {
-    let receive = new Send({
-      signature: request.signature,
-      work: request.work,
-      transactions: request.transactions,
-      sequence: request.sequence,
-      previous: request.previous,
-      fee: request.fee,
-      origin: request.origin
-    })
-    if (receive.verify()) {
-      this._receiveChain.push(receive)
-      if (this.wallet.fullSync) {
-        this.updateBalancesFromChain()
-      } else {
-        this.updateBalancesFromRequest(receive)
-      }
-      return receive
-    } else {
-      return false
     }
   }
 }

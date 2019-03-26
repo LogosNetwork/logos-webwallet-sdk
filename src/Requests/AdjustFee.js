@@ -1,6 +1,7 @@
 const Utils = require('../Utils')
 const TokenRequest = require('./TokenRequest')
 const blake = require('blakejs')
+const bigInt = require('big-integer')
 
 /**
  * The Token AdjustFee class.
@@ -18,9 +19,9 @@ class AdjustFee extends TokenRequest {
      * @private
      */
     if (options.feeType !== undefined) {
-      this._feeType = options.feeType
+      this._feeType = options.feeType.toLowerCase()
     } else if (options.fee_type !== undefined) {
-      this._feeType = options.fee_type
+      this._feeType = options.fee_type.toLowerCase()
     } else {
       this._feeType = 'flat'
     }
@@ -53,8 +54,8 @@ class AdjustFee extends TokenRequest {
   }
 
   set feeType (val) {
-    if (val !== 'flat' && val !== 'percentage') throw new Error('Token Fee Type - Invalid Fee Type use "flat" or "percentage"')
-    this._feeType = val
+    if (val.toLowerCase() !== 'flat' && val.toLowerCase() !== 'percentage') throw new Error('Token Fee Type - Invalid Fee Type use "flat" or "percentage"')
+    this._feeType = val.toLowerCase()
   }
 
   /**
@@ -97,6 +98,7 @@ class AdjustFee extends TokenRequest {
   get hash () {
     if (!this.feeType) throw new Error('Fee Type is not set.')
     if (!this.feeRate) throw new Error('Fee Rate is not set.')
+    if (this.feeType === 'percentage' && bigInt(this.feeRate).greater(bigInt('100'))) throw new Error('Fee Type is percentage and exceeds the maximum of 100')
     const context = super.hash()
     let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
     blake.blake2bUpdate(context, feeType)

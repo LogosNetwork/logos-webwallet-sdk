@@ -34,7 +34,7 @@ class AdjustUserStatus extends TokenRequest {
      * @private
      */
     if (options.status !== undefined) {
-      this._status = options.status
+      this._status = options.status.toLowerCase()
     } else {
       this._status = null
     }
@@ -46,8 +46,8 @@ class AdjustUserStatus extends TokenRequest {
   }
 
   set status (val) {
-    if (typeof Statuses[val] !== 'number') throw new Error('Invalid status option valid options are frozen, unfrozen, whitelisted, not_whitelisted')
-    this._status = val
+    if (typeof Statuses[val.toLowerCase()] !== 'number') throw new Error('Invalid status option valid options are frozen, unfrozen, whitelisted, not_whitelisted')
+    this._status = val.toLowerCase()
   }
 
   /**
