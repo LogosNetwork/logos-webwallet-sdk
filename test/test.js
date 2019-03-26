@@ -43,7 +43,7 @@ let create = async () => {
           change_modify_adjust_fee: Math.random() >= 0.5,
           change_whitelist: Math.random() >= 0.5,
           change_modify_whitelist: Math.random() >= 0.5,
-          issuance: Math.random() >= 0.5,
+          issuance: true,
           revoke: Math.random() >= 0.5,
           freeze: Math.random() >= 0.5,
           adjust_fee: true,

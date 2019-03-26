@@ -541,7 +541,11 @@ class TokenAccount {
       let info = await RPC.accounts.info(address)
       if (info.type !== 'LogosAccount') return false
       let tokenInfo = info.tokens[this.tokenID]
-      if (this.hasSetting('whitelist') && tokenInfo.whitelisted === 'false') {
+      if (!tokenInfo && this.hasSetting('whitelist')) {
+        return false
+      } else if (!tokenInfo && !this.hasSetting('whitelist')) {
+        return true
+      } else if (this.hasSetting('whitelist') && tokenInfo.whitelisted === 'false') {
         return false
       } else if (tokenInfo.frozen === 'true') {
         return false
@@ -569,7 +573,7 @@ class TokenAccount {
         } else if (!this.hasSetting('issuance')) {
           console.log('Invalid Issue Additional Request: Token does not allow issuance')
           return false
-        } else if (!this.controllerPrivilege(request.originAddress, 'issuance')) {
+        } else if (!this.controllerPrivilege(request.originAccount, 'issuance')) {
           console.log('Invalid Issue Additional Request: Controller does not have permission to issue additional tokens')
           return false
         } else {
@@ -579,7 +583,7 @@ class TokenAccount {
         if (!this.hasSetting(`modify_${request.setting}`)) {
           console.log(`Invalid Change Setting Request: ${this.name} does not allow changing ${request.setting}`)
           return false
-        } else if (!this.controllerPrivilege(request.originAddress, `change_${request.setting}`)) {
+        } else if (!this.controllerPrivilege(request.originAccount, `change_${request.setting}`)) {
           console.log(`Invalid Change Setting Request: Controller does not have permission to change ${request.setting}`)
           return false
         } else {
@@ -589,7 +593,7 @@ class TokenAccount {
         if (!this.hasSetting(`modify_${request.setting}`)) {
           console.log(`Invalid Immute Setting Request: ${request.setting} is already immuatable`)
           return false
-        } else if (!this.controllerPrivilege(request.originAddress, `change_modify_${request.setting}`)) {
+        } else if (!this.controllerPrivilege(request.originAccount, `change_modify_${request.setting}`)) {
           console.log(`Invalid Immute Setting Request: Controller does not have permission to immute ${request.setting}`)
           return false
         } else {
@@ -599,7 +603,7 @@ class TokenAccount {
         if (!this.hasSetting(`revoke`)) {
           console.log(`Invalid Revoke Request: ${this.name} does not support revoking accounts`)
           return false
-        } else if (!this.controllerPrivilege(request.originAddress, `revoke`)) {
+        } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
           console.log(`Invalid Revoke Request: Controller does not have permission to issue revoke requests`)
           return false
         } else if (await !this.accountHasFunds(request.source, request.transaction.amount)) {
@@ -616,7 +620,7 @@ class TokenAccount {
           if (!this.hasSetting(`freeze`)) {
             console.log(`Invalid Adjust User Status: ${this.name} does not support freezing accounts`)
             return false
-          } else if (!this.controllerPrivilege(request.originAddress, `freeze`)) {
+          } else if (!this.controllerPrivilege(request.originAccount, `freeze`)) {
             console.log(`Invalid Adjust User Status Request: Controller does not have permission to freeze accounts`)
             return false
           } else {
@@ -626,7 +630,7 @@ class TokenAccount {
           if (!this.hasSetting(`whitelist`)) {
             console.log(`Invalid Adjust User Status: ${this.name} does not require whitelisting accounts`)
             return false
-          } else if (!this.controllerPrivilege(request.originAddress, `revoke`)) {
+          } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
             console.log(`Invalid Adjust User Status Request: Controller does not have permission to whitelist accounts`)
             return false
           } else {
@@ -640,21 +644,21 @@ class TokenAccount {
         if (!this.hasSetting(`adjust_fee`)) {
           console.log(`Invalid Adjust Fee Request: ${this.name} does not allow changing the fee type or fee rate`)
           return false
-        } else if (!this.controllerPrivilege(request.originAddress, `adjust_fee`)) {
+        } else if (!this.controllerPrivilege(request.originAccount, `adjust_fee`)) {
           console.log(`Invalid Adjust Fee Request: Controller does not have permission to freeze accounts`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'update_issuer_info') {
-        if (!this.controllerPrivilege(request.originAddress, `update_issuer_info`)) {
+        if (!this.controllerPrivilege(request.originAccount, `update_issuer_info`)) {
           console.log(`Invalid Update Issuer Info Request: Controller does not have permission to update the issuer info`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'update_controller') {
-        if (!this.controllerPrivilege(request.originAddress, `update_controller`)) {
+        if (!this.controllerPrivilege(request.originAccount, `update_controller`)) {
           console.log(`Invalid Update Controller Request: Controller does not have permission to update controllers`)
           return false
         } else if (this.controllers.length === 10 && request.action === 'add' && !this.isController(request.controller.account)) {
@@ -664,7 +668,7 @@ class TokenAccount {
           return true
         }
       } else if (request.type === 'burn') {
-        if (!this.controllerPrivilege(request.originAddress, `burn`)) {
+        if (!this.controllerPrivilege(request.originAccount, `burn`)) {
           console.log(`Invalid Burn Request: Controller does not have permission to burn tokens`)
           return false
         } else if (bigInt(this.tokenBalance).lesser(bigInt(request.amount))) {
@@ -674,7 +678,7 @@ class TokenAccount {
           return true
         }
       } else if (request.type === 'distribute') {
-        if (!this.controllerPrivilege(request.originAddress, `distribute`)) {
+        if (!this.controllerPrivilege(request.originAccount, `distribute`)) {
           console.log(`Invalid Distribute Request: Controller does not have permission to distribute tokens`)
           return false
         } else if (bigInt(this.tokenBalance).lesser(bigInt(request.transaction.amount))) {
@@ -687,7 +691,7 @@ class TokenAccount {
           return true
         }
       } else if (request.type === 'withdraw_fee') {
-        if (!this.controllerPrivilege(request.originAddress, `withdraw_fee`)) {
+        if (!this.controllerPrivilege(request.originAccount, `withdraw_fee`)) {
           console.log(`Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee`)
           return false
         } else if (bigInt(this.tokenFeeBalance).lesser(bigInt(request.transaction.amount))) {
@@ -700,7 +704,7 @@ class TokenAccount {
           return true
         }
       } else if (request.type === 'withdraw_logos') {
-        if (!this.controllerPrivilege(request.originAddress, `withdraw_logos`)) {
+        if (!this.controllerPrivilege(request.originAccount, `withdraw_logos`)) {
           console.log(`Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos`)
           return false
         } else if (bigInt(this.balance).lesser(bigInt(request.transaction.amount))) {
