@@ -212,6 +212,8 @@ class TokenAccount {
   }
 
   set feeType (val) {
+    val = val.toLowerCase()
+    if (val !== 'flat' && val !== 'percentage') throw new Error('Invalid Fee Type use "flat" or "percentage"')
     this._feeType = val
   }
 
@@ -358,7 +360,7 @@ class TokenAccount {
         this._name = info._name
         this._issuerInfo = info.issuer_info
         this._feeRate = info.fee_rate
-        this._feeType = info.fee_type
+        this.feeType = info.fee_type
         this._controllers = this._getControllerFromJSON(info.controllers)
         this._settings = this._getSettingsFromJSON(info.settings)
         this._balance = info.balance

@@ -961,17 +961,33 @@ class Account {
     } else if (request.type === 'token_send') {
       let tokenAccount = await this.getTokenAccount(request.tokenID)
       if (bigInt(this._balance).minus(request.fee).lesser(0)) {
-        console.log(`Invalid Request ${request.type} ${request.sequence}: Not Enough Logos to pay the logos fee for token sends`)
+        console.log(`Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends`)
+        return false
+      }
+      if (!this._tokenBalances[tokenAccount.tokenID]) {
+        console.log(`Invalid Token Send Request: User doesn't have a token account with the specified token`)
+        return false
+      }
+      if (tokenAccount.feeType === 'flat' && bigInt(tokenAccount.feeRate).greater(request.tokenFee)) {
+        console.log(`Invalid Token Send Request: Requests token is less than the required flat token fee of ${tokenAccount.feeRate}`)
+        return false
+      }
+      if (tokenAccount.feeType === 'percentage' &&
+        bigInt(request.totalAmount)
+          .multiply(bigInt(tokenAccount.feeRate))
+          .divide(100)
+          .greater(bigInt(request.tokenFee))) {
+        console.log(`Invalid Token Send Request: Requests token is less than the required percentage token fee of ${tokenAccount.feeRate}%`)
         return false
       }
       if (bigInt(this._tokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
-        console.log(`Invalid Request ${request.type} ${request.sequence}: Not Enough Token to pay the token fee for token sends`)
+        console.log(`Invalid Token Send Request: Not Enough Token to pay the token fee for token sends`)
         return false
       }
       return true
     } else if (request.type === 'issuance') {
       if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-        console.log(`Invalid Request ${request.type} ${request.sequence}: Token Account does not have enough Logos to afford the fee to broadcast an issuance`)
+        console.log(`Invalid Issuance Request: Token Account does not have enough Logos to afford the fee to broadcast an issuance`)
         return false
       }
       return true
@@ -986,7 +1002,7 @@ class Account {
   async broadcastRequest () {
     if (this.wallet.rpc && this._pendingChain.length > 0) {
       let request = this._pendingChain[0]
-      if (!request.published && this.validateRequest(request)) {
+      if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
           await request.publish(this.wallet.rpc)
@@ -1153,17 +1169,17 @@ class Account {
       tokenID: tokenAccount.tokenID,
       transactions: transactions
     })
-    if (tokenAccount.feeType === 'Flat') {
-      request.tokenFee = tokenAccount.feeRate
+    if (tokenAccount.feeType === 'flat') {
+      request.tokenFee = tokenAccount.feeRate.toString()
     } else {
-      request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.feeRate)).divide(100)
+      request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.feeRate)).divide(100).toString()
     }
     if (!this.wallet.lazyErrors) {
       if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
         throw new Error('Invalid Request: Not Enough Logos to pay the logos fee for token sends')
       }
       if (bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
-        throw new Error('Invalid Request: Not Enough Token to pay the Logos fee for token sends')
+        throw new Error('Invalid Request: Not Enough Token to pay the for the token fee and the token send amounts')
       }
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()

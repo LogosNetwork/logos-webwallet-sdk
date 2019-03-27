@@ -109,9 +109,9 @@ class Issuance extends Request {
      * @private
      */
     if (options.feeType !== undefined) {
-      this._feeType = options.feeType
+      this._feeType = options.feeType.toLowerCase()
     } else if (options.fee_type !== undefined) {
-      this._feeType = options.fee_type
+      this._feeType = options.fee_type.toLowerCase()
     } else {
       this._feeType = 'flat'
     }
