@@ -39,7 +39,7 @@ class TokenSend extends TokenRequest {
 
     this._type = {
       text: 'token_send',
-      value: 14
+      value: 15
     }
   }
 

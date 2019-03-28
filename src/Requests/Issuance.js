@@ -11,7 +11,7 @@ class Issuance extends Request {
     tokenID: null,
     symbol: null,
     name: null,
-    totalSupply: '340282366920938463463374607431768210000',
+    totalSupply: Utils.MAXUINT128,
     feeType: 'flat',
     feeRate: '0',
     settings: {
@@ -100,7 +100,7 @@ class Issuance extends Request {
     } else if (options.total_supply !== undefined) {
       this._totalSupply = options.total_supply
     } else {
-      this._totalSupply = '340282366920938463463374607431768210000'
+      this._totalSupply = Utils.MAXUINT128
     }
 
     /**
@@ -222,8 +222,8 @@ class Issuance extends Request {
       if (!this.symbol) throw new Error('Symbol is not set.')
       if (!this.name) throw new Error('Name is not set.')
       const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
+      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
       blake.blake2bUpdate(context, Utils.hexToUint8(Utils.stringToHex(this.symbol + this.name)))
       let tokenID = Utils.uint8ToHex(blake.blake2bFinal(context))
       this.tokenID = tokenID
@@ -270,7 +270,7 @@ class Issuance extends Request {
   }
 
   set totalSupply (val) {
-    if (bigInt(val).gt(bigInt('340282366920938463463374607431768210000'))) throw new Error('Invalid Total Supply - Maximum supply is 340282366920938463463374607431768210000')
+    if (bigInt(val).gt(bigInt(Utils.MAXUINT128))) throw new Error(`Invalid Total Supply - Maximum supply is ${Utils.MAXUINT128}`)
     this._totalSupply = val
   }
 
@@ -308,16 +308,7 @@ class Issuance extends Request {
   }
 
   set settings (val) {
-    if (typeof val.issuance === 'undefined') throw new Error('issuance should be passed in token settings')
-    if (typeof val.modify_issuance === 'undefined') throw new Error('modify_issuance should be passed in token settings')
-    if (typeof val.revoke === 'undefined') throw new Error('revoke should be passed in token settings')
-    if (typeof val.modify_revoke === 'undefined') throw new Error('modify_revoke should be passed in token settings')
-    if (typeof val.freeze === 'undefined') throw new Error('freeze should be passed in token settings')
-    if (typeof val.modify_freeze === 'undefined') throw new Error('modify_freeze should be passed in token settings')
-    if (typeof val.adjust_fee === 'undefined') throw new Error('adjust_fee should be passed in token settings')
-    if (typeof val.modify_adjust_fee === 'undefined') throw new Error('modify_adjust_fee should be passed in token settings')
-    if (typeof val.whitelist === 'undefined') throw new Error('whitelist should be passed in token settings')
-    if (typeof val.modify_whitelist === 'undefined') throw new Error('modify_whitelist should be passed in token settings')
+    this.validateSettings(val)
     this._settings = val
   }
 
@@ -330,6 +321,10 @@ class Issuance extends Request {
   }
 
   set controllers (val) {
+    val = this.getControllerFromJSON(val)
+    for (let controller of val) {
+      this.validateController(controller)
+    }
     this._controllers = val
   }
 
@@ -365,13 +360,34 @@ class Issuance extends Request {
   }
 
   /**
-   * Adds a controller to the Token Issuance
-   * @param {Controller} controller - controller you want to add to this request
-   * @returns {Controller[]} list of all controllers
+   * Validates the settings
+   * @throws a shit load of errors if it is wrong
+   * @returns {Boolean}
    */
-  addController (controller) {
-    if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
+  validateSettings (settings = this.settings) {
+    if (typeof settings.issuance === 'undefined') throw new Error('issuance should be passed in token settings')
+    if (typeof settings.modify_issuance === 'undefined') throw new Error('modify_issuance should be passed in token settings')
+    if (typeof settings.revoke === 'undefined') throw new Error('revoke should be passed in token settings')
+    if (typeof settings.modify_revoke === 'undefined') throw new Error('modify_revoke should be passed in token settings')
+    if (typeof settings.freeze === 'undefined') throw new Error('freeze should be passed in token settings')
+    if (typeof settings.modify_freeze === 'undefined') throw new Error('modify_freeze should be passed in token settings')
+    if (typeof settings.adjust_fee === 'undefined') throw new Error('adjust_fee should be passed in token settings')
+    if (typeof settings.modify_adjust_fee === 'undefined') throw new Error('modify_adjust_fee should be passed in token settings')
+    if (typeof settings.whitelist === 'undefined') throw new Error('whitelist should be passed in token settings')
+    if (typeof settings.modify_whitelist === 'undefined') throw new Error('modify_whitelist should be passed in token settings')
+    return true
+  }
+
+  /**
+   * Validates the controller
+   * @param {Controller} controller - controller you want to validate
+   * @throws a shit load of errors if it is wrong
+   * @returns {Boolean}
+   */
+  validateController (controller) {
+    if (!controller) throw new Error('Controller is null')
     if (!controller.account) throw new Error('Controller must have account')
+    if (!controller.privileges) throw new Error('Controller must have privileges')
     if (typeof controller.privileges.change_issuance === 'undefined') throw new Error('change_issuance should be passed: Change issuance allows the controller account to add additional tokens')
     if (typeof controller.privileges.change_modify_issuance === 'undefined') throw new Error('change_modify_issuance should be passed: Change modify issuance allows the controller account to modify if the token is allowed to have additional tokens added')
     if (typeof controller.privileges.change_revoke === 'undefined') throw new Error('change_revoke should be passed: Change revoke allows the controller account to revoke tokens')
@@ -392,7 +408,21 @@ class Issuance extends Request {
     if (typeof controller.privileges.burn === 'undefined') throw new Error('burn should be passed')
     if (typeof controller.privileges.distribute === 'undefined') throw new Error('distribute should be passed')
     if (typeof controller.privileges.withdraw_fee === 'undefined') throw new Error('withdraw_fee should be passed')
-    this._controllers.push(controller)
+    if (typeof controller.privileges.withdraw_logos === 'undefined') throw new Error('withdraw_logos should be passed')
+    return true
+  }
+
+  /**
+   * Adds a controller to the Token Issuance
+   * @param {Controller} controller - controller you want to add to this request
+   * @returns {Controller[]} list of all controllers
+   */
+  addController (controller) {
+    if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
+    controller = this.getControllerFromJSON(controller)[0]
+    if (this.validateController(controller)) {
+      this._controllers.push(controller)
+    }
     return this._controllers
   }
 
@@ -421,6 +451,9 @@ class Issuance extends Request {
   }
 
   getControllerFromJSON (controllers) {
+    if (!(controllers instanceof Array)) {
+      controllers = [controllers]
+    }
     let newControllers = []
     for (let controller of controllers) {
       let newController = {}
@@ -447,6 +480,7 @@ class Issuance extends Request {
         newController.privileges.burn = controller.privileges.indexOf('burn') > -1
         newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
         newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
+        newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_fee') > -1
       } else {
         newController.privileges = controller.privileges
       }
@@ -492,14 +526,39 @@ class Issuance extends Request {
    * @readonly
    */
   get hash () {
+    // Validate Symbol
     if (!this.symbol) throw new Error('Symbol is not set.')
+    if (Utils.byteCount(this.symbol) > 8) throw new Error('Token Symbol - Invalid Size. Max Size 8 Bytes')
+    if (!Utils.isAlphanumeric(this.symbol)) throw new Error('Token Symbol - Non-alphanumeric characters')
+
+    // Validate Name
     if (!this.name) throw new Error('Name is not set.')
+    if (Utils.byteCount(this.name) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
+    if (!Utils.isAlphanumeric(this.name)) throw new Error('Token Name - Non-alphanumeric characters')
+
+    // Validate Total Supply
     if (!this.totalSupply) throw new Error('Total Supply is not set.')
+    if (bigInt(this.totalSupply).gt(bigInt(Utils.MAXUINT128))) throw new Error(`Invalid Total Supply - Maximum supply is ${Utils.MAXUINT128}`)
+
+    // Validate Fee Type
     if (!this.feeType) throw new Error('Fee Type is not set.')
+    if (this.feeType !== 'flat' && this.feeType !== 'percentage') throw new Error('Token Fee Type - Invalid Fee Type use "flat" or "percentage"')
+
+    // Validate Fee Rate
     if (!this.feeRate) throw new Error('Fee Rate is not set.')
+    if (this.feeType === 'percentage' && bigInt(this.feeRate).greater(bigInt('100'))) throw new Error('Fee Type is percentage and exceeds the maximum of 100')
+
+    // Validate Settings
     if (!this.settings) throw new Error('Settings is not set.')
+    this.validateSettings()
+
+    // Controllers are validated in the controller hash loop saves some time....
     if (!this.controllers) throw new Error('Controllers is not set.')
+
+    // Validate Issuer Info
     if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
+    if (Utils.byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
+
     let context = super.hash()
 
     let tokenID = Utils.hexToUint8(this.tokenID)
@@ -524,6 +583,7 @@ class Issuance extends Request {
     blake.blake2bUpdate(context, settings)
 
     for (let controller of this.controllers) {
+      this.validateController(controller)
       let account = Utils.hexToUint8(Utils.keyFromAccount(controller.account))
       blake.blake2bUpdate(context, account)
 

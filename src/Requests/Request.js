@@ -278,7 +278,6 @@ class Request {
     obj.sequence = this.sequence.toString()
     obj.origin = this._origin
     obj.fee = this.fee
-    obj.next = Utils.GENESIS_HASH
     obj.work = this.work
     obj.hash = this.hash
     obj.type = this.type

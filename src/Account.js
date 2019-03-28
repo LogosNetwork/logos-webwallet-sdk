@@ -13,6 +13,7 @@ const UpdateController = require('./Requests/UpdateController.js')
 const Burn = require('./Requests/Burn.js')
 const Distribute = require('./Requests/Distribute.js')
 const WithdrawFee = require('./Requests/WithdrawFee.js')
+const WithdrawLogos = require('./Requests/WithdrawLogos.js')
 const TokenSend = require('./Requests/TokenSend.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 
@@ -550,6 +551,10 @@ class Account {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
+      } else if (request.type === 'withdraw_logos') {
+        if (request.transaction.destination === this.address) {
+          sum = sum.plus(bigInt(request.transaction.amount))
+        }
       } else if (request.type === 'token_send') {
         for (let transaction of request.transactions) {
           if (transaction.destination === this.address) {
@@ -631,6 +636,10 @@ class Account {
       }
     } else if (request.type === 'issuance') {
       sum = sum.minus(bigInt(request.fee))
+    } else if (request.type === 'withdraw_logos') {
+      if (request.transaction.destination === this.address) {
+        sum = sum.plus(bigInt(request.transaction.amount))
+      }
     } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
       if (request.transaction.destination === this.address) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount)).toString()
@@ -713,7 +722,9 @@ class Account {
       this._receiveChain.push(request)
       return request
     } else if (requestInfo.type === 'withdraw_logos') {
-      // TODO
+      request = new WithdrawLogos(requestInfo)
+      this._receiveChain.push(request)
+      return request
     } else {
       return request
     }
@@ -1455,6 +1466,31 @@ class Account {
     let tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
     let request = new WithdrawFee({
+      signature: null,
+      work: null,
+      previous: tokenAccount.previous,
+      fee: Utils.minimumFee,
+      sequence: tokenAccount.sequence,
+      origin: this.address,
+      tokenID: tokenAccount.tokenID,
+      transaction: options.transaction
+    })
+    request.sign(this._privateKey)
+    let result = await tokenAccount.addRequest(request)
+    return result
+  }
+
+  /**
+   * Creates a request from the specified information
+   *
+   * @param {WithdrawLogosOptions} options - The Token ID & transaction
+   * @throws An exception if the pending balance is less than the required amount to do a withdraw logos request
+   * @returns {Promise<Request>} the request object
+   */
+  async createWithdrawLogosRequest (options) {
+    let tokenAccount = await this.getTokenAccount(options)
+    if (!options.transaction) throw new Error('You must pass transaction in options')
+    let request = new WithdrawLogos({
       signature: null,
       work: null,
       previous: tokenAccount.previous,
