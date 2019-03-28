@@ -804,7 +804,7 @@ class TokenAccount {
       if (requestInfo.transaction.destination === this.address) {
         this.receiveChain.push(request)
       }
-      if (requestInfo.tokenID === this.tokenID) {
+      if (requestInfo.token_id === this.tokenID) {
         this.chain.push(request)
       }
       return request

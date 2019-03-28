@@ -72,7 +72,7 @@ let create = async () => {
     tokenAccount: 'lgs_39tuybeb7zx3ptf9k8s3nkbxuce6zot6zhbbt1woaxiruebz1pjpoknpd31h',
     transaction: {
       destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
-      amount: '250000000000000000000000000000'
+      amount: '10000000000000000000000000000'
     }
   })
   //   await account.createDistributeRequest({
