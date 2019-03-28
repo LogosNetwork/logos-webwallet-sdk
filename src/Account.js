@@ -998,7 +998,7 @@ class Account {
       return true
     } else if (request.type === 'issuance') {
       if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-        console.log(`Invalid Issuance Request: Token Account does not have enough Logos to afford the fee to broadcast an issuance`)
+        console.log(`Invalid Issuance Request: Account does not have enough Logos to afford the fee to broadcast an issuance`)
         return false
       }
       return true
