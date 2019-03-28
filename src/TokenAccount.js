@@ -369,7 +369,7 @@ class TokenAccount {
         this.name = info.name
         this.issuerInfo = info.issuer_info
         this.feeRate = info.fee_rate
-        this.feeType = info.fee_type
+        this.feeType = info.fee_type.toLowerCase()
         this.controllers = this._getControllerFromJSON(info.controllers)
         this.settings = this._getSettingsFromJSON(info.settings)
         this.balance = info.balance

@@ -12,62 +12,69 @@ let create = async () => {
     privateKey: '872C745C3401354C6BF4BFD869CCC2B8382736DA68BF6D7A23AF01AAFDD67700'
   })
   // for (let i = 0; i < 10; i++) {
-  await account.createSendRequest([{
-    destination: 'lgs_185kudcrstuwcxch1kxpf83owdaqjzbasajf946oohpb1t1qj3p43srbissz',
-    amount: '500000000000000000000000000000'
-  }])
+  // await account.createSendRequest([{
+  //   destination: 'lgs_185kudcrstuwcxch1kxpf83owdaqjzbasajf946oohpb1t1qj3p43srbissz',
+  //   amount: '500000000000000000000000000000'
+  // }])
   // }
-  for (let i = 0; i < 50; i++) {
-    let request = await account.createTokenIssuanceRequest({
-      name: `LazyErrorCoin${i + 1}`,
-      symbol: `LEC${i + 1}`,
-      totalSupply: '2779530283000000',
-      feeRate: '1000000',
-      issuerInfo: '{"decimals":"10","website":"https://www.stormtv.dev/"}',
-      settings: {
-        issuance: true,
-        modify_issuance: true,
-        revoke: true,
-        modify_revoke: true,
-        freeze: true,
-        modify_freeze: true,
-        adjust_fee: true,
-        modify_adjust_fee: true,
-        whitelist: false,
-        modify_whitelist: true
-      },
-      controllers: [{
-        account: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
-        privileges: {
-          change_issuance: true,
-          change_modify_issuance: true,
-          change_revoke: true,
-          change_modify_revoke: true,
-          change_freeze: true,
-          change_modify_freeze: true,
-          change_adjust_fee: true,
-          change_modify_adjust_fee: true,
-          change_whitelist: true,
-          change_modify_whitelist: true,
-          issuance: true,
-          revoke: true,
-          freeze: true,
-          adjust_fee: true,
-          whitelist: true,
-          update_issuer_info: true,
-          update_controller: true,
-          burn: true,
-          distribute: true,
-          withdraw_fee: true,
-          withdraw_logos: true
-        }
-      }]
-    })
+  // for (let i = 0; i < 50; i++) {
+  // await account.createTokenIssuanceRequest({
+  //   name: `FullPowerCoin`,
+  //   symbol: `FP`,
+  //   totalSupply: '1000',
+  //   feeRate: '1',
+  //   issuerInfo: '{"website":"https://www.stormtv.dev/"}',
+  //   settings: {
+  //     issuance: true,
+  //     modify_issuance: true,
+  //     revoke: true,
+  //     modify_revoke: true,
+  //     freeze: true,
+  //     modify_freeze: true,
+  //     adjust_fee: true,
+  //     modify_adjust_fee: true,
+  //     whitelist: false,
+  //     modify_whitelist: true
+  //   },
+  //   controllers: [{
+  //     account: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
+  //     privileges: {
+  //       change_issuance: true,
+  //       change_modify_issuance: true,
+  //       change_revoke: true,
+  //       change_modify_revoke: true,
+  //       change_freeze: true,
+  //       change_modify_freeze: true,
+  //       change_adjust_fee: true,
+  //       change_modify_adjust_fee: true,
+  //       change_whitelist: true,
+  //       change_modify_whitelist: true,
+  //       issuance: true,
+  //       revoke: true,
+  //       freeze: true,
+  //       adjust_fee: true,
+  //       whitelist: true,
+  //       update_issuer_info: true,
+  //       update_controller: true,
+  //       burn: true,
+  //       distribute: true,
+  //       withdraw_fee: true,
+  //       withdraw_logos: true
+  //     }
+  //   }]
+  // })
   //   let tokenAddress = Utils.accountFromHexKey(request.tokenID)
-  //   await account.createSendRequest([{
-  //     destination: tokenAddress,
-  //     amount: '500000000000000000000000000000'
-  //   }])
+  // await account.createSendRequest([{
+  //   destination: 'lgs_39tuybeb7zx3ptf9k8s3nkbxuce6zot6zhbbt1woaxiruebz1pjpoknpd31h',
+  //   amount: '500000000000000000000000000000'
+  // }])
+  await account.createWithdrawLogosRequest({
+    tokenAccount: 'lgs_39tuybeb7zx3ptf9k8s3nkbxuce6zot6zhbbt1woaxiruebz1pjpoknpd31h',
+    transaction: {
+      destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
+      amount: '250000000000000000000000000000'
+    }
+  })
   //   await account.createDistributeRequest({
   //     tokenAccount: tokenAddress,
   //     transaction: {

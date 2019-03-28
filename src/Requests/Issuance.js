@@ -26,31 +26,7 @@ class Issuance extends Request {
       whitelist: false,
       modify_whitelist: false
     },
-    controllers: [{
-      account: null,
-      privileges: {
-        change_issuance: false,
-        change_modify_issuance: false,
-        change_revoke: false,
-        change_modify_revoke: false,
-        change_freeze: false,
-        change_modify_freeze: false,
-        change_adjust_fee: false,
-        change_modify_adjust_fee: false,
-        change_whitelist: false,
-        change_modify_whitelist: false,
-        issuance: false,
-        revoke: false,
-        freeze: false,
-        adjust_fee: false,
-        whitelist: false,
-        update_issuer_info: false,
-        update_controller: false,
-        burn: false,
-        distribute: true,
-        withdraw_fee: false
-      }
-    }],
+    controllers: [],
     issuerInfo: ''
   }) {
     super(options)
@@ -181,7 +157,8 @@ class Issuance extends Request {
           update_controller: false,
           burn: false,
           distribute: true,
-          withdraw_fee: false
+          withdraw_fee: false,
+          withdraw_logos: false
         }
       }]
     }
