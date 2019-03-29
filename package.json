@@ -1,6 +1,6 @@
 {
   "name": "@logosnetwork/logos-webwallet-sdk",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Create Logos wallets without a full Logos node",
   "keywords": [
     "Logos",
@@ -60,10 +60,11 @@
     "terser-webpack-plugin": "^1.1.0"
   },
   "dependencies": {
-    "@logosnetwork/logos-rpc-client": "^1.1.26",
+    "@logosnetwork/logos-rpc-client": "^1.1.27",
     "assert": "^1.4.1",
     "big-integer": "^1.6.39",
     "blakejs": "^1.1.0",
+    "bunyan": "^1.8.12",
     "mqtt": "^2.18.8",
     "mqtt-regex": "^1.0.5",
     "pbkdf2": "^3.0.17",

@@ -20,6 +20,7 @@ module.exports = {
     libraryTarget: 'umd'
   },
   module: {
+    noParse: [/dtrace-provider$/, /safe-json-stringify$/, /mv/],
     rules: [
       { test: /\.md$/, loader: 'ignore-loader' },
       {
