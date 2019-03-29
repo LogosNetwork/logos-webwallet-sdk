@@ -70,7 +70,8 @@ describe('Wallet', () => {
     let encryptedWallet = null
     it('encrypts the wallet', () => {
       encryptedWallet = wallet.encrypt()
-      expect(encryptedWallet).to.have.a.lengthOf(576)
+      let hex = /([\da-fA-F]+)/g
+      expect(hex.test(encryptedWallet)).to.be.true
     })
     it('decrypts the wallet', () => {
       let loadWallet = new Wallet({
@@ -121,6 +122,7 @@ describe('Wallet', () => {
     let wallet = new Wallet({
       password: 'password',
       mqtt: false,
+      logging: 'error',
       fullSync: false
     })
     it('Creates Wallets | Sends Two Transactions', async function () {
