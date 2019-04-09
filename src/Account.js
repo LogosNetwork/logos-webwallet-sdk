@@ -337,11 +337,13 @@ class Account {
    * @param {Hexadecimal64Length} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
    * @returns {LogosAddress[]} Array of all the associated tokens
    */
-  async addToken (tokenID) {
+  addToken (tokenID) {
     let tokenAddress = Utils.parseAccount(tokenID)
     if (!this.tokens.includes(tokenAddress)) {
       this._tokens.push(tokenAddress)
-      this.wallet.createTokenAccount(tokenAddress)
+      if (this.wallet.syncTokens) {
+        this.wallet.createTokenAccount(tokenAddress)
+      }
     }
     return this.tokens
   }

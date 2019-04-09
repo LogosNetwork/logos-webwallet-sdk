@@ -24,6 +24,7 @@ class Wallet {
     batchSends: true,
     fullSync: false,
     lazyErrors: false,
+    syncTokens: false,
     logging: 'info',
     mqtt: Utils.defaultMQTT,
     rpc: Utils.defaultRPC,
