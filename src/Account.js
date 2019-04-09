@@ -30,6 +30,7 @@ class Account {
     balance: '0',
     pendingBalance: '0',
     tokenBalances: {},
+    tokens: [],
     pendingTokenBalances: {},
     representative: null,
     chain: [],
@@ -119,6 +120,17 @@ class Account {
       this._pendingBalance = options.pendingBalance
     } else {
       this._pendingBalance = '0'
+    }
+
+    /**
+     * Tokens that are associated with your account
+     * @type {LogosAddress[]}
+     * @private
+     */
+    if (options.tokens !== undefined) {
+      this._tokens = options.tokens
+    } else {
+      this._tokens = []
     }
 
     /**
@@ -311,6 +323,30 @@ class Account {
   }
 
   /**
+   * Array of associated token ids to this account (full list available only with fullsync)
+   * @type {LogosAddress[]}
+   * @readonly
+   */
+  get tokens () {
+    return this._tokens
+  }
+
+  /**
+   * Adds a token to the accounts associated tokens if it doesn't already exist
+   *
+   * @param {Hexadecimal64Length} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
+   * @returns {LogosAddress[]} Array of all the associated tokens
+   */
+  async addToken (tokenID) {
+    let tokenAddress = Utils.parseAccount(tokenID)
+    if (!this.tokens.includes(tokenAddress)) {
+      this._tokens.push(tokenAddress)
+      this.wallet.createTokenAccount(tokenAddress)
+    }
+    return this.tokens
+  }
+
+  /**
    * The balance of the tokens in base token unit
    * @type {TokenBalances}
    * @readonly
@@ -485,6 +521,7 @@ class Account {
             this.updateBalancesFromChain()
             if (this.verifyChain() && this.verifyReceiveChain()) {
               this._synced = true
+              this.log.info(`${this.address} has been fully synced`)
               resolve(this)
             }
           } else {
@@ -507,12 +544,14 @@ class Account {
               }
               if (info.tokens) {
                 for (let pairs of Object.entries(info.tokens)) {
+                  this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
                 this._tokenBalances = info.tokens
                 this._pendingTokenBalances = info.tokens
               }
               this._synced = true
+              this.log.info(`${this.address} has been lazy synced`)
               resolve(this)
             })
           } else {
@@ -523,6 +562,7 @@ class Account {
               }
               if (info.tokens) {
                 for (let pairs of Object.entries(info.tokens)) {
+                  this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
                 this._tokenBalances = info.tokens
@@ -684,6 +724,9 @@ class Account {
    */
   addConfirmedRequest (requestInfo) {
     let request = null
+    if (requestInfo.token_id) {
+      this.addToken(requestInfo.token_id)
+    }
     if (requestInfo.type === 'send' || requestInfo.type === 'token_send') {
       if (requestInfo.type === 'send') {
         request = new Send(requestInfo)

@@ -384,6 +384,7 @@ class TokenAccount {
               }
               if (this.verifyChain() && this.verifyReceiveChain()) {
                 this.synced = true
+                this.log.info(`${info.name} has been fully synced`)
                 resolve(this)
               }
             } else {
@@ -400,6 +401,7 @@ class TokenAccount {
                 throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
               }
               this.synced = true
+              this.log.info(`${info.name} has been lazy synced`)
               resolve(this)
             })
           } else {
@@ -559,7 +561,10 @@ class TokenAccount {
       })
       let info = await RPC.accounts.info(address)
       if (info.type !== 'LogosAccount') return false
-      let tokenInfo = info.tokens[this.tokenID]
+      let tokenInfo = null
+      if (info && info.tokens && info.tokens[this.tokenID]) {
+        tokenInfo = info.tokens[this.tokenID]
+      }
       if (!tokenInfo && this.hasSetting('whitelist')) {
         return false
       } else if (!tokenInfo && !this.hasSetting('whitelist')) {
