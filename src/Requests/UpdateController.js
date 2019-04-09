@@ -134,7 +134,33 @@ class UpdateController extends TokenRequest {
       newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
       newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_logos') > -1
     } else {
-      newController.privileges = controller.privileges
+      if (controller.privileges === '[]') {
+        newController.privileges = {
+          change_issuance: false,
+          change_modify_issuance: false,
+          change_revoke: false,
+          change_modify_revoke: false,
+          change_freeze: false,
+          change_modify_freeze: false,
+          change_adjust_fee: false,
+          change_modify_adjust_fee: false,
+          change_whitelist: false,
+          change_modify_whitelist: false,
+          issuance: false,
+          revoke: false,
+          freeze: false,
+          adjust_fee: false,
+          whitelist: false,
+          update_issuer_info: false,
+          update_controller: false,
+          burn: false,
+          distribute: false,
+          withdraw_fee: false,
+          withdraw_logos: false
+        }
+      } else {
+        newController.privileges = controller.privileges
+      }
     }
     return newController
   }

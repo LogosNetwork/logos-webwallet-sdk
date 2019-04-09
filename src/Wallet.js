@@ -277,12 +277,21 @@ class Wallet {
   }
 
   /**
-   * List all the accounts in the wallet
-   * @type {Map<LogosAddress, Account>}
+   * Array of all the accounts in the wallet
+   * @type {Account[]}
    * @readonly
    */
   get accounts () {
     return Array.from(Object.values(this._accounts))
+  }
+
+  /**
+   * Object of all the accounts in the wallet
+   * @type {Map<LogosAddress, Account>}
+   * @readonly
+   */
+  get accountsObject () {
+    return this._accounts
   }
 
   /**
@@ -467,7 +476,7 @@ class Wallet {
       if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
       accountOptions = this._generateAccountOptionsFromSeed(this._deterministicKeyIndex)
       this._deterministicKeyIndex++
-    } else if (options.address === undefined) {
+    } else {
       if (options.privateKey !== undefined) {
         accountOptions = this._generateAccountOptionsFromPrivateKey(options.privateKey)
       } else if (options.index !== undefined) {

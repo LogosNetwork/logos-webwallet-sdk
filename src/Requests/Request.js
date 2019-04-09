@@ -258,10 +258,10 @@ class Request {
       url: `http://${options.delegates[delegateId]}:55000`,
       proxyURL: options.proxy
     })
-    log.info(`Publishing ${this.type} ${this.sequence}`)
+    log.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
     let response = await RPC.requests.publish(this.toJSON())
     if (response.hash) {
-      log.info(`Delegate accepted ${this.type} ${this.sequence}`)
+      log.info(`Delegate ${delegateId} accepted ${this.type} ${this.sequence}`)
       return response
     } else {
       throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
