@@ -373,8 +373,8 @@ class TokenAccount {
         this.issuerInfo = info.issuer_info
         this.feeRate = info.fee_rate
         this.feeType = info.fee_type.toLowerCase()
-        this.controllers = this._getControllerFromJSON(info.controllers)
-        this.settings = this._getSettingsFromJSON(info.settings)
+        this.controllers = Utils.getControllerFromJSON(info.controllers)
+        this.settings = Utils.getSettingsFromJSON(info.settings)
         this.balance = info.balance
         if (this.wallet.fullSync) {
           RPC.accounts.history(this.address, -1, true).then((history) => {
@@ -1123,104 +1123,6 @@ class TokenAccount {
       }
       this.updateTokenInfoFromRequest(request)
       this.broadcastRequest()
-    }
-  }
-
-  _getControllerFromJSON (controllers) {
-    if (!(controllers instanceof Array)) {
-      controllers = [controllers]
-    }
-    let newControllers = []
-    for (let controller of controllers) {
-      let newController = {}
-      newController.account = controller.account
-      newController.privileges = {}
-      if (controller.privileges instanceof Array) {
-        newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
-        newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
-        newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
-        newController.privileges.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
-        newController.privileges.change_freeze = controller.privileges.indexOf('change_freeze') > -1
-        newController.privileges.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
-        newController.privileges.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
-        newController.privileges.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
-        newController.privileges.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
-        newController.privileges.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
-        newController.privileges.issuance = controller.privileges.indexOf('issuance') > -1
-        newController.privileges.revoke = controller.privileges.indexOf('revoke') > -1
-        newController.privileges.freeze = controller.privileges.indexOf('freeze') > -1
-        newController.privileges.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
-        newController.privileges.whitelist = controller.privileges.indexOf('whitelist') > -1
-        newController.privileges.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
-        newController.privileges.update_controller = controller.privileges.indexOf('update_controller') > -1
-        newController.privileges.burn = controller.privileges.indexOf('burn') > -1
-        newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
-        newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
-        newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_logos') > -1
-      } else {
-        if (controller.privileges === '[]') {
-          newController.privileges = {
-            change_issuance: false,
-            change_modify_issuance: false,
-            change_revoke: false,
-            change_modify_revoke: false,
-            change_freeze: false,
-            change_modify_freeze: false,
-            change_adjust_fee: false,
-            change_modify_adjust_fee: false,
-            change_whitelist: false,
-            change_modify_whitelist: false,
-            issuance: false,
-            revoke: false,
-            freeze: false,
-            adjust_fee: false,
-            whitelist: false,
-            update_issuer_info: false,
-            update_controller: false,
-            burn: false,
-            distribute: false,
-            withdraw_fee: false,
-            withdraw_logos: false
-          }
-        } else {
-          newController.privileges = controller.privileges
-        }
-      }
-      newControllers.push(newController)
-    }
-    return newControllers
-  }
-  _getSettingsFromJSON (settings) {
-    if (settings instanceof Array) {
-      return {
-        issuance: settings.indexOf('issuance') > -1,
-        modify_issuance: settings.indexOf('modify_issuance') > -1,
-        revoke: settings.indexOf('revoke') > -1,
-        modify_revoke: settings.indexOf('modify_revoke') > -1,
-        freeze: settings.indexOf('freeze') > -1,
-        modify_freeze: settings.indexOf('modify_freeze') > -1,
-        adjust_fee: settings.indexOf('adjust_fee') > -1,
-        modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
-        whitelist: settings.indexOf('whitelist') > -1,
-        modify_whitelist: settings.indexOf('modify_whitelist') > -1
-      }
-    } else {
-      if (settings === '') {
-        return {
-          issuance: false,
-          modify_issuance: false,
-          revoke: false,
-          modify_revoke: false,
-          freeze: false,
-          modify_freeze: false,
-          adjust_fee: false,
-          modify_adjust_fee: false,
-          whitelist: false,
-          modify_whitelist: false
-        }
-      } else {
-        return settings
-      }
     }
   }
 }

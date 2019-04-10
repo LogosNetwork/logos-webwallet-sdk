@@ -111,7 +111,7 @@ class Issuance extends Request {
      * @private
      */
     if (options.settings !== undefined) {
-      this._settings = this.getSettingsFromJSON(options.settings)
+      this._settings = Utils.getSettingsFromJSON(options.settings)
     } else {
       this._settings = {
         issuance: false,
@@ -133,7 +133,7 @@ class Issuance extends Request {
      * @private
      */
     if (options.controllers !== undefined) {
-      this._controllers = this.getControllerFromJSON(options.controllers)
+      this._controllers = Utils.getControllerFromJSON(options.controllers)
     } else {
       this._controllers = [{
         account: Utils.accountFromHexKey(this.origin),
@@ -285,7 +285,7 @@ class Issuance extends Request {
   }
 
   set settings (val) {
-    val = this.getSettingsFromJSON(val)
+    val = Utils.getSettingsFromJSON(val)
     this.validateSettings(val)
     this._settings = val
   }
@@ -299,7 +299,7 @@ class Issuance extends Request {
   }
 
   set controllers (val) {
-    val = this.getControllerFromJSON(val)
+    val = Utils.getControllerFromJSON(val)
     for (let controller of val) {
       this.validateController(controller)
     }
@@ -397,7 +397,7 @@ class Issuance extends Request {
    */
   addController (controller) {
     if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
-    controller = this.getControllerFromJSON(controller)[0]
+    controller = Utils.getControllerFromJSON(controller)[0]
     if (this.validateController(controller)) {
       this._controllers.push(controller)
     }
@@ -410,131 +410,6 @@ class Issuance extends Request {
       if (typeof obj[val] === 'boolean') bits = (+obj[val]) + bits
     }
     return bits
-  }
-
-  getControllerJSON () {
-    let controllers = []
-    for (let controller of this.controllers) {
-      let newController = {}
-      newController.account = controller.account
-      newController.privileges = []
-      for (let key in controller.privileges) {
-        if (controller.privileges[key] === true) {
-          newController.privileges.push(key)
-        }
-      }
-      controllers.push(newController)
-    }
-    return controllers
-  }
-
-  getControllerFromJSON (controllers) {
-    if (!(controllers instanceof Array)) {
-      controllers = [controllers]
-    }
-    let newControllers = []
-    for (let controller of controllers) {
-      let newController = {}
-      newController.account = controller.account
-      if (controller.privileges instanceof Array) {
-        newController.privileges = {}
-        newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
-        newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
-        newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
-        newController.privileges.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
-        newController.privileges.change_freeze = controller.privileges.indexOf('change_freeze') > -1
-        newController.privileges.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
-        newController.privileges.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
-        newController.privileges.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
-        newController.privileges.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
-        newController.privileges.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
-        newController.privileges.issuance = controller.privileges.indexOf('issuance') > -1
-        newController.privileges.revoke = controller.privileges.indexOf('revoke') > -1
-        newController.privileges.freeze = controller.privileges.indexOf('freeze') > -1
-        newController.privileges.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
-        newController.privileges.whitelist = controller.privileges.indexOf('whitelist') > -1
-        newController.privileges.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
-        newController.privileges.update_controller = controller.privileges.indexOf('update_controller') > -1
-        newController.privileges.burn = controller.privileges.indexOf('burn') > -1
-        newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
-        newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
-        newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_logos') > -1
-      } else {
-        if (controller.privileges === '[]') {
-          newController.privileges = {
-            change_issuance: false,
-            change_modify_issuance: false,
-            change_revoke: false,
-            change_modify_revoke: false,
-            change_freeze: false,
-            change_modify_freeze: false,
-            change_adjust_fee: false,
-            change_modify_adjust_fee: false,
-            change_whitelist: false,
-            change_modify_whitelist: false,
-            issuance: false,
-            revoke: false,
-            freeze: false,
-            adjust_fee: false,
-            whitelist: false,
-            update_issuer_info: false,
-            update_controller: false,
-            burn: false,
-            distribute: false,
-            withdraw_fee: false,
-            withdraw_logos: false
-          }
-        } else {
-          newController.privileges = controller.privileges
-        }
-      }
-      newControllers.push(newController)
-    }
-    return newControllers
-  }
-
-  getSettingsFromJSON (settings) {
-    if (settings instanceof Array) {
-      return {
-        issuance: settings.indexOf('issuance') > -1,
-        modify_issuance: settings.indexOf('modify_issuance') > -1,
-        revoke: settings.indexOf('revoke') > -1,
-        modify_revoke: settings.indexOf('modify_revoke') > -1,
-        freeze: settings.indexOf('freeze') > -1,
-        modify_freeze: settings.indexOf('modify_freeze') > -1,
-        adjust_fee: settings.indexOf('adjust_fee') > -1,
-        modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
-        whitelist: settings.indexOf('whitelist') > -1,
-        modify_whitelist: settings.indexOf('modify_whitelist') > -1
-      }
-    } else {
-      if (settings === '') {
-        return {
-          issuance: false,
-          modify_issuance: false,
-          revoke: false,
-          modify_revoke: false,
-          freeze: false,
-          modify_freeze: false,
-          adjust_fee: false,
-          modify_adjust_fee: false,
-          whitelist: false,
-          modify_whitelist: false
-        }
-      } else {
-        return settings
-      }
-    }
-  }
-
-  getSettingsJSON () {
-    let settings = []
-    for (let key in this._settings) {
-      if (this._settings[key] === true) {
-        settings.push(key)
-      }
-    }
-    return settings
   }
 
   /**
@@ -630,8 +505,8 @@ class Issuance extends Request {
     obj.total_supply = this.totalSupply
     obj.fee_type = this.feeType
     obj.fee_rate = this.feeRate
-    obj.settings = this.getSettingsJSON()
-    obj.controllers = this.getControllerJSON()
+    obj.settings = Utils.getSettingsJSON(this.settings)
+    obj.controllers = Utils.getControllerJSON(this.controllers)
     obj.issuer_info = this.issuerInfo
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)

@@ -130,6 +130,17 @@ class Wallet {
     }
 
     /**
+     * Sync Tokens - Syncs all associated token's of the accounts on the account sync instead of on use
+     * @type {boolean}
+     * @private
+     */
+    if (options.syncTokens !== undefined) {
+      this._syncTokens = options.syncTokens
+    } else {
+      this._syncTokens = false
+    }
+
+    /**
      * Lazy Errors - Do not reject invalid requests when adding to pending chain
      *
      * Lazy errors will not prevent you from creating blocks but only from broadcasting them
@@ -250,6 +261,18 @@ class Wallet {
 
   set fullSync (val) {
     this._fullSync = val
+  }
+
+  /**
+   * Sync Tokens - Syncs all associated token's of the accounts on the account sync instead of on use
+   * @type {boolean}
+   */
+  get syncTokens () {
+    return this._syncTokens
+  }
+
+  set syncTokens (val) {
+    this._syncTokens = val
   }
 
   /**
