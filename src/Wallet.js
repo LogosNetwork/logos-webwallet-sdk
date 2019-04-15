@@ -450,6 +450,21 @@ class Wallet {
   }
 
   /**
+   * Removes an account to the wallet
+   *
+   * @param {LogosAddress} address - the account you wish to remove
+   * @returns {Boolean}
+   */
+  removeAccount (address) {
+    if (this._accounts[address]) {
+      delete this._accounts[address]
+      if (this._mqtt && this._mqttConnected) this._unsubscribe(`account/${address}`)
+      return true
+    }
+    return false
+  }
+
+  /**
    * Adds a tokenAccount to the wallet
    *
    * @param {TokenAccount} tokenAccount - the tokenAccount you wish to add

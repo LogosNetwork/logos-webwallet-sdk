@@ -35,7 +35,11 @@ class ChangeSetting extends TokenRequest {
      * @private
      */
     if (options.value !== undefined) {
-      this._value = Boolean(options.value)
+      if (options.value === false || options.value === 'false' || options.value === 0) {
+        this._value = false
+      } else if (options.value === true || options.value === 'true' || options.value === 1) {
+        this._value = true
+      }
     } else {
       this._value = null
     }

@@ -337,12 +337,12 @@ class Account {
    * @param {Hexadecimal64Length} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
    * @returns {LogosAddress[]} Array of all the associated tokens
    */
-  addToken (tokenID) {
+  async addToken (tokenID) {
     let tokenAddress = Utils.parseAccount(tokenID)
     if (!this.tokens.includes(tokenAddress)) {
       this._tokens.push(tokenAddress)
       if (this.wallet.syncTokens) {
-        this.wallet.createTokenAccount(tokenAddress)
+        await this.wallet.createTokenAccount(tokenAddress)
       }
     }
     return this.tokens
@@ -515,10 +515,10 @@ class Account {
         proxyURL: this.wallet.rpc.proxy
       })
       if (this.wallet.fullSync) {
-        RPC.accounts.history(this.address, -1, true).then((history) => {
+        RPC.accounts.history(this.address, -1, true).then(async history => {
           if (history) {
             for (const requestInfo of history) {
-              this.addConfirmedRequest(requestInfo)
+              await this.addConfirmedRequest(requestInfo)
             }
             this.updateBalancesFromChain()
             if (this.verifyChain() && this.verifyReceiveChain()) {
@@ -535,8 +535,8 @@ class Account {
       } else {
         RPC.accounts.info(this.address).then(info => {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
-            RPC.requests.info(info.frontier).then(val => {
-              let request = this.addConfirmedRequest(val)
+            RPC.requests.info(info.frontier).then(async val => {
+              let request = await this.addConfirmedRequest(val)
               if (request !== null && !request.verify()) {
                 throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
               }
@@ -724,10 +724,10 @@ class Account {
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
    * @returns {Request}
    */
-  addConfirmedRequest (requestInfo) {
+  async addConfirmedRequest (requestInfo) {
     let request = null
     if (requestInfo.token_id) {
-      this.addToken(requestInfo.token_id)
+      await this.addToken(requestInfo.token_id)
     }
     if (requestInfo.type === 'send' || requestInfo.type === 'token_send') {
       if (requestInfo.type === 'send') {
@@ -1560,7 +1560,7 @@ class Account {
    */
   async processRequest (requestInfo) {
     // Confirm the requests / updates balances / broadcasts next block
-    let request = this.addConfirmedRequest(requestInfo)
+    let request = await this.addConfirmedRequest(requestInfo)
     if (request !== null) {
       if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
       if (request.originAccount === this._address &&
