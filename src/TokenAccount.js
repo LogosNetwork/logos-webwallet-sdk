@@ -423,6 +423,7 @@ class TokenAccount {
   updateTokenInfoFromRequest (request) {
     if (request.type === 'issue_additional') {
       this.totalSupply = bigInt(this.totalSupply).plus(bigInt(request.amount)).toString()
+      this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.amount)).toString()
     } else if (request.type === 'change_setting') {
       this.settings[request.setting] = request.value
     } else if (request.type === 'immute_setting') {
@@ -431,6 +432,7 @@ class TokenAccount {
       if (request.transaction.destination === this.address) {
         this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.transaction.amount)).toString()
       }
+      // Handle if TK account is SRC?
     } else if (request.type === 'adjust_user_status') {
       // Nothing to update here :)
     } else if (request.type === 'adjust_fee') {
@@ -443,6 +445,7 @@ class TokenAccount {
       if (request.action === 'add') this.controllers.push(request.controller)
     } else if (request.type === 'burn') {
       this.totalSupply = bigInt(this.totalSupply).minus(bigInt(request.amount)).toString()
+      this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.amount)).toString()
     } else if (request.type === 'distribute') {
       this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.transaction.amount)).toString()
     } else if (request.type === 'withdraw_fee') {

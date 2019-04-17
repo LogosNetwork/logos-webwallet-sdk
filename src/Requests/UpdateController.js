@@ -22,7 +22,7 @@ class UpdateController extends TokenRequest {
      * @private
      */
     if (options.controller !== undefined) {
-      this._controller = Utils.getControllerFromJSON(options.controller)
+      this._controller = Utils.getControllerFromJSON(options.controller)[0]
     } else {
       this._controller = null
     }

@@ -169,11 +169,12 @@
 //     tokenAccount: 'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
 //     issuerInfo: '{"decimals":"5","website":"https://stormtv.dev/"}'
 //   })
-//   await account.createUpdateControllerRequest({
-//     tokenAccount: 'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
-//     action: i % 2 ? 'remove' : 'add',
-//     controller: {
-//       account: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+// await account.createUpdateControllerRequest({
+//   tokenAccount: 'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
+//   action: i % 2 ? 'remove' : 'add',
+//   controller: {
+//     account: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+//     privileges: {
 //       change_issuance: true,
 //       change_modify_issuance: false,
 //       change_revoke: false,
@@ -195,7 +196,8 @@
 //       distribute: false,
 //       withdraw_fee: false
 //     }
-//   })
+//   }
+// })
 //   await account.createBurnRequest({
 //     tokenAccount: 'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
 //     amount: '100000000000'

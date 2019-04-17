@@ -459,6 +459,9 @@ class Wallet {
     if (this._accounts[address]) {
       delete this._accounts[address]
       if (this._mqtt && this._mqttConnected) this._unsubscribe(`account/${address}`)
+      if (address === this.currentAccountAddress) {
+        this.currentAccountAddress = Object.keys(this._accounts)[0]
+      }
       return true
     }
     return false
@@ -507,9 +510,10 @@ class Wallet {
    * You are allowed to create an account using your seed, precalculated account options, or a privateKey
    *
    * @param {AccountOptions} options - the options to populate the account. If you send just private key it will generate the account from that privateKey. If you just send index it will genereate the account from that determinstic seed index.
+   * @param {Boolean} setCurrent - sets the current account to newly created accounts this is default true
    * @returns {Promise<Account>}
    */
-  async createAccount (options = null) {
+  async createAccount (options = null, setCurrent = true) {
     let accountOptions = null
     if (options === null) { // No options generate from seed
       if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
@@ -536,7 +540,7 @@ class Wallet {
     } else {
       this._accounts[account.address].synced = true
     }
-    this._currentAccountAddress = account.address
+    if (setCurrent) this._currentAccountAddress = account.address
     return this._accounts[account.address]
   }
 
