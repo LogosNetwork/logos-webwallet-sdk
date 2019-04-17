@@ -35,8 +35,10 @@ const Iso10126 = {
 }
 
 function getControllerFromJSON (controllers) {
+  let shouldBeArray = true
   if (!(controllers instanceof Array)) {
     controllers = [controllers]
+    shouldBeArray = false
   }
   let newControllers = []
   for (let controller of controllers) {
@@ -96,23 +98,39 @@ function getControllerFromJSON (controllers) {
     }
     newControllers.push(newController)
   }
-  return newControllers
+  if (shouldBeArray) {
+    return newControllers
+  } else {
+    return newControllers[0]
+  }
 }
 
 function getControllerJSON (controllersObject) {
-  let controllers = []
-  for (let controller of controllersObject) {
+  if (!(controllersObject instanceof Array)) {
     let newController = {}
-    newController.account = controller.account
+    newController.account = controllersObject.account
     newController.privileges = []
-    for (let key in controller.privileges) {
-      if (controller.privileges[key] === true) {
+    for (let key in controllersObject.privileges) {
+      if (controllersObject.privileges[key] === true) {
         newController.privileges.push(key)
       }
     }
-    controllers.push(newController)
+    return newController
+  } else {
+    let controllers = []
+    for (let controller of controllersObject) {
+      let newController = {}
+      newController.account = controller.account
+      newController.privileges = []
+      for (let key in controller.privileges) {
+        if (controller.privileges[key] === true) {
+          newController.privileges.push(key)
+        }
+      }
+      controllers.push(newController)
+    }
+    return controllers
   }
-  return controllers
 }
 
 function getSettingsFromJSON (settings) {

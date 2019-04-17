@@ -397,7 +397,7 @@ class Issuance extends Request {
    */
   addController (controller) {
     if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
-    controller = Utils.getControllerFromJSON(controller)[0]
+    controller = Utils.getControllerFromJSON(controller)
     if (this.validateController(controller)) {
       this._controllers.push(controller)
     }

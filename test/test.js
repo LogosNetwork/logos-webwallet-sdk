@@ -170,31 +170,32 @@
 //     issuerInfo: '{"decimals":"5","website":"https://stormtv.dev/"}'
 //   })
 // await account.createUpdateControllerRequest({
-//   tokenAccount: 'lgs_3xnnxe59j4qppwgei1ehwanpeddar5cm3xkia38xiax1i77tyadddi9zfaqn',
-//   action: i % 2 ? 'remove' : 'add',
+//   tokenAccount: 'lgs_36xw35gt9pzn661ftfshp97o3xazdxnjgw9uqr3femtba9czk3q9k774aqpn',
+//   action: 'add',
 //   controller: {
-//     account: 'lgs_1ypa5i4c1srejgreg1ukqmsp1166g477diob3rchsujrh6jqjd8memwrsti3',
+//     account: 'lgs_3dj8pkb13h8eb4dp3zypp7wdncqre7itphr1swu7p55ax7mwagd11jh3bbyd',
 //     privileges: {
-//       change_issuance: true,
-//       change_modify_issuance: false,
-//       change_revoke: false,
-//       change_modify_revoke: false,
-//       change_freeze: false,
-//       change_modify_freeze: false,
+//       adjust_fee: false,
+//       burn: true,
 //       change_adjust_fee: false,
+//       change_freeze: false,
+//       change_issuance: false,
 //       change_modify_adjust_fee: false,
-//       change_whitelist: false,
+//       change_modify_freeze: false,
+//       change_modify_issuance: false,
+//       change_modify_revoke: false,
 //       change_modify_whitelist: false,
+//       change_revoke: false,
+//       change_whitelist: false,
+//       distribute: false,
+//       freeze: false,
 //       issuance: false,
 //       revoke: false,
-//       freeze: false,
-//       adjust_fee: false,
-//       whitelist: false,
-//       update_issuer_info: false,
 //       update_controller: false,
-//       burn: false,
-//       distribute: false,
-//       withdraw_fee: false
+//       update_issuer_info: false,
+//       whitelist: false,
+//       withdraw_fee: false,
+//       withdraw_logos: false
 //     }
 //   }
 // })

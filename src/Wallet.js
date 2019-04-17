@@ -540,7 +540,7 @@ class Wallet {
     } else {
       this._accounts[account.address].synced = true
     }
-    if (setCurrent) this._currentAccountAddress = account.address
+    if (setCurrent || this._currentAccountAddress === null) this._currentAccountAddress = account.address
     return this._accounts[account.address]
   }
 
