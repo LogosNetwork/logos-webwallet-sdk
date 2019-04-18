@@ -441,8 +441,30 @@ class TokenAccount {
     } else if (request.type === 'update_issuer_info') {
       this.issuerInfo = request.issuerInfo
     } else if (request.type === 'update_controller') {
-      this.controllers = this.controllers.filter(controller => controller.account !== request.controller.account)
-      if (request.action === 'add') this.controllers.push(request.controller)
+      let updatedPrivs = Utils.getControllerJSON(request.controller).privileges
+      if (request.action === 'remove' && updatedPrivs.length === 0) {
+        this.controllers = this.controllers.filter(controller => controller.account !== request.controller.account)
+      } else if (request.action === 'remove' && updatedPrivs.length > 0) {
+        for (let controller of this.controllers) {
+          if (controller.account === request.controller.account) {
+            for (let priv of updatedPrivs) {
+              controller.privileges[priv] = false
+            }
+          }
+        }
+      } else if (request.action === 'add') {
+        if (this.controllers.some(controller => controller.account === request.controller.account)) {
+          for (let controller of this.controllers) {
+            if (controller.account === request.controller.account) {
+              for (let priv of updatedPrivs) {
+                controller.privileges[priv] = true
+              }
+            }
+          }
+        } else {
+          this.controllers.push(request.controller)
+        }
+      }
     } else if (request.type === 'burn') {
       this.totalSupply = bigInt(this.totalSupply).minus(bigInt(request.amount)).toString()
       this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.amount)).toString()
