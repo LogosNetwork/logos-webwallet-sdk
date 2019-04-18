@@ -868,6 +868,7 @@ class TokenAccount {
       this.receiveChain.push(request)
       return request
     } else {
+      this.log.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
       return request
     }
   }

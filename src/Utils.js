@@ -46,29 +46,29 @@ function getControllerFromJSON (controllers) {
     newController.account = controller.account
     newController.privileges = {}
     if (controller.privileges instanceof Array) {
-      newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
-      newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
-      newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
-      newController.privileges.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
-      newController.privileges.change_freeze = controller.privileges.indexOf('change_freeze') > -1
-      newController.privileges.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
-      newController.privileges.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
-      newController.privileges.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
-      newController.privileges.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
-      newController.privileges.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
-      newController.privileges.issuance = controller.privileges.indexOf('issuance') > -1
-      newController.privileges.revoke = controller.privileges.indexOf('revoke') > -1
-      newController.privileges.freeze = controller.privileges.indexOf('freeze') > -1
-      newController.privileges.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
-      newController.privileges.whitelist = controller.privileges.indexOf('whitelist') > -1
-      newController.privileges.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
-      newController.privileges.update_controller = controller.privileges.indexOf('update_controller') > -1
-      newController.privileges.burn = controller.privileges.indexOf('burn') > -1
-      newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
-      newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
-      newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_logos') > -1
-    } else {
-      if (controller.privileges === '[]' || controller.privileges === '') {
+      if (controller.privileges.length > 0) {
+        newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
+        newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
+        newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
+        newController.privileges.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
+        newController.privileges.change_freeze = controller.privileges.indexOf('change_freeze') > -1
+        newController.privileges.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
+        newController.privileges.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
+        newController.privileges.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
+        newController.privileges.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
+        newController.privileges.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
+        newController.privileges.issuance = controller.privileges.indexOf('issuance') > -1
+        newController.privileges.revoke = controller.privileges.indexOf('revoke') > -1
+        newController.privileges.freeze = controller.privileges.indexOf('freeze') > -1
+        newController.privileges.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
+        newController.privileges.whitelist = controller.privileges.indexOf('whitelist') > -1
+        newController.privileges.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
+        newController.privileges.update_controller = controller.privileges.indexOf('update_controller') > -1
+        newController.privileges.burn = controller.privileges.indexOf('burn') > -1
+        newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
+        newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
+        newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_logos') > -1
+      } else {
         newController.privileges = {
           change_issuance: false,
           change_modify_issuance: false,
@@ -92,9 +92,9 @@ function getControllerFromJSON (controllers) {
           withdraw_fee: false,
           withdraw_logos: false
         }
-      } else {
-        newController.privileges = controller.privileges
       }
+    } else {
+      newController.privileges = controller.privileges
     }
     newControllers.push(newController)
   }
@@ -109,24 +109,14 @@ function getControllerJSON (controllersObject) {
   if (!(controllersObject instanceof Array)) {
     let newController = {}
     newController.account = controllersObject.account
-    newController.privileges = []
-    for (let key in controllersObject.privileges) {
-      if (controllersObject.privileges[key] === true) {
-        newController.privileges.push(key)
-      }
-    }
+    newController.privileges = this.getSettingsJSON(controllersObject.privileges)
     return newController
   } else {
     let controllers = []
     for (let controller of controllersObject) {
       let newController = {}
       newController.account = controller.account
-      newController.privileges = []
-      for (let key in controller.privileges) {
-        if (controller.privileges[key] === true) {
-          newController.privileges.push(key)
-        }
-      }
+      newController.privileges = this.getSettingsJSON(controller.privileges)
       controllers.push(newController)
     }
     return controllers
@@ -135,20 +125,20 @@ function getControllerJSON (controllersObject) {
 
 function getSettingsFromJSON (settings) {
   if (settings instanceof Array) {
-    return {
-      issuance: settings.indexOf('issuance') > -1,
-      modify_issuance: settings.indexOf('modify_issuance') > -1,
-      revoke: settings.indexOf('revoke') > -1,
-      modify_revoke: settings.indexOf('modify_revoke') > -1,
-      freeze: settings.indexOf('freeze') > -1,
-      modify_freeze: settings.indexOf('modify_freeze') > -1,
-      adjust_fee: settings.indexOf('adjust_fee') > -1,
-      modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
-      whitelist: settings.indexOf('whitelist') > -1,
-      modify_whitelist: settings.indexOf('modify_whitelist') > -1
-    }
-  } else {
-    if (settings === '[]' || settings === '') {
+    if (settings.length > 0) {
+      return {
+        issuance: settings.indexOf('issuance') > -1,
+        modify_issuance: settings.indexOf('modify_issuance') > -1,
+        revoke: settings.indexOf('revoke') > -1,
+        modify_revoke: settings.indexOf('modify_revoke') > -1,
+        freeze: settings.indexOf('freeze') > -1,
+        modify_freeze: settings.indexOf('modify_freeze') > -1,
+        adjust_fee: settings.indexOf('adjust_fee') > -1,
+        modify_adjust_fee: settings.indexOf('modify_adjust_fee') > -1,
+        whitelist: settings.indexOf('whitelist') > -1,
+        modify_whitelist: settings.indexOf('modify_whitelist') > -1
+      }
+    } else {
       return {
         issuance: false,
         modify_issuance: false,
@@ -161,9 +151,9 @@ function getSettingsFromJSON (settings) {
         whitelist: false,
         modify_whitelist: false
       }
-    } else {
-      return settings
     }
+  } else {
+    return settings
   }
 }
 
@@ -529,6 +519,10 @@ const isAlphanumeric = (s) => {
   return /^[a-z0-9]+$/i.test(s)
 }
 
+const isAlphanumericExtended = (s) => {
+  return /^[a-z0-9-_ ]+$/i.test(s)
+}
+
 module.exports = {
   Iso10126,
   AES,
@@ -547,6 +541,7 @@ module.exports = {
   changeEndianness,
   byteCount,
   isAlphanumeric,
+  isAlphanumericExtended,
   minimumFee,
   EMPTY_WORK,
   GENESIS_HASH,

@@ -225,7 +225,7 @@ class Issuance extends Request {
 
   set name (val) {
     if (Utils.byteCount(val) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
-    if (!Utils.isAlphanumeric(val)) throw new Error('Token Name - Non-alphanumeric characters')
+    if (!Utils.isAlphanumericExtended(val)) throw new Error('Token Name - Invalid Characters (alphanumeric, space, hypen, and underscore are allowed)')
     this._tokenID = null
     this._name = val
   }
@@ -428,7 +428,7 @@ class Issuance extends Request {
     // Validate Name
     if (!this.name) throw new Error('Name is not set.')
     if (Utils.byteCount(this.name) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
-    if (!Utils.isAlphanumeric(this.name)) throw new Error('Token Name - Non-alphanumeric characters')
+    if (!Utils.isAlphanumericExtended(this.name)) throw new Error('Token Name - Non-alphanumeric characters')
 
     // Validate Total Supply
     if (!this.totalSupply) throw new Error('Total Supply is not set.')
@@ -476,9 +476,12 @@ class Issuance extends Request {
     let settings = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.settings), 2), 8)))
     blake.blake2bUpdate(context, settings)
 
+    let accounts = []
     for (let controller of this.controllers) {
       this.validateController(controller)
       let account = Utils.hexToUint8(Utils.keyFromAccount(controller.account))
+      if (accounts.includes(account)) throw new Error('Duplicate Controllers are not allowed')
+      accounts.push(account)
       blake.blake2bUpdate(context, account)
 
       let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(controller.privileges), 2), 8)))

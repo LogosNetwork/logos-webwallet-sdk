@@ -740,8 +740,7 @@ class Account {
       if (request.originAccount === this.address) {
         this._chain.push(request)
       }
-      // If the request is a send AND
-      // has transactions pointed to us
+      // If the request has transactions pointed to us
       // add the request to the receive chain
       if (request.transactions && request.transactions.length > 0) {
         for (let trans of request.transactions) {
@@ -773,6 +772,7 @@ class Account {
       this._receiveChain.push(request)
       return request
     } else {
+      this.log.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
       return request
     }
   }
