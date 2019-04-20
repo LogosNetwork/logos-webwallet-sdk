@@ -264,6 +264,7 @@ class Request {
       log.info(`Delegate ${delegateId} accepted ${this.type} ${this.sequence}`)
       return response
     } else {
+      log.error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
       throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
     }
   }
