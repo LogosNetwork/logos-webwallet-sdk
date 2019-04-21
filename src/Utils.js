@@ -152,6 +152,19 @@ function getSettingsFromJSON (settings) {
         modify_whitelist: false
       }
     }
+  } else if (settings === '') {
+    return {
+      issuance: false,
+      modify_issuance: false,
+      revoke: false,
+      modify_revoke: false,
+      freeze: false,
+      modify_freeze: false,
+      adjust_fee: false,
+      modify_adjust_fee: false,
+      whitelist: false,
+      modify_whitelist: false
+    }
   } else {
     return settings
   }
