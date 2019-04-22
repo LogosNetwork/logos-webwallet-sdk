@@ -16,7 +16,6 @@ const WithdrawFee = require('./Requests/WithdrawFee.js')
 const WithdrawLogos = require('./Requests/WithdrawLogos.js')
 const TokenSend = require('./Requests/TokenSend.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
-const bunyan = require('bunyan')
 
 /**
  * The Accounts contain the keys, chains, and balances.
@@ -237,7 +236,6 @@ class Account {
       this._wallet = null
     }
 
-    this.log = bunyan.createLogger({ name: this._label, level: this._wallet.loggingLevel })
     this._synced = false
   }
 
@@ -523,12 +521,12 @@ class Account {
             this.updateBalancesFromChain()
             if (this.verifyChain() && this.verifyReceiveChain()) {
               this._synced = true
-              this.log.info(`${this.address} has been fully synced`)
+              console.info(`${this.address} has been fully synced`)
               resolve(this)
             }
           } else {
             this._synced = true
-            this.log.info(`${this.address} is empty and therefore valid`)
+            console.info(`${this.address} is empty and therefore valid`)
             resolve(this)
           }
         })
@@ -553,7 +551,7 @@ class Account {
                 this._pendingTokenBalances = info.tokens
               }
               this._synced = true
-              this.log.info(`${this.address} has been lazy synced`)
+              console.info(`${this.address} has been lazy synced`)
               resolve(this)
             })
           } else {
@@ -572,7 +570,7 @@ class Account {
               }
             }
             this._synced = true
-            this.log.info(`${this.address} is empty and therefore valid`)
+            console.info(`${this.address} is empty and therefore valid`)
             resolve(this)
           }
         })
@@ -772,7 +770,7 @@ class Account {
       this._receiveChain.push(request)
       return request
     } else {
-      this.log.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
+      console.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
       return request
     }
   }
@@ -933,7 +931,7 @@ class Account {
       }
     }
     if (!found) {
-      this.log.warn('Not found')
+      console.warn('Not found')
       return false
     }
   }
@@ -1012,22 +1010,22 @@ class Account {
     // Validate current values are appropriate for sends
     if (request.type === 'send') {
       if (bigInt(this._balance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
-        this.log.error(`Invalid Request: Not Enough Funds including fee to send that amount`)
+        console.error(`Invalid Request: Not Enough Funds including fee to send that amount`)
         return false
       }
       return true
     } else if (request.type === 'token_send') {
       let tokenAccount = await this.getTokenAccount(request.tokenID)
       if (bigInt(this._balance).minus(request.fee).lesser(0)) {
-        this.log.error(`Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends`)
+        console.error(`Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends`)
         return false
       }
       if (!this._tokenBalances[tokenAccount.tokenID]) {
-        this.log.error(`Invalid Token Send Request: User doesn't have a token account with the specified token`)
+        console.error(`Invalid Token Send Request: User doesn't have a token account with the specified token`)
         return false
       }
       if (tokenAccount.feeType === 'flat' && bigInt(tokenAccount.feeRate).greater(request.tokenFee)) {
-        this.log.error(`Invalid Token Send Request: Requests token is less than the required flat token fee of ${tokenAccount.feeRate}`)
+        console.error(`Invalid Token Send Request: Requests token is less than the required flat token fee of ${tokenAccount.feeRate}`)
         return false
       }
       if (tokenAccount.feeType === 'percentage' &&
@@ -1035,17 +1033,17 @@ class Account {
           .multiply(bigInt(tokenAccount.feeRate))
           .divide(100)
           .greater(bigInt(request.tokenFee))) {
-        this.log.error(`Invalid Token Send Request: Requests token is less than the required percentage token fee of ${tokenAccount.feeRate}%`)
+        console.error(`Invalid Token Send Request: Requests token is less than the required percentage token fee of ${tokenAccount.feeRate}%`)
         return false
       }
       if (bigInt(this._tokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).greaterOrEquals(0)) {
-        this.log.error(`Invalid Token Send Request: Not Enough Token to pay the token fee for token sends`)
+        console.error(`Invalid Token Send Request: Not Enough Token to pay the token fee for token sends`)
         return false
       }
       return true
     } else if (request.type === 'issuance') {
       if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-        this.log.error(`Invalid Issuance Request: Account does not have enough Logos to afford the fee to broadcast an issuance`)
+        console.error(`Invalid Issuance Request: Account does not have enough Logos to afford the fee to broadcast an issuance`)
         return false
       }
       return true
@@ -1063,7 +1061,7 @@ class Account {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpc, this.log)
+          await request.publish(this.wallet.rpc, console)
         } catch (err) {
           request.published = false
           // Wallet setting to reject the request and clear the invalid request?
@@ -1093,7 +1091,7 @@ class Account {
         request.work = await request.createWork(true)
       }
     }
-    this.log.info(`Added Request: ${request.type} ${request.sequence} to Pending Chain`)
+    console.info(`Added Request: ${request.type} ${request.sequence} to Pending Chain`)
     this._pendingChain.push(request)
     if (this._pendingChain.length === 1) {
       this.broadcastRequest()
@@ -1568,7 +1566,7 @@ class Account {
         if (this.getPendingRequest(requestInfo.hash)) {
           this.removePendingRequest(requestInfo.hash)
         } else {
-          this.log.error('Someone is sending blocks from this account that is not us!!!')
+          console.error('Someone is sending blocks from this account that is not us!!!')
           // Remove all pendings as they are now invalidated
           // It is possible to update the pending blocks but this could
           // lead to unintended consequences so its best to just reset IMO

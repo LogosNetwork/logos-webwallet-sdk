@@ -16,27 +16,13 @@ module.exports = {
   output: {
     path: path.resolve('./webpack'),
     filename,
+    chunkFilename: 'logos-webwallet-sdk.chunks.bundle.js',
     library: 'logos-webwallet-sdk',
     libraryTarget: 'umd'
   },
-  module: {
-    noParse: [/dtrace-provider$/, /safe-json-stringify$/, /mv/],
-    rules: [
-      { test: /\.md$/, loader: 'ignore-loader' },
-      {
-        test: require.resolve('./package.json'),
-        type: 'javascript/auto',
-        use: {
-          loader: 'json-filter-loader',
-          options: {
-            used: ['version', 'homepage']
-          }
-        }
-      }
-    ]
-  },
   node: {
     fs: 'empty',
+    module: 'empty',
     dns: 'mock',
     tls: 'mock',
     child_process: 'empty',
@@ -47,7 +33,24 @@ module.exports = {
     Buffer: false,
     zlib: 'empty'
   },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+        exclude: /(node_modules|bower_components)/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
+      }
+    ]
+  },
   optimization: {
+    splitChunks: {
+      chunks: 'all'
+    },
     minimizer: [
       new TerserJSPlugin({
         terserOptions: {

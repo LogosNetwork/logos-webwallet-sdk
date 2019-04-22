@@ -15,7 +15,6 @@ const Issuance = require('./Requests/Issuance.js')
 const WithdrawFee = require('./Requests/WithdrawFee.js')
 const WithdrawLogos = require('./Requests/WithdrawLogos.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
-const bunyan = require('bunyan')
 
 /**
  * TokenAccount contain the keys, chains, and balances.
@@ -64,7 +63,6 @@ class TokenAccount {
       this._pendingChain = []
       this._synced = true
     }
-    this.log = bunyan.createLogger({ name: this._name, level: this._wallet.loggingLevel })
   }
 
   /**
@@ -192,7 +190,6 @@ class TokenAccount {
 
   set name (val) {
     this._name = val
-    this.log = bunyan.createLogger({ name: this._name, level: this._wallet.loggingLevel })
   }
 
   /**
@@ -384,12 +381,12 @@ class TokenAccount {
               }
               if (this.verifyChain() && this.verifyReceiveChain()) {
                 this.synced = true
-                this.log.info(`${info.name} has been fully synced`)
+                console.info(`${info.name} has been fully synced`)
                 resolve(this)
               }
             } else {
               this.synced = true
-              this.log.info(`${this.address} is empty and therefore valid`)
+              console.info(`${this.address} is empty and therefore valid`)
               resolve(this)
             }
           })
@@ -401,12 +398,12 @@ class TokenAccount {
                 throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
               }
               this.synced = true
-              this.log.info(`${info.name} has been lazy synced`)
+              console.info(`${info.name} has been lazy synced`)
               resolve(this)
             })
           } else {
             this.synced = true
-            this.log.info(`${this.address} is empty and therefore valid`)
+            console.info(`${this.address} is empty and therefore valid`)
             resolve(this)
           }
         }
@@ -556,7 +553,7 @@ class TokenAccount {
    */
   async accountHasFunds (address, amount) {
     if (!this.wallet.rpc) {
-      this.log.warn('Cannot client-side validate if an account has funds without RPC enabled')
+      console.warn('Cannot client-side validate if an account has funds without RPC enabled')
       return true
     } else {
       const RPC = new Logos({
@@ -577,7 +574,7 @@ class TokenAccount {
   async validTokenDestination (address) {
     // TODO 104 - This token account is a valid destiantion
     if (!this.wallet.rpc) {
-      this.log.warn('Cannot client-side validate destination without RPC enabled')
+      console.warn('Cannot client-side validate destination without RPC enabled')
       return true
     } else {
       const RPC = new Logos({
@@ -612,54 +609,54 @@ class TokenAccount {
    */
   async validateRequest (request) {
     if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-      this.log.error('Invalid Request: Token Account does not have enough Logos to afford the fee perform token opperation')
+      console.error('Invalid Request: Token Account does not have enough Logos to afford the fee perform token opperation')
       return false
     } else {
       if (request.type === 'issue_additional') {
         if (bigInt(this.totalSupply).plus(bigInt(request.amount)).greater(bigInt(Utils.MAXUINT128))) {
-          this.log.error('Invalid Issue Additional Request: Total Supply would exceed MAXUINT128')
+          console.error('Invalid Issue Additional Request: Total Supply would exceed MAXUINT128')
           return false
         } else if (!this.hasSetting('issuance')) {
-          this.log.error('Invalid Issue Additional Request: Token does not allow issuance')
+          console.error('Invalid Issue Additional Request: Token does not allow issuance')
           return false
         } else if (!this.controllerPrivilege(request.originAccount, 'issuance')) {
-          this.log.error('Invalid Issue Additional Request: Controller does not have permission to issue additional tokens')
+          console.error('Invalid Issue Additional Request: Controller does not have permission to issue additional tokens')
           return false
         } else {
           return true
         }
       } else if (request.type === 'change_setting') {
         if (!this.hasSetting(`modify_${request.setting}`)) {
-          this.log.error(`Invalid Change Setting Request: ${this.name} does not allow changing ${request.setting}`)
+          console.error(`Invalid Change Setting Request: ${this.name} does not allow changing ${request.setting}`)
           return false
         } else if (!this.controllerPrivilege(request.originAccount, `change_${request.setting}`)) {
-          this.log.error(`Invalid Change Setting Request: Controller does not have permission to change ${request.setting}`)
+          console.error(`Invalid Change Setting Request: Controller does not have permission to change ${request.setting}`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'immute_setting') {
         if (!this.hasSetting(`modify_${request.setting}`)) {
-          this.log.error(`Invalid Immute Setting Request: ${request.setting} is already immuatable`)
+          console.error(`Invalid Immute Setting Request: ${request.setting} is already immuatable`)
           return false
         } else if (!this.controllerPrivilege(request.originAccount, `change_modify_${request.setting}`)) {
-          this.log.error(`Invalid Immute Setting Request: Controller does not have permission to immute ${request.setting}`)
+          console.error(`Invalid Immute Setting Request: Controller does not have permission to immute ${request.setting}`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'revoke') {
         if (!this.hasSetting(`revoke`)) {
-          this.log.error(`Invalid Revoke Request: ${this.name} does not support revoking accounts`)
+          console.error(`Invalid Revoke Request: ${this.name} does not support revoking accounts`)
           return false
         } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
-          this.log.error(`Invalid Revoke Request: Controller does not have permission to issue revoke requests`)
+          console.error(`Invalid Revoke Request: Controller does not have permission to issue revoke requests`)
           return false
         } else if (await !this.accountHasFunds(request.source, request.transaction.amount)) {
-          this.log.error(`Invalid Revoke Request: Source account does not have sufficient ${this.symbol} to complete this request`)
+          console.error(`Invalid Revoke Request: Source account does not have sufficient ${this.symbol} to complete this request`)
           return false
         } else if (await !this.validTokenDestination(request.transaction.destination)) {
-          this.log.error(`Invalid Revoke Request: Destination does not have permission to receive ${this.symbol}`)
+          console.error(`Invalid Revoke Request: Destination does not have permission to receive ${this.symbol}`)
           return false
         } else {
           return true
@@ -667,97 +664,97 @@ class TokenAccount {
       } else if (request.type === 'adjust_user_status') {
         if (request.status === 'frozen' || request.status === 'unfrozen') {
           if (!this.hasSetting(`freeze`)) {
-            this.log.error(`Invalid Adjust User Status: ${this.name} does not support freezing accounts`)
+            console.error(`Invalid Adjust User Status: ${this.name} does not support freezing accounts`)
             return false
           } else if (!this.controllerPrivilege(request.originAccount, `freeze`)) {
-            this.log.error(`Invalid Adjust User Status Request: Controller does not have permission to freeze accounts`)
+            console.error(`Invalid Adjust User Status Request: Controller does not have permission to freeze accounts`)
             return false
           } else {
             return true
           }
         } else if (request.status === 'whitelisted' || request.status === 'not_whitelisted') {
           if (!this.hasSetting(`whitelist`)) {
-            this.log.error(`Invalid Adjust User Status: ${this.name} does not require whitelisting accounts`)
+            console.error(`Invalid Adjust User Status: ${this.name} does not require whitelisting accounts`)
             return false
           } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
-            this.log.error(`Invalid Adjust User Status Request: Controller does not have permission to whitelist accounts`)
+            console.error(`Invalid Adjust User Status Request: Controller does not have permission to whitelist accounts`)
             return false
           } else {
             return true
           }
         } else {
-          this.log.error(`Invalid Adjust User Status: ${request.status} is not a valid status`)
+          console.error(`Invalid Adjust User Status: ${request.status} is not a valid status`)
           return false
         }
       } else if (request.type === 'adjust_fee') {
         if (!this.hasSetting(`adjust_fee`)) {
-          this.log.error(`Invalid Adjust Fee Request: ${this.name} does not allow changing the fee type or fee rate`)
+          console.error(`Invalid Adjust Fee Request: ${this.name} does not allow changing the fee type or fee rate`)
           return false
         } else if (!this.controllerPrivilege(request.originAccount, `adjust_fee`)) {
-          this.log.error(`Invalid Adjust Fee Request: Controller does not have permission to freeze accounts`)
+          console.error(`Invalid Adjust Fee Request: Controller does not have permission to freeze accounts`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'update_issuer_info') {
         if (!this.controllerPrivilege(request.originAccount, `update_issuer_info`)) {
-          this.log.error(`Invalid Update Issuer Info Request: Controller does not have permission to update the issuer info`)
+          console.error(`Invalid Update Issuer Info Request: Controller does not have permission to update the issuer info`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'update_controller') {
         if (!this.controllerPrivilege(request.originAccount, `update_controller`)) {
-          this.log.error(`Invalid Update Controller Request: Controller does not have permission to update controllers`)
+          console.error(`Invalid Update Controller Request: Controller does not have permission to update controllers`)
           return false
         } else if (this.controllers.length === 10 && request.action === 'add' && !this.isController(request.controller.account)) {
-          this.log.error(`Invalid Update Controller Request: ${this.name} already has 10 controllers you must remove one first`)
+          console.error(`Invalid Update Controller Request: ${this.name} already has 10 controllers you must remove one first`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'burn') {
         if (!this.controllerPrivilege(request.originAccount, `burn`)) {
-          this.log.error(`Invalid Burn Request: Controller does not have permission to burn tokens`)
+          console.error(`Invalid Burn Request: Controller does not have permission to burn tokens`)
           return false
         } else if (bigInt(this.tokenBalance).lesser(bigInt(request.amount))) {
-          this.log.error(`Invalid Burn Request: the token balance of the token account is less than the amount of tokens you are trying to burn`)
+          console.error(`Invalid Burn Request: the token balance of the token account is less than the amount of tokens you are trying to burn`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'distribute') {
         if (!this.controllerPrivilege(request.originAccount, `distribute`)) {
-          this.log.error(`Invalid Distribute Request: Controller does not have permission to distribute tokens`)
+          console.error(`Invalid Distribute Request: Controller does not have permission to distribute tokens`)
           return false
         } else if (bigInt(this.tokenBalance).lesser(bigInt(request.transaction.amount))) {
-          this.log.error(`Invalid Distribute Request: Token account does not have sufficient ${this.symbol} to distribute`)
+          console.error(`Invalid Distribute Request: Token account does not have sufficient ${this.symbol} to distribute`)
           return false
         } else if (await !this.validTokenDestination(request.transaction.destination)) {
-          this.log.error(`Invalid Distribute Request: Destination does not have permission to receive ${this.symbol}`)
+          console.error(`Invalid Distribute Request: Destination does not have permission to receive ${this.symbol}`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'withdraw_fee') {
         if (!this.controllerPrivilege(request.originAccount, `withdraw_fee`)) {
-          this.log.error(`Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee`)
+          console.error(`Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee`)
           return false
         } else if (bigInt(this.tokenFeeBalance).lesser(bigInt(request.transaction.amount))) {
-          this.log.error(`Invalid Withdraw Fee Request: Token account does not have a sufficient token fee balance to withdraw the specified amount`)
+          console.error(`Invalid Withdraw Fee Request: Token account does not have a sufficient token fee balance to withdraw the specified amount`)
           return false
         } else if (await !this.validTokenDestination(request.transaction.destination)) {
-          this.log.error(`Invalid Withdraw Fee Request: Destination does not have permission to receive ${this.symbol}`)
+          console.error(`Invalid Withdraw Fee Request: Destination does not have permission to receive ${this.symbol}`)
           return false
         } else {
           return true
         }
       } else if (request.type === 'withdraw_logos') {
         if (!this.controllerPrivilege(request.originAccount, `withdraw_logos`)) {
-          this.log.error(`Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos`)
+          console.error(`Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos`)
           return false
         } else if (bigInt(this.balance).lesser(bigInt(request.transaction.amount).plus(bigInt(request.fee)))) {
-          this.log.error(`Invalid Withdraw Logos Request: Token account does not have sufficient balance to withdraw the specified amount + the minimum logos fee`)
+          console.error(`Invalid Withdraw Logos Request: Token account does not have sufficient balance to withdraw the specified amount + the minimum logos fee`)
           return false
         } else {
           return true
@@ -777,7 +774,7 @@ class TokenAccount {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpc, this.log)
+          await request.publish(this.wallet.rpc)
         } catch (err) {
           request.published = false
           // Wallet setting to reject the request and clear the invalid request?
@@ -890,7 +887,7 @@ class TokenAccount {
       this.receiveChain.push(request)
       return request
     } else {
-      this.log.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
+      console.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
       return request
     }
   }
@@ -1049,7 +1046,7 @@ class TokenAccount {
       }
     }
     if (!found) {
-      this.log.warn('Not found')
+      console.warn('Not found')
       return false
     }
   }
@@ -1140,7 +1137,7 @@ class TokenAccount {
         if (this.getPendingRequest(requestInfo.hash)) {
           this.removePendingRequest(requestInfo.hash)
         } else {
-          this.log.error('Someone is performing token account requests that is not us!!!')
+          console.error('Someone is performing token account requests that is not us!!!')
           // Remove all pendings as they are now invalidated
           // It is possible to update the pending blocks but this could
           // lead to unintended consequences so its best to just reset IMO

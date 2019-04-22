@@ -1,13 +1,12 @@
 const Utils = require('./Utils')
-const pbkdf2 = require('pbkdf2')
 const Account = require('./Account')
 const TokenAccount = require('./TokenAccount')
+const mqttRegex = require('mqtt-regex')
+const pbkdf2 = require('pbkdf2')
 const nacl = require('tweetnacl/nacl')
 const blake = require('blakejs')
 const bigInt = require('big-integer')
 const mqtt = require('mqtt')
-const mqttRegex = require('mqtt-regex')
-const bunyan = require('bunyan')
 /**
  * The main hub for interacting with the Logos Accounts and Requests.
  */
@@ -25,7 +24,6 @@ class Wallet {
     fullSync: false,
     lazyErrors: false,
     syncTokens: false,
-    logging: 'info',
     mqtt: Utils.defaultMQTT,
     rpc: Utils.defaultRPC,
     version: 1
@@ -155,20 +153,6 @@ class Wallet {
     }
 
     /**
-     * Logging - The Level of logging on the SDK
-     * trace / debug / info / warn / error
-     *
-     * @type {string}
-     * @private
-     */
-    if (options.logging !== undefined) {
-      this._logging = options.logging
-    } else {
-      this._logging = 'info'
-    }
-    this.log = bunyan.createLogger({ name: 'WebwalletSDK', level: this._logging })
-
-    /**
      * RPC enabled
      * @type {RPCOptions}
      * @private
@@ -285,19 +269,6 @@ class Wallet {
 
   set lazyErrors (val) {
     this._lazyErrors = val
-  }
-
-  /**
-   * Logging Level
-   * trace / debug / info / warn / error
-   * @type {string}
-   */
-  get loggingLevel () {
-    return this._logging
-  }
-
-  set loggingLevel (val) {
-    this._logging = val
   }
 
   /**
@@ -497,7 +468,7 @@ class Wallet {
       if (this._rpc && !issuance) {
         await this._tokenAccounts[tokenAccount.address].sync()
       } else {
-        if (!this._rpc) this.log.warn('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
+        if (!this._rpc) console.warn('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
         this._tokenAccounts[tokenAccount.address].synced = true
       }
       return this._tokenAccounts[tokenAccount.address]
@@ -759,9 +730,9 @@ class Wallet {
     if (this._mqttConnected && this._mqttClient) {
       this._mqttClient.subscribe(topic, (err) => {
         if (!err) {
-          this.log.info(`subscribed to ${topic}`)
+          console.info(`subscribed to ${topic}`)
         } else {
-          this.log.error(err)
+          console.error(err)
         }
       })
     }
@@ -778,9 +749,9 @@ class Wallet {
     if (this._mqttConnected && this._mqttClient) {
       this._mqttClient.unsubscribe(topic, (err) => {
         if (!err) {
-          this.log.info(`unsubscribed from ${topic}`)
+          console.info(`unsubscribed from ${topic}`)
         } else {
-          this.log.error(err)
+          console.error(err)
         }
       })
     }
@@ -806,7 +777,7 @@ class Wallet {
     if (this._mqtt) {
       this._mqttClient = mqtt.connect(this._mqtt)
       this._mqttClient.on('connect', () => {
-        this.log.info('Webwallet SDK Connected to MQTT')
+        console.info('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
         Object.keys(this._accounts).forEach(account => {
           this._subscribe(`account/${account}`)
@@ -814,7 +785,7 @@ class Wallet {
       })
       this._mqttClient.on('close', () => {
         this._mqttConnected = false
-        this.log.info('Webwallet SDK disconnected from MQTT')
+        console.info('Webwallet SDK disconnected from MQTT')
       })
       this._mqttClient.on('message', (topic, request) => {
         const accountMqttRegex = mqttRegex('account/+address').exec
@@ -822,10 +793,10 @@ class Wallet {
         let params = accountMqttRegex(topic)
         if (params) {
           if (this._accounts[params.address]) {
-            this.log.info(`MQTT Confirmation - Account - ${request.type} - ${request.sequence}`)
+            console.info(`MQTT Confirmation - Account - ${request.type} - ${request.sequence}`)
             this._accounts[params.address].processRequest(request)
           } else if (this._tokenAccounts[params.address]) {
-            this.log.info(`MQTT Confirmation - TK Account - ${request.type} - ${request.sequence}`)
+            console.info(`MQTT Confirmation - TK Account - ${request.type} - ${request.sequence}`)
             this._tokenAccounts[params.address].processRequest(request)
           }
         }
