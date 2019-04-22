@@ -1036,7 +1036,7 @@ class Account {
         console.error(`Invalid Token Send Request: Requests token is less than the required percentage token fee of ${tokenAccount.feeRate}%`)
         return false
       }
-      if (bigInt(this._tokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).greaterOrEquals(0)) {
+      if (bigInt(this._tokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).lesser(0)) {
         console.error(`Invalid Token Send Request: Not Enough Token to pay the token fee for token sends`)
         return false
       }
