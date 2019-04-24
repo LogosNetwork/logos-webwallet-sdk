@@ -34,96 +34,106 @@ const Iso10126 = {
   }
 }
 
-function getControllerFromJSON (controllers) {
-  let shouldBeArray = true
-  if (!(controllers instanceof Array)) {
-    controllers = [controllers]
-    shouldBeArray = false
+const defaultPrivileges = {
+  change_issuance: false,
+  change_modify_issuance: false,
+  change_revoke: false,
+  change_modify_revoke: false,
+  change_freeze: false,
+  change_modify_freeze: false,
+  change_adjust_fee: false,
+  change_modify_adjust_fee: false,
+  change_whitelist: false,
+  change_modify_whitelist: false,
+  issuance: false,
+  revoke: false,
+  freeze: false,
+  adjust_fee: false,
+  whitelist: false,
+  update_issuer_info: false,
+  update_controller: false,
+  burn: false,
+  distribute: false,
+  withdraw_fee: false,
+  withdraw_logos: false
+}
+
+const defaulSettings = {
+  issuance: false,
+  modify_issuance: false,
+  revoke: false,
+  modify_revoke: false,
+  freeze: false,
+  modify_freeze: false,
+  adjust_fee: false,
+  modify_adjust_fee: false,
+  whitelist: false,
+  modify_whitelist: false
+}
+
+function deserializeController (controller) {
+  let newController = {}
+  newController.account = controller.account
+  newController.privileges = {}
+  if (controller.privileges instanceof Array) {
+    if (controller.privileges.length > 0) {
+      newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
+      newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
+      newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
+      newController.privileges.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
+      newController.privileges.change_freeze = controller.privileges.indexOf('change_freeze') > -1
+      newController.privileges.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
+      newController.privileges.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
+      newController.privileges.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
+      newController.privileges.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
+      newController.privileges.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
+      newController.privileges.issuance = controller.privileges.indexOf('issuance') > -1
+      newController.privileges.revoke = controller.privileges.indexOf('revoke') > -1
+      newController.privileges.freeze = controller.privileges.indexOf('freeze') > -1
+      newController.privileges.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
+      newController.privileges.whitelist = controller.privileges.indexOf('whitelist') > -1
+      newController.privileges.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
+      newController.privileges.update_controller = controller.privileges.indexOf('update_controller') > -1
+      newController.privileges.burn = controller.privileges.indexOf('burn') > -1
+      newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
+      newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
+      newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_logos') > -1
+    } else {
+      newController.privileges = defaultPrivileges
+    }
+  } else if (typeof controller.privileges === 'object' && controller.privileges !== null) {
+    newController.privileges = controller.privileges
+  } else {
+    newController.privileges = defaultPrivileges
   }
+  return newController
+}
+
+function deserializeControllers (controllers) {
   let newControllers = []
   for (let controller of controllers) {
-    let newController = {}
-    newController.account = controller.account
-    newController.privileges = {}
-    if (controller.privileges instanceof Array) {
-      if (controller.privileges.length > 0) {
-        newController.privileges.change_issuance = controller.privileges.indexOf('change_issuance') > -1
-        newController.privileges.change_modify_issuance = controller.privileges.indexOf('change_modify_issuance') > -1
-        newController.privileges.change_revoke = controller.privileges.indexOf('change_revoke') > -1
-        newController.privileges.change_modify_revoke = controller.privileges.indexOf('change_modify_revoke') > -1
-        newController.privileges.change_freeze = controller.privileges.indexOf('change_freeze') > -1
-        newController.privileges.change_modify_freeze = controller.privileges.indexOf('change_modify_freeze') > -1
-        newController.privileges.change_adjust_fee = controller.privileges.indexOf('change_adjust_fee') > -1
-        newController.privileges.change_modify_adjust_fee = controller.privileges.indexOf('change_modify_adjust_fee') > -1
-        newController.privileges.change_whitelist = controller.privileges.indexOf('change_whitelist') > -1
-        newController.privileges.change_modify_whitelist = controller.privileges.indexOf('change_modify_whitelist') > -1
-        newController.privileges.issuance = controller.privileges.indexOf('issuance') > -1
-        newController.privileges.revoke = controller.privileges.indexOf('revoke') > -1
-        newController.privileges.freeze = controller.privileges.indexOf('freeze') > -1
-        newController.privileges.adjust_fee = controller.privileges.indexOf('adjust_fee') > -1
-        newController.privileges.whitelist = controller.privileges.indexOf('whitelist') > -1
-        newController.privileges.update_issuer_info = controller.privileges.indexOf('update_issuer_info') > -1
-        newController.privileges.update_controller = controller.privileges.indexOf('update_controller') > -1
-        newController.privileges.burn = controller.privileges.indexOf('burn') > -1
-        newController.privileges.distribute = controller.privileges.indexOf('distribute') > -1
-        newController.privileges.withdraw_fee = controller.privileges.indexOf('withdraw_fee') > -1
-        newController.privileges.withdraw_logos = controller.privileges.indexOf('withdraw_logos') > -1
-      } else {
-        newController.privileges = {
-          change_issuance: false,
-          change_modify_issuance: false,
-          change_revoke: false,
-          change_modify_revoke: false,
-          change_freeze: false,
-          change_modify_freeze: false,
-          change_adjust_fee: false,
-          change_modify_adjust_fee: false,
-          change_whitelist: false,
-          change_modify_whitelist: false,
-          issuance: false,
-          revoke: false,
-          freeze: false,
-          adjust_fee: false,
-          whitelist: false,
-          update_issuer_info: false,
-          update_controller: false,
-          burn: false,
-          distribute: false,
-          withdraw_fee: false,
-          withdraw_logos: false
-        }
-      }
-    } else {
-      newController.privileges = controller.privileges
-    }
-    newControllers.push(newController)
+    newControllers.push(this.deserializeController(controller))
   }
-  if (shouldBeArray) {
-    return newControllers
-  } else {
-    return newControllers[0]
-  }
+  return newControllers
 }
 
-function getControllerJSON (controllersObject) {
-  if (!(controllersObject instanceof Array)) {
-    let newController = {}
-    newController.account = controllersObject.account
-    newController.privileges = this.getSettingsJSON(controllersObject.privileges)
-    return newController
-  } else {
-    let controllers = []
-    for (let controller of controllersObject) {
-      let newController = {}
-      newController.account = controller.account
-      newController.privileges = this.getSettingsJSON(controller.privileges)
-      controllers.push(newController)
-    }
-    return controllers
-  }
+// Convert's the webwallet SDK controller into a Logos Node compatiable controller
+function serializeController (controllerObject) {
+  let newController = {}
+  newController.account = controllerObject.account
+  newController.privileges = this.convertObjectToArray(controllerObject.privileges)
+  return newController
 }
 
-function getSettingsFromJSON (settings) {
+function serializeControllers (controllersObject) {
+  let controllers = []
+  for (let controller of controllersObject) {
+    controllers.push(this.serializeController(controller))
+  }
+  return controllers
+}
+
+function deserializeSettings (settings) {
   if (settings instanceof Array) {
     if (settings.length > 0) {
       return {
@@ -138,46 +148,21 @@ function getSettingsFromJSON (settings) {
         whitelist: settings.indexOf('whitelist') > -1,
         modify_whitelist: settings.indexOf('modify_whitelist') > -1
       }
-    } else {
-      return {
-        issuance: false,
-        modify_issuance: false,
-        revoke: false,
-        modify_revoke: false,
-        freeze: false,
-        modify_freeze: false,
-        adjust_fee: false,
-        modify_adjust_fee: false,
-        whitelist: false,
-        modify_whitelist: false
-      }
     }
-  } else if (settings === '') {
-    return {
-      issuance: false,
-      modify_issuance: false,
-      revoke: false,
-      modify_revoke: false,
-      freeze: false,
-      modify_freeze: false,
-      adjust_fee: false,
-      modify_adjust_fee: false,
-      whitelist: false,
-      modify_whitelist: false
-    }
-  } else {
+  } else if (typeof settings === 'object' && settings !== null) {
     return settings
   }
+  return defaulSettings
 }
 
-function getSettingsJSON (settingsObject) {
-  let settings = []
-  for (let key in settingsObject) {
-    if (settingsObject[key] === true) {
-      settings.push(key)
+function convertObjectToArray (myObjects) {
+  let myArray = []
+  for (let key in myObjects) {
+    if (myObjects[key] === true) {
+      myArray.push(key)
     }
   }
-  return settings
+  return myArray
 }
 
 const AES = {
@@ -562,8 +547,10 @@ module.exports = {
   defaultRPC,
   defaultMQTT,
   MAXUINT128,
-  getControllerFromJSON,
-  getControllerJSON,
-  getSettingsFromJSON,
-  getSettingsJSON
+  deserializeController,
+  deserializeControllers,
+  deserializeSettings,
+  serializeController,
+  serializeControllers,
+  convertObjectToArray
 }

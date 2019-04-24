@@ -370,8 +370,8 @@ class TokenAccount {
         this.issuerInfo = info.issuer_info
         this.feeRate = info.fee_rate
         this.feeType = info.fee_type.toLowerCase()
-        this.controllers = Utils.getControllerFromJSON(info.controllers)
-        this.settings = Utils.getSettingsFromJSON(info.settings)
+        this.controllers = Utils.deserializeControllers(info.controllers)
+        this.settings = Utils.deserializeSettings(info.settings)
         this.balance = info.balance
         if (this.wallet.fullSync) {
           RPC.accounts.history(this.address, -1, true).then((history) => {
@@ -438,7 +438,7 @@ class TokenAccount {
     } else if (request.type === 'update_issuer_info') {
       this.issuerInfo = request.issuerInfo
     } else if (request.type === 'update_controller') {
-      let updatedPrivs = Utils.getControllerJSON(request.controller).privileges
+      let updatedPrivs = Utils.serializeController(request.controller).privileges
       if (request.action === 'remove' && updatedPrivs.length === 0) {
         this.controllers = this.controllers.filter(controller => controller.account !== request.controller.account)
       } else if (request.action === 'remove' && updatedPrivs.length > 0) {

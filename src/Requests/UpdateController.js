@@ -22,7 +22,7 @@ class UpdateController extends TokenRequest {
      * @private
      */
     if (options.controller !== undefined) {
-      this._controller = Utils.getControllerFromJSON(options.controller)
+      this._controller = Utils.deserializeController(options.controller)
     } else {
       this._controller = null
     }
@@ -158,7 +158,7 @@ class UpdateController extends TokenRequest {
   toJSON (pretty = false) {
     const obj = JSON.parse(super.toJSON())
     obj.action = this.action
-    obj.controller = Utils.getControllerJSON(this.controller)
+    obj.controller = Utils.serializeController(this.controller)
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }

@@ -1061,7 +1061,7 @@ class Account {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpc, console)
+          await request.publish(this.wallet.rpc)
         } catch (err) {
           request.published = false
           // Wallet setting to reject the request and clear the invalid request?

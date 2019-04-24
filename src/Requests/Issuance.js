@@ -111,7 +111,7 @@ class Issuance extends Request {
      * @private
      */
     if (options.settings !== undefined) {
-      this._settings = Utils.getSettingsFromJSON(options.settings)
+      this._settings = Utils.deserializeSettings(options.settings)
     } else {
       this._settings = {
         issuance: false,
@@ -133,7 +133,7 @@ class Issuance extends Request {
      * @private
      */
     if (options.controllers !== undefined) {
-      this._controllers = Utils.getControllerFromJSON(options.controllers)
+      this._controllers = Utils.deserializeControllers(options.controllers)
     } else {
       this._controllers = [{
         account: Utils.accountFromHexKey(this.origin),
@@ -285,7 +285,7 @@ class Issuance extends Request {
   }
 
   set settings (val) {
-    val = Utils.getSettingsFromJSON(val)
+    val = Utils.deserializeSettings(val)
     this.validateSettings(val)
     this._settings = val
   }
@@ -299,7 +299,7 @@ class Issuance extends Request {
   }
 
   set controllers (val) {
-    val = Utils.getControllerFromJSON(val)
+    val = Utils.deserializeControllers(val)
     for (let controller of val) {
       this.validateController(controller)
     }
@@ -397,7 +397,7 @@ class Issuance extends Request {
    */
   addController (controller) {
     if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
-    controller = Utils.getControllerFromJSON(controller)
+    controller = Utils.deserializeController(controller)
     if (this.validateController(controller)) {
       this._controllers.push(controller)
     }
@@ -508,8 +508,8 @@ class Issuance extends Request {
     obj.total_supply = this.totalSupply
     obj.fee_type = this.feeType
     obj.fee_rate = this.feeRate
-    obj.settings = Utils.getSettingsJSON(this.settings)
-    obj.controllers = Utils.getControllerJSON(this.controllers)
+    obj.settings = Utils.convertObjectToArray(this.settings)
+    obj.controllers = Utils.serializeControllers(this.controllers)
     obj.issuer_info = this.issuerInfo
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
