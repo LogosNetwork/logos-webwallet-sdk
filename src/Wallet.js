@@ -779,6 +779,7 @@ class Wallet {
       this._mqttClient.on('connect', () => {
         console.info('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
+        this._subscribe(`delegateChange`)
         Object.keys(this._accounts).forEach(account => {
           this._subscribe(`account/${account}`)
         })
@@ -790,14 +791,19 @@ class Wallet {
       this._mqttClient.on('message', (topic, request) => {
         const accountMqttRegex = mqttRegex('account/+address').exec
         request = JSON.parse(request.toString())
-        let params = accountMqttRegex(topic)
-        if (params) {
-          if (this._accounts[params.address]) {
-            console.info(`MQTT Confirmation - Account - ${request.type} - ${request.sequence}`)
-            this._accounts[params.address].processRequest(request)
-          } else if (this._tokenAccounts[params.address]) {
-            console.info(`MQTT Confirmation - TK Account - ${request.type} - ${request.sequence}`)
-            this._tokenAccounts[params.address].processRequest(request)
+        if (topic === 'delegateChange') {
+          console.info(`MQTT Delegate Change`)
+          this.rpc.delegates = Object.values(request)
+        } else {
+          let params = accountMqttRegex(topic)
+          if (params) {
+            if (this._accounts[params.address]) {
+              console.info(`MQTT Confirmation - Account - ${request.type} - ${request.sequence}`)
+              this._accounts[params.address].processRequest(request)
+            } else if (this._tokenAccounts[params.address]) {
+              console.info(`MQTT Confirmation - TK Account - ${request.type} - ${request.sequence}`)
+              this._tokenAccounts[params.address].processRequest(request)
+            }
           }
         }
       })

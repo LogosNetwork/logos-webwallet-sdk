@@ -252,6 +252,7 @@ class Request {
     if (this.previous !== Utils.GENESIS_HASH) {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32
     } else {
+      // TODO 104 if token id and not token_send or issuance then use that else use origin
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
     const RPC = new Logos({

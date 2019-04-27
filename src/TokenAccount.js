@@ -811,6 +811,42 @@ class TokenAccount {
   }
 
   /**
+   * Adds the request to the Receive chain if it doesn't already exist
+   *
+   * @param {Request} request - Request Object
+   * @returns {void}
+   */
+  _addToReceiveChain (request) {
+    let addBlock = true
+    for (let j = this._receiveChain.length - 1; j >= 0; j--) {
+      const blk = this._receiveChain[j]
+      if (blk.hash === request.hash) {
+        addBlock = false
+        break
+      }
+    }
+    if (addBlock) this._receiveChain.push(request)
+  }
+
+  /**
+   * Adds the request to the Send chain if it doesn't already exist
+   *
+   * @param {Request} request - Request Object
+   * @returns {void}
+   */
+  _addToSendChain (request) {
+    let addBlock = true
+    for (let j = this._chain.length - 1; j >= 0; j--) {
+      const blk = this._chain[j]
+      if (blk.hash === request.hash) {
+        addBlock = false
+        break
+      }
+    }
+    if (addBlock) this._chain.push(request)
+  }
+
+  /**
    * Adds a request to the appropriate chain
    *
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
@@ -823,7 +859,7 @@ class TokenAccount {
       if (requestInfo.transactions && requestInfo.transactions.length > 0) {
         for (let trans of requestInfo.transactions) {
           if (trans.destination === this.address) {
-            this.receiveChain.push(request)
+            this._addToReceiveChain(request)
             break
           }
         }
@@ -832,59 +868,59 @@ class TokenAccount {
     } else if (requestInfo.type === 'withdraw_logos') {
       request = new WithdrawLogos(requestInfo)
       if (requestInfo.transaction.destination === this.address) {
-        this.receiveChain.push(request)
+        this._addToReceiveChain(request)
       }
       if (requestInfo.token_id === this.tokenID) {
-        this.chain.push(request)
+        this._addToSendChain(request)
       }
       return request
     } else if (requestInfo.type === 'issue_additional') {
       request = new IssueAdditional(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'change_setting') {
       request = new ChangeSetting(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'immute_setting') {
       request = new ImmuteSetting(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'revoke') {
       request = new Revoke(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'adjust_user_status') {
       request = new AdjustUserStatus(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'adjust_fee') {
       request = new AdjustFee(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'update_issuer_info') {
       request = new UpdateIssuerInfo(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'update_controller') {
       request = new UpdateController(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'burn') {
       request = new Burn(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'distribute') {
       request = new Distribute(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'withdraw_fee') {
       request = new WithdrawFee(requestInfo)
-      this.chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'issuance') {
       request = new Issuance(requestInfo)
-      this.receiveChain.push(request)
+      this._addToReceiveChain(request)
       return request
     } else {
       console.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)

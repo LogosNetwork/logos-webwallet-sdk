@@ -24,7 +24,7 @@ class IssueAdditional extends TokenRequest {
 
     this._type = {
       text: 'issue_additional',
-      value: '3'
+      value: 3
     }
   }
 

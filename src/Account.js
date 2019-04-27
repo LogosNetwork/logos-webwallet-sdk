@@ -736,14 +736,14 @@ class Account {
       // If this request was created by us
       // add the request to confirmed chain
       if (request.originAccount === this.address) {
-        this._chain.push(request)
+        this._addToSendChain(request)
       }
       // If the request has transactions pointed to us
       // add the request to the receive chain
       if (request.transactions && request.transactions.length > 0) {
         for (let trans of request.transactions) {
           if (trans.destination === this.address) {
-            this._receiveChain.push(request)
+            this._addToReceiveChain(request)
             break
           }
         }
@@ -751,23 +751,23 @@ class Account {
       return request
     } else if (requestInfo.type === 'issuance') {
       request = new Issuance(requestInfo)
-      this._chain.push(request)
+      this._addToSendChain(request)
       return request
     } else if (requestInfo.type === 'distribute') {
       request = new Distribute(requestInfo)
-      this._receiveChain.push(request)
+      this._addToReceiveChain(request)
       return request
     } else if (requestInfo.type === 'withdraw_fee') {
       request = new WithdrawFee(requestInfo)
-      this._receiveChain.push(request)
+      this._addToReceiveChain(request)
       return request
     } else if (requestInfo.type === 'revoke') {
       request = new Revoke(requestInfo)
-      this._receiveChain.push(request)
+      this._addToReceiveChain(request)
       return request
     } else if (requestInfo.type === 'withdraw_logos') {
       request = new WithdrawLogos(requestInfo)
-      this._receiveChain.push(request)
+      this._addToReceiveChain(request)
       return request
     } else {
       console.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
@@ -940,7 +940,7 @@ class Account {
    * Finds the request object of the specified request hash
    *
    * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} false if no request object of the specified hash was found
+   * @returns {Request} null if no request object of the specified hash was found
    */
   getRequest (hash) {
     for (let j = this._chain.length - 1; j >= 0; j--) {
@@ -1097,6 +1097,42 @@ class Account {
       this.broadcastRequest()
     }
     return request
+  }
+
+  /**
+   * Adds the request to the Receive chain if it doesn't already exist
+   *
+   * @param {Request} request - Request Object
+   * @returns {void}
+   */
+  _addToReceiveChain (request) {
+    let addBlock = true
+    for (let j = this._receiveChain.length - 1; j >= 0; j--) {
+      const blk = this._receiveChain[j]
+      if (blk.hash === request.hash) {
+        addBlock = false
+        break
+      }
+    }
+    if (addBlock) this._receiveChain.push(request)
+  }
+
+  /**
+   * Adds the request to the Send chain if it doesn't already exist
+   *
+   * @param {Request} request - Request Object
+   * @returns {void}
+   */
+  _addToSendChain (request) {
+    let addBlock = true
+    for (let j = this._chain.length - 1; j >= 0; j--) {
+      const blk = this._chain[j]
+      if (blk.hash === request.hash) {
+        addBlock = false
+        break
+      }
+    }
+    if (addBlock) this._chain.push(request)
   }
 
   /**
