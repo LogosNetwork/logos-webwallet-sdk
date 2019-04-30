@@ -173,7 +173,16 @@ class Account {
      * @private
      */
     if (options.chain !== undefined) {
-      this._chain = options.chain
+      this._chain = []
+      for (let request of options.chain) {
+        if (request.type === 'send') {
+          this._chain.push(new Send(request))
+        } else if (request.type === 'token_send') {
+          this._chain.push(new TokenSend(request))
+        } else if (request.type === 'issuance') {
+          this._chain.push(new Issuance(request))
+        }
+      }
     } else {
       this._chain = []
     }
@@ -184,7 +193,22 @@ class Account {
      * @private
      */
     if (options.receiveChain !== undefined) {
-      this._receiveChain = options.receiveChain
+      this._receiveChain = []
+      for (let request of options.receiveChain) {
+        if (request.type === 'send') {
+          this._receiveChain.push(new Send(request))
+        } else if (request.type === 'token_send') {
+          this._receiveChain.push(new TokenSend(request))
+        } else if (request.type === 'distribute') {
+          this._receiveChain.push(new Distribute(request))
+        } else if (request.type === 'withdraw_fee') {
+          this._receiveChain.push(new WithdrawFee(request))
+        } else if (request.type === 'revoke') {
+          this._receiveChain.push(new Revoke(request))
+        } else if (request.type === 'withdraw_logos') {
+          this._receiveChain.push(new WithdrawLogos(request))
+        }
+      }
     } else {
       this._receiveChain = []
     }
@@ -195,7 +219,16 @@ class Account {
      * @private
      */
     if (options.pendingChain !== undefined) {
-      this._pendingChain = options.pendingChain
+      this._pendingChain = []
+      for (let request of options.pendingChain) {
+        if (request.type === 'send') {
+          this._pendingChain.push(new Send(request))
+        } else if (request.type === 'token_send') {
+          this._pendingChain.push(new TokenSend(request))
+        } else if (request.type === 'issuance') {
+          this._pendingChain.push(new Issuance(request))
+        }
+      }
     } else {
       this._pendingChain = []
     }
@@ -497,6 +530,47 @@ class Account {
       this._sequence = -1
     }
     return parseInt(this._sequence) + 1
+  }
+
+  /**
+   * Checks if the account is synced
+   * @returns {Promise<Boolean>}
+   */
+  isSynced () {
+    return new Promise((resolve, reject) => {
+      const RPC = new Logos({
+        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this.wallet.rpc.proxy
+      })
+      RPC.accounts.info(this.address).then(async info => {
+        let synced = true
+        if (info && info.frontier) {
+          if (info.frontier !== Utils.GENESIS_HASH) {
+            if (this.chain.length === 0 || this.chain[this.chain.length - 1].hash !== info.frontier) {
+              synced = false
+            }
+          }
+          let receiveBlock = await RPC.requests.info(info.receive_tip)
+          if (this.receiveChain.length === 0 || this.receiveChain[this.receiveChain.length - 1].hash !== receiveBlock.send_hash) {
+            synced = false
+          }
+          this._synced = synced
+          if (synced) {
+            this.updateBalancesFromChain()
+            if (this.verifyChain() && this.verifyReceiveChain()) {
+              console.info(`${this.address} has been fully synced`)
+              resolve(true)
+            }
+          } else {
+            resolve(synced)
+          }
+        } else {
+          console.info(`${this.address} is empty and therefore valid`)
+          this._synced = synced
+          resolve(synced)
+        }
+      })
+    })
   }
 
   /**
@@ -1721,6 +1795,33 @@ class Account {
         this.broadcastRequest()
       }
     }
+  }
+
+  /**
+   * Returns the base account JSON
+   * @returns {AccountJSON} JSON request
+   */
+  toJSON () {
+    const obj = {}
+    obj.label = this.label
+    obj.address = this.address
+    obj.publicKey = this.publicKey
+    obj.privateKey = this.privateKey
+    obj.balance = this.balance
+    obj.tokenBalances = this.tokenBalances
+    obj.tokens = this.tokens
+    obj.representative = this.representative
+    obj.chain = []
+    for (let request of this.chain) {
+      obj.chain.push(JSON.parse(request.toJSON()))
+    }
+    obj.receiveChain = []
+    for (let request of this.receiveChain) {
+      obj.receiveChain.push(JSON.parse(request.toJSON()))
+    }
+    obj.version = this._version
+    obj.index = this.index
+    return JSON.stringify(obj)
   }
 }
 

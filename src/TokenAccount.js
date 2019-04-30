@@ -20,49 +20,333 @@ const Logos = require('@logosnetwork/logos-rpc-client')
  * TokenAccount contain the keys, chains, and balances.
  */
 class TokenAccount {
-  constructor (address, wallet, issuance) {
-    if (!address) throw new Error('You must initalize a token account with a address')
-    if (!wallet) throw new Error('You must initalize a token account with a wallet')
-    this._tokenID = Utils.keyFromAccount(address)
-    this._address = address
-    this._wallet = wallet
-    this._tokenBalance = null
-    this._totalSupply = null
-    this._tokenFeeBalance = null
-    this._symbol = null
-    this._name = 'UnknownToken'
-    this._issuerInfo = null
-    this._feeRate = null
-    this._feeType = null
-    this._controllers = []
-    this._settings = {}
-    this._sequence = null
-    this._previous = null
-    this._balance = '0'
-    this._chain = []
-    this._receiveChain = []
-    this._pendingChain = []
-    this._synced = false
+  constructor (options) {
+    if (!options) throw new Error('You must pass settings to initalize the token account')
+    if (!options.address && !options.tokenID) throw new Error('You must initalize a token account with an address or tokenID')
+    if (!options.wallet) throw new Error('You must initalize a token account with a wallet')
 
-    if (issuance) {
-      this._tokenBalance = issuance.totalSupply
-      this._totalSupply = issuance.totalSupply
+    if (options.issuance !== undefined) {
+      this._tokenBalance = options.issuance.totalSupply
+      this._totalSupply = options.issuance.totalSupply
       this._tokenFeeBalance = '0'
-      this._symbol = issuance.symbol
-      this._name = issuance.name
-      this._issuerInfo = issuance.issuerInfo
-      this._feeRate = issuance.feeRate
-      this._feeType = issuance.feeType
-      this._controllers = issuance.controllers
-      this._settings = issuance.settings
+      this._symbol = options.issuance.symbol
+      this._name = options.issuance.name
+      this._issuerInfo = options.issuance.issuerInfo
+      this._feeRate = options.issuance.feeRate
+      this._feeType = options.issuance.feeType
+      this._controllers = options.issuance.controllers
+      this._settings = options.issuance.settings
       this._sequence = 0
       this._previous = null
       this._balance = '0'
       this._chain = []
       this._receiveChain = []
       this._pendingChain = []
-      this._synced = true
     }
+
+    /**
+     * Token ID of this token
+     *
+     * @type {string}
+     * @private
+     */
+    if (options.tokenID !== undefined) {
+      this._tokenID = options.tokenID
+      this._address = Utils.accountFromHexKey(options.tokenID)
+    } else {
+      this._tokenID = null
+    }
+
+    /**
+     * Address of this token account
+     *
+     * @type {LogosAddress}
+     * @private
+     */
+    if (options.address !== undefined) {
+      this._address = options.address
+      this._tokenID = Utils.keyFromAccount(options.address)
+    } else {
+      this._address = null
+    }
+
+    /**
+     * Wallet reference
+     * @type {Wallet}
+     * @private
+     */
+    if (options.wallet !== undefined) {
+      this._wallet = options.wallet
+    } else {
+      this._wallet = null
+    }
+
+    /**
+     * Token Balance of the token account
+     *
+     * @type {String}
+     * @private
+     */
+    if (options.tokenBalance !== undefined) {
+      this._tokenBalance = options.tokenBalance
+    } else {
+      this._tokenBalance = '0'
+    }
+
+    /**
+     * Total Supply of tokens
+     *
+     * @type {String}
+     * @private
+     */
+    if (options.totalSupply !== undefined) {
+      this._totalSupply = options.totalSupply
+    } else {
+      this._totalSupply = null
+    }
+
+    /**
+     * Token Fee Balance
+     *
+     * @type {String}
+     * @private
+     */
+    if (options.tokenFeeBalance !== undefined) {
+      this._tokenFeeBalance = options.tokenFeeBalance
+    } else {
+      this._tokenFeeBalance = '0'
+    }
+
+    /**
+     * Symbol of the token
+     *
+     * @type {String}
+     * @private
+     */
+    if (options.symbol !== undefined) {
+      this._symbol = options.symbol
+    } else {
+      this._symbol = null
+    }
+
+    /**
+     * Name of the token
+     *
+     * @type {String}
+     * @private
+     */
+    if (options.name !== undefined) {
+      this._name = options.name
+    } else {
+      this._name = 'Unknown Token'
+    }
+
+    /**
+     * Issuer Info of the token
+     * @type {string}
+     * @private
+     */
+    if (options.issuerInfo !== undefined) {
+      this._issuerInfo = options.issuerInfo
+    } else {
+      this._issuerInfo = null
+    }
+
+    /**
+     * Fee Rate of the token
+     *
+     * @type {string}
+     * @private
+     */
+    if (options.feeRate !== undefined) {
+      this._feeRate = options.feeRate
+    } else {
+      this._feeRate = null
+    }
+
+    /**
+     * Fee Type of the token
+     *
+     * @type {string}
+     * @private
+     */
+    if (options.feeType !== undefined) {
+      this._feeType = options.feeType
+    } else {
+      this._feeType = null
+    }
+
+    /**
+     * Controllers of the token
+     *
+     * @type {string}
+     * @private
+     */
+    if (options.controllers !== undefined) {
+      this._controllers = options.controllers
+    } else {
+      this._controllers = null
+    }
+
+    /**
+     * Settings of the token
+     * @type {Object}
+     * @private
+     */
+    if (options.settings !== undefined) {
+      this._settings = options.settings
+    } else {
+      this._settings = {}
+    }
+
+    /**
+     * Previous hexadecimal hash of the last confirmed or pending request
+     * @type {Hexadecimal64Length}
+     * @private
+     */
+    this._previous = null
+
+    /**
+     * Sequence number of the last confirmed or pending request plus one
+     * @type {number}
+     * @private
+     */
+    this._sequence = null
+
+    /**
+     * Token Account Logos Balance
+     *
+     * @type {String}
+     * @private
+     */
+    if (options.balance !== undefined) {
+      this._balance = options.balance
+    } else {
+      this._balance = '0'
+    }
+
+    /**
+     * Chain of the account
+     * @type {Request[]}
+     * @private
+     */
+    if (options.chain !== undefined) {
+      this._chain = []
+      for (let request of options.chain) {
+        if (request.type === 'issue_additional') {
+          this._chain.push(new IssueAdditional(request))
+        } else if (request.type === 'change_setting') {
+          this._chain.push(new ChangeSetting(request))
+        } else if (request.type === 'immute_setting') {
+          this._chain.push(new ImmuteSetting(request))
+        } else if (request.type === 'revoke') {
+          this._chain.push(new Revoke(request))
+        } else if (request.type === 'adjust_user_status') {
+          this._chain.push(new AdjustUserStatus(request))
+        } else if (request.type === 'adjust_fee') {
+          this._chain.push(new AdjustFee(request))
+        } else if (request.type === 'update_issuer_info') {
+          this._chain.push(new UpdateIssuerInfo(request))
+        } else if (request.type === 'update_controller') {
+          this._chain.push(new UpdateController(request))
+        } else if (request.type === 'burn') {
+          this._chain.push(new Burn(request))
+        } else if (request.type === 'distribute') {
+          this._chain.push(new Distribute(request))
+        } else if (request.type === 'withdraw_fee') {
+          this._chain.push(new WithdrawFee(request))
+        } else if (request.type === 'withdraw_logos') {
+          this._chain.push(new WithdrawLogos(request))
+        }
+      }
+    } else {
+      this._chain = []
+    }
+
+    /**
+     * Receive chain of the account
+     * @type {Request[]}
+     * @private
+     */
+    if (options.receiveChain !== undefined) {
+      this._receiveChain = []
+      for (let request of options.receiveChain) {
+        if (request.type === 'send') {
+          this._receiveChain.push(new Send(request))
+        } else if (request.type === 'issuance') {
+          this._receiveChain.push(new Issuance(request))
+        } else if (request.type === 'withdraw_logos') {
+          this._receiveChain.push(new WithdrawLogos(request))
+        }
+      }
+    } else {
+      this._receiveChain = []
+    }
+
+    /**
+     * Pending chain of the account (local unconfirmed sends)
+     * @type {Request[]}
+     * @private
+     */
+    if (options.pendingChain !== undefined) {
+      this._pendingChain = []
+      for (let request of options.pendingChain) {
+        if (request.type === 'issue_additional') {
+          this._pendingChain.push(new IssueAdditional(request))
+        } else if (request.type === 'change_setting') {
+          this._pendingChain.push(new ChangeSetting(request))
+        } else if (request.type === 'immute_setting') {
+          this._pendingChain.push(new ImmuteSetting(request))
+        } else if (request.type === 'revoke') {
+          this._pendingChain.push(new Revoke(request))
+        } else if (request.type === 'adjust_user_status') {
+          this._pendingChain.push(new AdjustUserStatus(request))
+        } else if (request.type === 'adjust_fee') {
+          this._pendingChain.push(new AdjustFee(request))
+        } else if (request.type === 'update_issuer_info') {
+          this._pendingChain.push(new UpdateIssuerInfo(request))
+        } else if (request.type === 'update_controller') {
+          this._pendingChain.push(new UpdateController(request))
+        } else if (request.type === 'burn') {
+          this._pendingChain.push(new Burn(request))
+        } else if (request.type === 'distribute') {
+          this._pendingChain.push(new Distribute(request))
+        } else if (request.type === 'withdraw_fee') {
+          this._pendingChain.push(new WithdrawFee(request))
+        } else if (request.type === 'withdraw_logos') {
+          this._pendingChain.push(new WithdrawLogos(request))
+        }
+      }
+    } else {
+      this._pendingChain = []
+    }
+
+    /**
+     * Previous hexadecimal hash of the last confirmed or pending request
+     * @type {Hexadecimal64Length}
+     * @private
+     */
+    this._previous = null
+
+    /**
+     * Sequence number of the last confirmed or pending request plus one
+     * @type {number}
+     * @private
+     */
+    this._sequence = null
+
+    /**
+     * Account version of webwallet SDK
+     * @type {number}
+     * @private
+     */
+    if (options.version !== undefined) {
+      this._version = options.version
+    } else {
+      this._version = 1
+    }
+
+    this._synced = false
   }
 
   /**
@@ -342,6 +626,47 @@ class TokenAccount {
       this._sequence = -1
     }
     return parseInt(this._sequence) + 1
+  }
+
+  /**
+   * Checks if the account is synced
+   * @returns {Promise<Boolean>}
+   */
+  isSynced () {
+    return new Promise((resolve, reject) => {
+      const RPC = new Logos({
+        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this.wallet.rpc.proxy
+      })
+      RPC.accounts.info(this.address).then(async info => {
+        let synced = true
+        if (info && info.frontier) {
+          if (info.frontier !== Utils.GENESIS_HASH) {
+            if (this.chain.length === 0 || this.chain[this.chain.length - 1].hash !== info.frontier) {
+              synced = false
+            }
+          }
+          let receiveBlock = await RPC.requests.info(info.receive_tip)
+          if (this.receiveChain.length === 0 || this.receiveChain[this.receiveChain.length - 1].hash !== receiveBlock.send_hash) {
+            synced = false
+          }
+          this._synced = synced
+          if (synced) {
+            if (this.verifyChain() && this.verifyReceiveChain()) {
+              this.synced = true
+              console.info(`${info.name} has been fully synced`)
+              resolve(this)
+            }
+          } else {
+            resolve(synced)
+          }
+        } else {
+          console.info(`${this.address} is empty and therefore valid`)
+          this._synced = synced
+          resolve(synced)
+        }
+      })
+    })
   }
 
   /**
@@ -1183,6 +1508,38 @@ class TokenAccount {
       this.updateTokenInfoFromRequest(request)
       this.broadcastRequest()
     }
+  }
+
+  /**
+   * Returns the token account JSON
+   * @returns {TokenAccountJSON} JSON request
+   */
+  toJSON () {
+    const obj = {}
+    obj.tokenID = this.tokenID
+    obj.address = this.address
+    obj.tokenBalance = this.tokenBalance
+    obj.totalSupply = this.totalSupply
+    obj.tokenFeeBalance = this.tokenFeeBalance
+    obj.symbol = this.symbol
+    obj.name = this.name
+    obj.issuerInfo = this.issuerInfo
+    obj.feeRate = this.feeRate
+    obj.feeType = this.feeType
+    obj.controllers = this.controllers
+    obj.settings = this.settings
+    obj.balance = this.balance
+    obj.chain = []
+    for (let request of this.chain) {
+      obj.chain.push(JSON.parse(request.toJSON()))
+    }
+    obj.receiveChain = []
+    for (let request of this.receiveChain) {
+      obj.receiveChain.push(JSON.parse(request.toJSON()))
+    }
+    obj.version = this._version
+    obj.index = this.index
+    return JSON.stringify(obj)
   }
 }
 

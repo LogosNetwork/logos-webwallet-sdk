@@ -28,6 +28,10 @@ class Wallet {
     rpc: Utils.defaultRPC,
     version: 1
   }) {
+    this.loadOptions(options)
+  }
+
+  loadOptions (options) {
     /**
      * Password used to encrypt and decrypt the wallet data
      * @type {string}
@@ -59,28 +63,6 @@ class Wallet {
       this._currentAccountAddress = options.currentAccountAddress
     } else {
       this._currentAccountAddress = null
-    }
-
-    /**
-     * Array of accounts in this wallet
-     * @type {Map<LogosAddress, Account>}
-     * @private
-     */
-    if (options.accounts !== undefined) {
-      this._accounts = options.accounts
-    } else {
-      this._accounts = {}
-    }
-
-    /**
-     * Array of accounts in this wallet
-     * @type {Map<LogosAddress, TokenAccount>}
-     * @private
-     */
-    if (options.tokenAccounts !== undefined) {
-      this._tokenAccounts = options.tokenAccounts
-    } else {
-      this._tokenAccounts = {}
     }
 
     /**
@@ -194,6 +176,40 @@ class Wallet {
       this._seed = options.seed
     } else {
       this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
+    }
+
+    /**
+     * Array of accounts in this wallet
+     * @type {Map<LogosAddress, Account>}
+     * @private
+     */
+    if (options.accounts !== undefined) {
+      this._accounts = {}
+      for (let account in options.accounts) {
+        let accountOptions = options.accounts[account]
+        accountOptions.wallet = this
+        this._accounts[account] = new Account(accountOptions)
+        if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account}`)
+      }
+    } else {
+      this._accounts = {}
+    }
+
+    /**
+     * Array of accounts in this wallet
+     * @type {Map<LogosAddress, TokenAccount>}
+     * @private
+     */
+    if (options.tokenAccounts !== undefined) {
+      this._tokenAccounts = {}
+      for (let account in options.tokenAccounts) {
+        let accountOptions = options.tokenAccounts[account]
+        accountOptions.wallet = this
+        this._tokenAccounts[account] = new TokenAccount(accountOptions)
+        if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account}`)
+      }
+    } else {
+      this._tokenAccounts = {}
     }
   }
 
@@ -462,7 +478,11 @@ class Wallet {
     if (this._tokenAccounts[address]) {
       return this._tokenAccounts[address]
     } else {
-      const tokenAccount = new TokenAccount(address, this, issuance)
+      const tokenAccount = new TokenAccount({
+        address: address,
+        wallet: this,
+        issuance: issuance
+      })
       if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
       this._tokenAccounts[tokenAccount.address] = tokenAccount
       if (this._rpc && !issuance) {
@@ -562,30 +582,7 @@ class Wallet {
    * @returns {string}
    */
   encrypt () {
-    let encryptedWallet = {}
-
-    encryptedWallet.seed = this._seed
-    encryptedWallet.deterministicKeyIndex = this._deterministicKeyIndex
-    encryptedWallet.version = this._version
-    encryptedWallet.walletID = this._walletID
-    encryptedWallet.remoteWork = this._remoteWork
-
-    encryptedWallet.accounts = []
-    Object.keys(this._accounts).forEach(account => {
-      account = this._accounts[account]
-      if (account.index !== null) {
-        encryptedWallet.accounts.push({
-          label: account.label,
-          index: account.index
-        })
-      } else {
-        encryptedWallet.accounts.push({
-          label: account.label,
-          privateKey: account.privateKey
-        })
-      }
-    })
-    encryptedWallet = JSON.stringify(encryptedWallet)
+    let encryptedWallet = this.toJSON()
     encryptedWallet = Utils.stringToHex(encryptedWallet)
     encryptedWallet = Buffer.from(encryptedWallet, 'hex')
 
@@ -594,7 +591,13 @@ class Wallet {
     const checksum = blake.blake2bFinal(context)
 
     const salt = Buffer.from(nacl.randomBytes(16))
-    const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha512')
+    let localPassword = ''
+    if (!this._password) {
+      localPassword = 'password'
+    } else {
+      localPassword = this._password
+    }
+    const key = pbkdf2.pbkdf2Sync(localPassword, salt, this._iterations, 32, 'sha512')
 
     const options = {
       mode: Utils.AES.CBC,
@@ -612,6 +615,22 @@ class Wallet {
   }
 
   /**
+   * Scans the accounts to make sure they are synced and if they are not synced it syncs them
+   * @returns {Boolean}
+   */
+  async sync () {
+    for (let account in this.accountsObject) {
+      let isSynced = await this.accountsObject[account].isSynced()
+      if (!isSynced) await this.accountsObject[account].sync()
+    }
+    for (let tokenAccount in this.tokenAccounts) {
+      let isSynced = await this.tokenAccounts[tokenAccount].isSynced()
+      if (!isSynced) await this.tokenAccounts[tokenAccount].sync()
+    }
+    return true
+  }
+
+  /**
    * Constructs the wallet from an encrypted base64 encoded wallet
    *
    * @param {string} - encrypted wallet
@@ -621,29 +640,8 @@ class Wallet {
     this._accounts = {}
     const decryptedBytes = this._decrypt(encryptedWallet)
     if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
-
     const walletData = JSON.parse(decryptedBytes.toString('utf8'))
-    this.seed = walletData.seed
-    this.walletID = walletData.walletID !== undefined ? walletData.walletID : false
-    for (let i in (walletData.accounts || [])) {
-      const accountOptions = walletData.accounts[i]
-      // Technically you don't need an if here but it helps with readability
-      if (accountOptions.index !== null) {
-        await this.createAccount({
-          index: accountOptions.index,
-          label: accountOptions.label
-        })
-      } else if (accountOptions.privateKey) {
-        await this.createAccount({
-          label: accountOptions.label,
-          privateKey: accountOptions.privateKey
-        })
-      }
-    }
-    this._remoteWork = walletData.remoteWork
-    this._deterministicKeyIndex = walletData.deterministicKeyIndex
-    this._currentAccountAddress = Object.keys(this._accounts)[0]
-
+    this.loadOptions(walletData)
     return walletData
   }
 
@@ -659,7 +657,13 @@ class Wallet {
     const checksum = bytes.slice(0, 32)
     const salt = bytes.slice(32, 48)
     const payload = bytes.slice(48)
-    const key = pbkdf2.pbkdf2Sync(this._password, salt, this._iterations, 32, 'sha512')
+    let localPassword = ''
+    if (!this._password) {
+      localPassword = 'password'
+    } else {
+      localPassword = this._password
+    }
+    const key = pbkdf2.pbkdf2Sync(localPassword, salt, this._iterations, 32, 'sha512')
 
     const options = {}
     options.padding = options.padding || Utils.Iso10126
@@ -808,6 +812,36 @@ class Wallet {
         }
       })
     }
+  }
+
+  /**
+   * Returns the base Wallet JSON
+   * @returns {WalletJSON} JSON request
+   */
+  toJSON () {
+    const obj = {}
+    obj.password = this._password
+    obj.seed = this.seed
+    obj.deterministicKeyIndex = this._deterministicKeyIndex
+    obj.currentAccountAddress = this.currentAccountAddress
+    obj.accounts = {}
+    for (let account in this.accountsObject) {
+      obj.accounts[account] = JSON.parse(this.accountsObject[account].toJSON())
+    }
+    obj.tokenAccounts = {}
+    for (let account in this.tokenAccounts) {
+      obj.tokenAccounts[account] = JSON.parse(this.tokenAccounts[account].toJSON())
+    }
+    obj.walletID = this.walletID
+    obj.remoteWork = this.remoteWork
+    obj.batchSends = this.batchSends
+    obj.fullSync = this.fullSync
+    obj.lazyErrors = this.lazyErrors
+    obj.syncTokens = this.syncTokens
+    obj.mqtt = this.mqtt
+    obj.rpc = this.rpc
+    obj.version = this._version
+    return JSON.stringify(obj)
   }
 }
 
