@@ -322,20 +322,6 @@ class TokenAccount {
     }
 
     /**
-     * Previous hexadecimal hash of the last confirmed or pending request
-     * @type {Hexadecimal64Length}
-     * @private
-     */
-    this._previous = null
-
-    /**
-     * Sequence number of the last confirmed or pending request plus one
-     * @type {number}
-     * @private
-     */
-    this._sequence = null
-
-    /**
      * Account version of webwallet SDK
      * @type {number}
      * @private
