@@ -1247,20 +1247,20 @@ class TokenAccount {
    */
   verifyChain () {
     let last = Utils.GENESIS_HASH
-    for (let i = this.chain.length - 1; i >= 0; i--) {
-      if (this.chain[i]) {
-        if (this.chain[i].previous !== last) throw new Error('Invalid Chain (prev != current hash)')
-        if (!this.chain[i].verify()) throw new Error('Invalid request in this chain')
-        last = this.chain[i].hash
+    this.chain.forEach(request => {
+      if (request) {
+        if (request.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
+        if (!request.verify()) throw new Error('Invalid request in this chain')
+        last = request.hash
       }
-    }
-    for (let i = this.pendingChain.length - 1; i >= 0; i--) {
-      if (this.pendingChain[i]) {
-        if (this.pendingChain[i].previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
-        if (!this.pendingChain[i].verify()) throw new Error('Invalid request in the pending chain')
-        last = this.pendingChain[i].hash
+    })
+    this.pendingChain.forEach(request => {
+      if (request) {
+        if (request.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
+        if (!request.verify()) throw new Error('Invalid request in the pending chain')
+        last = request.hash
       }
-    }
+    })
     return true
   }
 
@@ -1271,9 +1271,9 @@ class TokenAccount {
    * @returns {boolean}
    */
   verifyReceiveChain () {
-    for (let i = this.receiveChain.length - 1; i >= 0; i--) {
-      if (!this.receiveChain[i].verify()) throw new Error('Invalid request in the receive chain')
-    }
+    this.receiveChain.forEach(request => {
+      if (!request.verify()) throw new Error('Invalid request in the receive chain')
+    })
     return true
   }
 
