@@ -616,16 +616,22 @@ class Wallet {
 
   /**
    * Scans the accounts to make sure they are synced and if they are not synced it syncs them
-   * @returns {Boolean}
+   *
+   * @param {boolean} - encrypted wallet
+   * @returns {boolean}
    */
-  async sync () {
+  async sync (force = false) {
     for (let account in this.accountsObject) {
-      let isSynced = await this.accountsObject[account].isSynced()
-      if (!isSynced) await this.accountsObject[account].sync()
+      if (!this.accountsObject[account].synced || force) {
+        let isSynced = await this.accountsObject[account].isSynced()
+        if (!isSynced) await this.accountsObject[account].sync()
+      }
     }
     for (let tokenAccount in this.tokenAccounts) {
-      let isSynced = await this.tokenAccounts[tokenAccount].isSynced()
-      if (!isSynced) await this.tokenAccounts[tokenAccount].sync()
+      if (!this.tokenAccounts[tokenAccount].synced || force) {
+        let isSynced = await this.tokenAccounts[tokenAccount].isSynced()
+        if (!isSynced) await this.tokenAccounts[tokenAccount].sync()
+      }
     }
     return true
   }

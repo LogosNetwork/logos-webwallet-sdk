@@ -687,7 +687,8 @@ class TokenAccount {
         if (this.wallet.fullSync) {
           RPC.accounts.history(this.address, -1, true).then((history) => {
             if (history) {
-              for (const requestInfo of history) {
+              // Add Genesis to latest
+              for (const requestInfo of history.reverse()) {
                 this.addConfirmedRequest(requestInfo)
               }
               if (this.verifyChain() && this.verifyReceiveChain()) {
@@ -1246,20 +1247,20 @@ class TokenAccount {
    */
   verifyChain () {
     let last = Utils.GENESIS_HASH
-    this.chain.reverse().forEach(request => {
-      if (request) {
-        if (request.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
-        if (!request.verify()) throw new Error('Invalid request in this chain')
-        last = request.hash
+    for (let i = this.chain.length - 1; i >= 0; i--) {
+      if (this.chain[i]) {
+        if (this.chain[i].previous !== last) throw new Error('Invalid Chain (prev != current hash)')
+        if (!this.chain[i].verify()) throw new Error('Invalid request in this chain')
+        last = this.chain[i].hash
       }
-    })
-    this.pendingChain.reverse().forEach(request => {
-      if (request) {
-        if (request.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
-        if (!request.verify()) throw new Error('Invalid request in the pending chain')
-        last = request.hash
+    }
+    for (let i = this.pendingChain.length - 1; i >= 0; i--) {
+      if (this.pendingChain[i]) {
+        if (this.pendingChain[i].previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
+        if (!this.pendingChain[i].verify()) throw new Error('Invalid request in the pending chain')
+        last = this.pendingChain[i].hash
       }
-    })
+    }
     return true
   }
 
@@ -1270,9 +1271,9 @@ class TokenAccount {
    * @returns {boolean}
    */
   verifyReceiveChain () {
-    this.receiveChain.forEach(request => {
-      if (!request.verify()) throw new Error('Invalid request in this chain')
-    })
+    for (let i = this.receiveChain.length - 1; i >= 0; i--) {
+      if (!this.receiveChain[i].verify()) throw new Error('Invalid request in the receive chain')
+    }
     return true
   }
 
