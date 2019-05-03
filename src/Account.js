@@ -554,14 +554,15 @@ class Account {
           if (this.receiveChain.length === 0 || this.receiveChain[this.receiveChain.length - 1].hash !== receiveBlock.send_hash) {
             synced = false
           }
-          this._synced = synced
           if (synced) {
             this.updateBalancesFromChain()
             if (this.verifyChain() && this.verifyReceiveChain()) {
+              this._synced = synced
               console.info(`${this.address} has been fully synced`)
               resolve(true)
             }
           } else {
+            this._synced = synced
             resolve(synced)
           }
         } else {
@@ -845,8 +846,8 @@ class Account {
       this._addToReceiveChain(request)
       return request
     } else {
-      console.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
-      return request
+      console.error(`MQTT sent ${this._address} an unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
+      return null
     }
   }
 
@@ -898,7 +899,7 @@ class Account {
     const requests = []
     if (count > this._chain.length) count = this._chain.length
     for (let i = this._chain.length - 1 - offset; i > this._chain.length - 1 - count - offset; i--) {
-      requests.push(this._chain)
+      requests.push(this._chain[i])
     }
     return requests
   }
@@ -914,7 +915,7 @@ class Account {
     const requests = []
     if (count > this._pendingChain.length) count = this._pendingChain.length
     for (let i = this._pendingChain.length - 1 - offset; i > this._pendingChain.length - 1 - count - offset; i--) {
-      requests.push(this._pendingChain)
+      requests.push(this._pendingChain[i])
     }
     return requests
   }
@@ -930,7 +931,7 @@ class Account {
     const requests = []
     if (count > this._receiveChain.length) count = this._receiveChain.length
     for (let i = this._receiveChain.length - 1 - offset; i > this._receiveChain.length - 1 - count - offset; i--) {
-      requests.push(this._receiveChain)
+      requests.push(this._receiveChain[i])
     }
     return requests
   }

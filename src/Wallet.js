@@ -446,8 +446,8 @@ class Wallet {
     if (this._accounts[address]) {
       delete this._accounts[address]
       if (this._mqtt && this._mqttConnected) this._unsubscribe(`account/${address}`)
-      if (address === this.currentAccountAddress) {
-        this.currentAccountAddress = Object.keys(this._accounts)[0]
+      if (address === this._currentAccountAddress) {
+        this._currentAccountAddress = Object.keys(this._accounts)[0]
       }
       return true
     }
@@ -562,21 +562,6 @@ class Wallet {
   }
 
   /**
-   * Adds request to account chain
-   *
-   * @param {LogosAddress} address logos address
-   * @param {Hexadecimal64Length} hash The request hash
-   * @throws An exception if the request is not found in the ready requests array
-   * @throws An exception if the previous request does not match the last chain request
-   * @throws An exception if the request amount is greater than your balance minus the fee
-   * @returns {void}
-   */
-  confirmRequest (address, hash) {
-    this.currentAccountAddress(address)
-    this.account.confirmRequest(hash)
-  }
-
-  /**
    * Encrypts and packs the wallet data in a hex string
    *
    * @returns {string}
@@ -621,16 +606,16 @@ class Wallet {
    * @returns {boolean}
    */
   async sync (force = false) {
-    for (let account in this.accountsObject) {
-      if (!this.accountsObject[account].synced || force) {
-        let isSynced = await this.accountsObject[account].isSynced()
-        if (!isSynced) await this.accountsObject[account].sync()
+    for (let account in this._accounts) {
+      if (!this._accounts[account].synced || force) {
+        let isSynced = await this._accounts[account].isSynced()
+        if (!isSynced) await this._accounts[account].sync()
       }
     }
-    for (let tokenAccount in this.tokenAccounts) {
-      if (!this.tokenAccounts[tokenAccount].synced || force) {
-        let isSynced = await this.tokenAccounts[tokenAccount].isSynced()
-        if (!isSynced) await this.tokenAccounts[tokenAccount].sync()
+    for (let tokenAccount in this._tokenAccounts) {
+      if (!this._tokenAccounts[tokenAccount].synced || force) {
+        let isSynced = await this._tokenAccounts[tokenAccount].isSynced()
+        if (!isSynced) await this._tokenAccounts[tokenAccount].sync()
       }
     }
     return true
@@ -790,8 +775,11 @@ class Wallet {
         console.info('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
         this._subscribe(`delegateChange`)
-        Object.keys(this._accounts).forEach(account => {
-          this._subscribe(`account/${account}`)
+        Object.keys(this._accounts).forEach(address => {
+          this._subscribe(`account/${address}`)
+        })
+        Object.keys(this._tokenAccounts).forEach(tkAddress => {
+          this._subscribe(`account/${tkAddress}`)
         })
       })
       this._mqttClient.on('close', () => {
@@ -803,7 +791,7 @@ class Wallet {
         request = JSON.parse(request.toString())
         if (topic === 'delegateChange') {
           console.info(`MQTT Delegate Change`)
-          this.rpc.delegates = Object.values(request)
+          this._rpc.delegates = Object.values(request)
         } else {
           let params = accountMqttRegex(topic)
           if (params) {
@@ -827,25 +815,25 @@ class Wallet {
   toJSON () {
     const obj = {}
     obj.password = this._password
-    obj.seed = this.seed
+    obj.seed = this._seed
     obj.deterministicKeyIndex = this._deterministicKeyIndex
-    obj.currentAccountAddress = this.currentAccountAddress
+    obj.currentAccountAddress = this._currentAccountAddress
     obj.accounts = {}
-    for (let account in this.accountsObject) {
-      obj.accounts[account] = JSON.parse(this.accountsObject[account].toJSON())
+    for (let account in this._accounts) {
+      obj.accounts[account] = JSON.parse(this._accounts[account].toJSON())
     }
     obj.tokenAccounts = {}
-    for (let account in this.tokenAccounts) {
-      obj.tokenAccounts[account] = JSON.parse(this.tokenAccounts[account].toJSON())
+    for (let account in this._tokenAccounts) {
+      obj.tokenAccounts[account] = JSON.parse(this._tokenAccounts[account].toJSON())
     }
-    obj.walletID = this.walletID
-    obj.remoteWork = this.remoteWork
-    obj.batchSends = this.batchSends
-    obj.fullSync = this.fullSync
-    obj.lazyErrors = this.lazyErrors
-    obj.syncTokens = this.syncTokens
-    obj.mqtt = this.mqtt
-    obj.rpc = this.rpc
+    obj.walletID = this._walletID
+    obj.remoteWork = this._remoteWork
+    obj.batchSends = this._batchSends
+    obj.fullSync = this._fullSync
+    obj.lazyErrors = this._lazyErrors
+    obj.syncTokens = this._syncTokens
+    obj.mqtt = this._mqtt
+    obj.rpc = this._rpc
     obj.version = this._version
     return JSON.stringify(obj)
   }

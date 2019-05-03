@@ -557,7 +557,7 @@ class TokenAccount {
    * @readonly
    */
   get requestCount () {
-    return this.chain.length
+    return this._chain.length
   }
 
   /**
@@ -567,7 +567,7 @@ class TokenAccount {
    * @readonly
    */
   get pendingRequestCount () {
-    return this.pendingChain.length
+    return this._pendingChain.length
   }
 
   /**
@@ -577,7 +577,7 @@ class TokenAccount {
    * @readonly
    */
   get receiveCount () {
-    return this.receiveChain.length
+    return this._receiveChain.length
   }
 
   /**
@@ -587,10 +587,10 @@ class TokenAccount {
    * @readonly
    */
   get previous () {
-    if (this.pendingChain.length > 0) {
-      this._previous = this.pendingChain[this.pendingChain.length - 1].hash
-    } else if (this.chain.length > 0) {
-      this._previous = this.chain[this.chain.length - 1].hash
+    if (this._pendingChain.length > 0) {
+      this._previous = this._pendingChain[this._pendingChain.length - 1].hash
+    } else if (this._chain.length > 0) {
+      this._previous = this._chain[this._chain.length - 1].hash
     } else {
       this._previous = Utils.GENESIS_HASH
     }
@@ -604,10 +604,10 @@ class TokenAccount {
    * @readonly
    */
   get sequence () {
-    if (this.pendingChain.length > 0) {
-      this._sequence = this.pendingChain[this.pendingChain.length - 1].sequence
-    } else if (this.chain.length > 0) {
-      this._sequence = this.chain[this.chain.length - 1].sequence
+    if (this._pendingChain.length > 0) {
+      this._sequence = this._pendingChain[this._pendingChain.length - 1].sequence
+    } else if (this._chain.length > 0) {
+      this._sequence = this._chain[this._chain.length - 1].sequence
     } else {
       this._sequence = -1
     }
@@ -621,33 +621,33 @@ class TokenAccount {
   isSynced () {
     return new Promise((resolve, reject) => {
       const RPC = new Logos({
-        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this.wallet.rpc.proxy
+        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this._wallet.rpc.proxy
       })
-      RPC.accounts.info(this.address).then(async info => {
+      RPC.accounts.info(this._address).then(async info => {
         let synced = true
         if (info && info.frontier) {
           if (info.frontier !== Utils.GENESIS_HASH) {
-            if (this.chain.length === 0 || this.chain[this.chain.length - 1].hash !== info.frontier) {
+            if (this._chain.length === 0 || this._chain[this._chain.length - 1].hash !== info.frontier) {
               synced = false
             }
           }
           let receiveBlock = await RPC.requests.info(info.receive_tip)
-          if (this.receiveChain.length === 0 || this.receiveChain[this.receiveChain.length - 1].hash !== receiveBlock.send_hash) {
+          if (this._receiveChain.length === 0 || this._receiveChain[this._receiveChain.length - 1].hash !== receiveBlock.send_hash) {
             synced = false
           }
-          this._synced = synced
           if (synced) {
             if (this.verifyChain() && this.verifyReceiveChain()) {
-              this.synced = true
+              this._synced = synced
               console.info(`${info.name} has been fully synced`)
               resolve(this)
             }
           } else {
+            this._synced = synced
             resolve(synced)
           }
         } else {
-          console.info(`${this.address} is empty and therefore valid`)
+          console.info(`${this._address} is empty and therefore valid`)
           this._synced = synced
           resolve(synced)
         }
@@ -661,44 +661,44 @@ class TokenAccount {
    */
   sync () {
     return new Promise((resolve, reject) => {
-      this.synced = false
-      this.chain = []
-      this.receiveChain = []
+      this._synced = false
+      this._chain = []
+      this._receiveChain = []
       const RPC = new Logos({
-        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this.wallet.rpc.proxy
+        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this._wallet.rpc.proxy
       })
 
-      RPC.accounts.info(this.address).then(info => {
+      RPC.accounts.info(this._address).then(info => {
         if (!info || !info.type || info.type !== 'TokenAccount') {
           throw new Error('Invalid Address - This is not a valid token account')
         }
-        this.tokenBalance = info.token_balance
-        this.totalSupply = info.total_supply
-        this.tokenFeeBalance = info.token_fee_balance
-        this.symbol = info.symbol
-        this.name = info.name
-        this.issuerInfo = info.issuer_info
-        this.feeRate = info.fee_rate
-        this.feeType = info.fee_type.toLowerCase()
-        this.controllers = Utils.deserializeControllers(info.controllers)
-        this.settings = Utils.deserializeSettings(info.settings)
-        this.balance = info.balance
-        if (this.wallet.fullSync) {
-          RPC.accounts.history(this.address, -1, true).then((history) => {
+        this._tokenBalance = info.token_balance
+        this._totalSupply = info.total_supply
+        this._tokenFeeBalance = info.token_fee_balance
+        this._symbol = info.symbol
+        this._name = info.name
+        this._issuerInfo = info.issuer_info
+        this._feeRate = info.fee_rate
+        this._feeType = info.fee_type.toLowerCase()
+        this._controllers = Utils.deserializeControllers(info.controllers)
+        this._settings = Utils.deserializeSettings(info.settings)
+        this._balance = info.balance
+        if (this._wallet.fullSync) {
+          RPC.accounts.history(this._address, -1, true).then((history) => {
             if (history) {
               // Add Genesis to latest
               for (const requestInfo of history.reverse()) {
                 this.addConfirmedRequest(requestInfo)
               }
               if (this.verifyChain() && this.verifyReceiveChain()) {
-                this.synced = true
+                this._synced = true
                 console.info(`${info.name} has been fully synced`)
                 resolve(this)
               }
             } else {
-              this.synced = true
-              console.info(`${this.address} is empty and therefore valid`)
+              this._synced = true
+              console.info(`${this._address} is empty and therefore valid`)
               resolve(this)
             }
           })
@@ -709,13 +709,13 @@ class TokenAccount {
               if (request !== null && !request.verify()) {
                 throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
               }
-              this.synced = true
+              this._synced = true
               console.info(`${info.name} has been lazy synced`)
               resolve(this)
             })
           } else {
-            this.synced = true
-            console.info(`${this.address} is empty and therefore valid`)
+            this._synced = true
+            console.info(`${this._address} is empty and therefore valid`)
             resolve(this)
           }
         }
@@ -731,30 +731,30 @@ class TokenAccount {
    */
   updateTokenInfoFromRequest (request) {
     if (request.type === 'issue_additional') {
-      this.totalSupply = bigInt(this.totalSupply).plus(bigInt(request.amount)).toString()
-      this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.amount)).toString()
+      this._totalSupply = bigInt(this._totalSupply).plus(bigInt(request.amount)).toString()
+      this._tokenBalance = bigInt(this._tokenBalance).plus(bigInt(request.amount)).toString()
     } else if (request.type === 'change_setting') {
-      this.settings[request.setting] = request.value
+      this._settings[request.setting] = request.value
     } else if (request.type === 'immute_setting') {
-      this.settings[`modify_${request.setting}`] = false
+      this._settings[`modify_${request.setting}`] = false
     } else if (request.type === 'revoke') {
-      if (request.transaction.destination === this.address) {
-        this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.transaction.amount)).toString()
+      if (request.transaction.destination === this._address) {
+        this._tokenBalance = bigInt(this._tokenBalance).plus(bigInt(request.transaction.amount)).toString()
       }
       // Handle if TK account is SRC?
     } else if (request.type === 'adjust_user_status') {
       // Nothing to update here :)
     } else if (request.type === 'adjust_fee') {
-      this.feeRate = request.feeRate
-      this.feeType = request.feeType
+      this._feeRate = request.feeRate
+      this._feeType = request.feeType
     } else if (request.type === 'update_issuer_info') {
-      this.issuerInfo = request.issuerInfo
+      this._issuerInfo = request.issuerInfo
     } else if (request.type === 'update_controller') {
       let updatedPrivs = Utils.serializeController(request.controller).privileges
       if (request.action === 'remove' && updatedPrivs.length === 0) {
-        this.controllers = this.controllers.filter(controller => controller.account !== request.controller.account)
+        this._controllers = this._controllers.filter(controller => controller.account !== request.controller.account)
       } else if (request.action === 'remove' && updatedPrivs.length > 0) {
-        for (let controller of this.controllers) {
+        for (let controller of this._controllers) {
           if (controller.account === request.controller.account) {
             for (let priv of updatedPrivs) {
               controller.privileges[priv] = false
@@ -762,8 +762,8 @@ class TokenAccount {
           }
         }
       } else if (request.action === 'add') {
-        if (this.controllers.some(controller => controller.account === request.controller.account)) {
-          for (let controller of this.controllers) {
+        if (this._controllers.some(controller => controller.account === request.controller.account)) {
+          for (let controller of this._controllers) {
             if (controller.account === request.controller.account) {
               for (let priv of updatedPrivs) {
                 controller.privileges[priv] = true
@@ -771,47 +771,47 @@ class TokenAccount {
             }
           }
         } else {
-          this.controllers.push(request.controller)
+          this._controllers.push(request.controller)
         }
       }
     } else if (request.type === 'burn') {
-      this.totalSupply = bigInt(this.totalSupply).minus(bigInt(request.amount)).toString()
-      this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.amount)).toString()
+      this._totalSupply = bigInt(this._totalSupply).minus(bigInt(request.amount)).toString()
+      this._tokenBalance = bigInt(this._tokenBalance).minus(bigInt(request.amount)).toString()
     } else if (request.type === 'distribute') {
-      this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.transaction.amount)).toString()
+      this._tokenBalance = bigInt(this._tokenBalance).minus(bigInt(request.transaction.amount)).toString()
     } else if (request.type === 'withdraw_fee') {
-      this.tokenFeeBalance = bigInt(this.tokenFeeBalance).minus(bigInt(request.transaction.amount)).toString()
+      this._tokenFeeBalance = bigInt(this._tokenFeeBalance).minus(bigInt(request.transaction.amount)).toString()
     } else if (request.type === 'withdraw_logos') {
-      if (request.tokenID === this.tokenID) {
-        this.balance = bigInt(this.balance).minus(bigInt(request.transaction.amount)).minus(bigInt(request.fee)).toString()
+      if (request.tokenID === this._tokenID) {
+        this._balance = bigInt(this._balance).minus(bigInt(request.transaction.amount)).minus(bigInt(request.fee)).toString()
       }
-      if (request.transaction.destination === this.address) {
-        this.balance = bigInt(this.balance).plus(bigInt(request.transaction.amount)).toString()
+      if (request.transaction.destination === this._address) {
+        this._balance = bigInt(this._balance).plus(bigInt(request.transaction.amount)).toString()
       }
     } else if (request.type === 'send') {
       for (let transaction of request.transactions) {
-        if (transaction.destination === this.address) {
-          this.balance = bigInt(this.balance).plus(bigInt(transaction.amount)).toString()
+        if (transaction.destination === this._address) {
+          this._balance = bigInt(this._balance).plus(bigInt(transaction.amount)).toString()
         }
       }
     } else if (request.type === 'issuance') {
-      this.tokenBalance = request.totalSupply
-      this.pendingTokenBalance = request.totalSupply
-      this.totalSupply = request.totalSupply
-      this.pendingTotalSupply = request.totalSupply
-      this.tokenFeeBalance = '0'
-      this.symbol = request.symbol
-      this.name = request.name
-      this.issuerInfo = request.issuerInfo
-      this.feeRate = request.feeRate
-      this.feeType = request.feeType
-      this.controllers = request.controllers
-      this.settings = request.settings
-      this.balance = '0'
-      this.pendingBalance = '0'
+      this._tokenBalance = request.totalSupply
+      this._pendingTokenBalance = request.totalSupply
+      this._totalSupply = request.totalSupply
+      this._pendingTotalSupply = request.totalSupply
+      this._tokenFeeBalance = '0'
+      this._symbol = request.symbol
+      this._name = request.name
+      this._issuerInfo = request.issuerInfo
+      this._feeRate = request.feeRate
+      this._feeType = request.feeType
+      this._controllers = request.controllers
+      this._settings = request.settings
+      this._balance = '0'
+      this._pendingBalance = '0'
     }
     if (request.type !== 'send' && request.type !== 'issuance' && request.type !== 'withdraw_logos') {
-      this.balance = bigInt(this.balance).minus(bigInt(request.fee)).toString()
+      this._balance = bigInt(this._balance).minus(bigInt(request.fee)).toString()
     }
   }
 
@@ -822,7 +822,7 @@ class TokenAccount {
    * @returns {Boolean}
    */
   isController (address) {
-    for (let controller of this.controllers) {
+    for (let controller of this._controllers) {
       if (controller.account === address) {
         return true
       }
@@ -837,7 +837,7 @@ class TokenAccount {
    * @returns {Boolean}
    */
   hasSetting (setting) {
-    return Boolean(this.settings[setting])
+    return Boolean(this._settings[setting])
   }
 
   /**
@@ -848,7 +848,7 @@ class TokenAccount {
    * @returns {Boolean}
    */
   controllerPrivilege (address, privilege) {
-    for (let controller of this.controllers) {
+    for (let controller of this._controllers) {
       if (controller.account === address) {
         return controller.privileges[privilege]
       }
@@ -864,16 +864,16 @@ class TokenAccount {
    * @returns {Promise<Boolean>}
    */
   async accountHasFunds (address, amount) {
-    if (!this.wallet.rpc) {
+    if (!this._wallet.rpc) {
       console.warn('Cannot client-side validate if an account has funds without RPC enabled')
       return true
     } else {
       const RPC = new Logos({
-        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this.wallet.rpc.proxy
+        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this._wallet.rpc.proxy
       })
       let info = await RPC.accounts.info(address)
-      return bigInt(info.tokens[this.tokenID].balance).greaterOrEquals(bigInt(amount))
+      return bigInt(info.tokens[this._tokenID].balance).greaterOrEquals(bigInt(amount))
     }
   }
 
@@ -885,19 +885,19 @@ class TokenAccount {
    */
   async validTokenDestination (address) {
     // TODO 104 - This token account is a valid destiantion
-    if (!this.wallet.rpc) {
+    if (!this._wallet.rpc) {
       console.warn('Cannot client-side validate destination without RPC enabled')
       return true
     } else {
       const RPC = new Logos({
-        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this.wallet.rpc.proxy
+        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
+        proxyURL: this._wallet.rpc.proxy
       })
       let info = await RPC.accounts.info(address)
       if (info.type !== 'LogosAccount') return false
       let tokenInfo = null
-      if (info && info.tokens && info.tokens[this.tokenID]) {
-        tokenInfo = info.tokens[this.tokenID]
+      if (info && info.tokens && info.tokens[this._tokenID]) {
+        tokenInfo = info.tokens[this._tokenID]
       }
       if (!tokenInfo && this.hasSetting('whitelist')) {
         return false
@@ -920,12 +920,12 @@ class TokenAccount {
    * @returns {Boolean}
    */
   async validateRequest (request) {
-    if (bigInt(this.balance).minus(request.fee).lesser(0)) {
+    if (bigInt(this._balance).minus(request.fee).lesser(0)) {
       console.error('Invalid Request: Token Account does not have enough Logos to afford the fee perform token opperation')
       return false
     } else {
       if (request.type === 'issue_additional') {
-        if (bigInt(this.totalSupply).plus(bigInt(request.amount)).greater(bigInt(Utils.MAXUINT128))) {
+        if (bigInt(this._totalSupply).plus(bigInt(request.amount)).greater(bigInt(Utils.MAXUINT128))) {
           console.error('Invalid Issue Additional Request: Total Supply would exceed MAXUINT128')
           return false
         } else if (!this.hasSetting('issuance')) {
@@ -939,7 +939,7 @@ class TokenAccount {
         }
       } else if (request.type === 'change_setting') {
         if (!this.hasSetting(`modify_${request.setting}`)) {
-          console.error(`Invalid Change Setting Request: ${this.name} does not allow changing ${request.setting}`)
+          console.error(`Invalid Change Setting Request: ${this._name} does not allow changing ${request.setting}`)
           return false
         } else if (!this.controllerPrivilege(request.originAccount, `change_${request.setting}`)) {
           console.error(`Invalid Change Setting Request: Controller does not have permission to change ${request.setting}`)
@@ -959,16 +959,16 @@ class TokenAccount {
         }
       } else if (request.type === 'revoke') {
         if (!this.hasSetting(`revoke`)) {
-          console.error(`Invalid Revoke Request: ${this.name} does not support revoking accounts`)
+          console.error(`Invalid Revoke Request: ${this._name} does not support revoking accounts`)
           return false
         } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
           console.error(`Invalid Revoke Request: Controller does not have permission to issue revoke requests`)
           return false
         } else if (await !this.accountHasFunds(request.source, request.transaction.amount)) {
-          console.error(`Invalid Revoke Request: Source account does not have sufficient ${this.symbol} to complete this request`)
+          console.error(`Invalid Revoke Request: Source account does not have sufficient ${this._symbol} to complete this request`)
           return false
         } else if (await !this.validTokenDestination(request.transaction.destination)) {
-          console.error(`Invalid Revoke Request: Destination does not have permission to receive ${this.symbol}`)
+          console.error(`Invalid Revoke Request: Destination does not have permission to receive ${this._symbol}`)
           return false
         } else {
           return true
@@ -976,7 +976,7 @@ class TokenAccount {
       } else if (request.type === 'adjust_user_status') {
         if (request.status === 'frozen' || request.status === 'unfrozen') {
           if (!this.hasSetting(`freeze`)) {
-            console.error(`Invalid Adjust User Status: ${this.name} does not support freezing accounts`)
+            console.error(`Invalid Adjust User Status: ${this._name} does not support freezing accounts`)
             return false
           } else if (!this.controllerPrivilege(request.originAccount, `freeze`)) {
             console.error(`Invalid Adjust User Status Request: Controller does not have permission to freeze accounts`)
@@ -986,7 +986,7 @@ class TokenAccount {
           }
         } else if (request.status === 'whitelisted' || request.status === 'not_whitelisted') {
           if (!this.hasSetting(`whitelist`)) {
-            console.error(`Invalid Adjust User Status: ${this.name} does not require whitelisting accounts`)
+            console.error(`Invalid Adjust User Status: ${this._name} does not require whitelisting accounts`)
             return false
           } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
             console.error(`Invalid Adjust User Status Request: Controller does not have permission to whitelist accounts`)
@@ -1000,7 +1000,7 @@ class TokenAccount {
         }
       } else if (request.type === 'adjust_fee') {
         if (!this.hasSetting(`adjust_fee`)) {
-          console.error(`Invalid Adjust Fee Request: ${this.name} does not allow changing the fee type or fee rate`)
+          console.error(`Invalid Adjust Fee Request: ${this._name} does not allow changing the fee type or fee rate`)
           return false
         } else if (!this.controllerPrivilege(request.originAccount, `adjust_fee`)) {
           console.error(`Invalid Adjust Fee Request: Controller does not have permission to freeze accounts`)
@@ -1019,8 +1019,8 @@ class TokenAccount {
         if (!this.controllerPrivilege(request.originAccount, `update_controller`)) {
           console.error(`Invalid Update Controller Request: Controller does not have permission to update controllers`)
           return false
-        } else if (this.controllers.length === 10 && request.action === 'add' && !this.isController(request.controller.account)) {
-          console.error(`Invalid Update Controller Request: ${this.name} already has 10 controllers you must remove one first`)
+        } else if (this._controllers.length === 10 && request.action === 'add' && !this.isController(request.controller.account)) {
+          console.error(`Invalid Update Controller Request: ${this._name} already has 10 controllers you must remove one first`)
           return false
         } else {
           return true
@@ -1029,7 +1029,7 @@ class TokenAccount {
         if (!this.controllerPrivilege(request.originAccount, `burn`)) {
           console.error(`Invalid Burn Request: Controller does not have permission to burn tokens`)
           return false
-        } else if (bigInt(this.tokenBalance).lesser(bigInt(request.amount))) {
+        } else if (bigInt(this._tokenBalance).lesser(bigInt(request.amount))) {
           console.error(`Invalid Burn Request: the token balance of the token account is less than the amount of tokens you are trying to burn`)
           return false
         } else {
@@ -1039,11 +1039,11 @@ class TokenAccount {
         if (!this.controllerPrivilege(request.originAccount, `distribute`)) {
           console.error(`Invalid Distribute Request: Controller does not have permission to distribute tokens`)
           return false
-        } else if (bigInt(this.tokenBalance).lesser(bigInt(request.transaction.amount))) {
-          console.error(`Invalid Distribute Request: Token account does not have sufficient ${this.symbol} to distribute`)
+        } else if (bigInt(this._tokenBalance).lesser(bigInt(request.transaction.amount))) {
+          console.error(`Invalid Distribute Request: Token account does not have sufficient ${this._symbol} to distribute`)
           return false
         } else if (await !this.validTokenDestination(request.transaction.destination)) {
-          console.error(`Invalid Distribute Request: Destination does not have permission to receive ${this.symbol}`)
+          console.error(`Invalid Distribute Request: Destination does not have permission to receive ${this._symbol}`)
           return false
         } else {
           return true
@@ -1052,11 +1052,11 @@ class TokenAccount {
         if (!this.controllerPrivilege(request.originAccount, `withdraw_fee`)) {
           console.error(`Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee`)
           return false
-        } else if (bigInt(this.tokenFeeBalance).lesser(bigInt(request.transaction.amount))) {
+        } else if (bigInt(this._tokenFeeBalance).lesser(bigInt(request.transaction.amount))) {
           console.error(`Invalid Withdraw Fee Request: Token account does not have a sufficient token fee balance to withdraw the specified amount`)
           return false
         } else if (await !this.validTokenDestination(request.transaction.destination)) {
-          console.error(`Invalid Withdraw Fee Request: Destination does not have permission to receive ${this.symbol}`)
+          console.error(`Invalid Withdraw Fee Request: Destination does not have permission to receive ${this._symbol}`)
           return false
         } else {
           return true
@@ -1065,7 +1065,7 @@ class TokenAccount {
         if (!this.controllerPrivilege(request.originAccount, `withdraw_logos`)) {
           console.error(`Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos`)
           return false
-        } else if (bigInt(this.balance).lesser(bigInt(request.transaction.amount).plus(bigInt(request.fee)))) {
+        } else if (bigInt(this._balance).lesser(bigInt(request.transaction.amount).plus(bigInt(request.fee)))) {
           console.error(`Invalid Withdraw Logos Request: Token account does not have sufficient balance to withdraw the specified amount + the minimum logos fee`)
           return false
         } else {
@@ -1081,12 +1081,12 @@ class TokenAccount {
    * @returns {Promise<Request>}
    */
   async broadcastRequest () {
-    if (this.wallet.rpc && this.pendingChain.length > 0) {
-      let request = this.pendingChain[0]
+    if (this._wallet.rpc && this._pendingChain.length > 0) {
+      let request = this._pendingChain[0]
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpc)
+          await request.publish(this._wallet.rpc)
         } catch (err) {
           request.published = false
           // Wallet setting to reject the request and clear the invalid request?
@@ -1109,14 +1109,14 @@ class TokenAccount {
    */
   async addRequest (request) {
     if (request.work === null) {
-      if (this.wallet.remoteWork) {
+      if (this._wallet.remoteWork) {
         request.work = Utils.EMPTY_WORK
       } else {
         request.work = await request.createWork(true)
       }
     }
-    this.pendingChain.push(request)
-    if (this.pendingChain.length === 1) {
+    this._pendingChain.push(request)
+    if (this._pendingChain.length === 1) {
       this.broadcastRequest()
     }
     return request
@@ -1170,7 +1170,7 @@ class TokenAccount {
       let request = new Send(requestInfo)
       if (requestInfo.transactions && requestInfo.transactions.length > 0) {
         for (let trans of requestInfo.transactions) {
-          if (trans.destination === this.address) {
+          if (trans.destination === this._address) {
             this._addToReceiveChain(request)
             break
           }
@@ -1179,10 +1179,10 @@ class TokenAccount {
       return request
     } else if (requestInfo.type === 'withdraw_logos') {
       request = new WithdrawLogos(requestInfo)
-      if (requestInfo.transaction.destination === this.address) {
+      if (requestInfo.transaction.destination === this._address) {
         this._addToReceiveChain(request)
       }
-      if (requestInfo.token_id === this.tokenID) {
+      if (requestInfo.token_id === this._tokenID) {
         this._addToSendChain(request)
       }
       return request
@@ -1235,8 +1235,8 @@ class TokenAccount {
       this._addToReceiveChain(request)
       return request
     } else {
-      console.error(`Error unknown block type: ${requestInfo.type} ${requestInfo.hash}`)
-      return request
+      console.error(`MQTT sent ${this._name} an unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
+      return null
     }
   }
 
@@ -1247,14 +1247,14 @@ class TokenAccount {
    */
   verifyChain () {
     let last = Utils.GENESIS_HASH
-    this.chain.forEach(request => {
+    this._chain.forEach(request => {
       if (request) {
         if (request.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
         if (!request.verify()) throw new Error('Invalid request in this chain')
         last = request.hash
       }
     })
-    this.pendingChain.forEach(request => {
+    this._pendingChain.forEach(request => {
       if (request) {
         if (request.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
         if (!request.verify()) throw new Error('Invalid request in the pending chain')
@@ -1271,7 +1271,7 @@ class TokenAccount {
    * @returns {boolean}
    */
   verifyReceiveChain () {
-    this.receiveChain.forEach(request => {
+    this._receiveChain.forEach(request => {
       if (!request.verify()) throw new Error('Invalid request in the receive chain')
     })
     return true
@@ -1286,9 +1286,9 @@ class TokenAccount {
    */
   recentRequests (count = 5, offset = 0) {
     const requests = []
-    if (count > this.chain.length) count = this.chain.length
-    for (let i = this.chain.length - 1 - offset; i > this.chain.length - 1 - count - offset; i--) {
-      requests.push(this.chain)
+    if (count > this._chain.length) count = this._chain.length
+    for (let i = this._chain.length - 1 - offset; i > this._chain.length - 1 - count - offset; i--) {
+      requests.push(this._chain[i])
     }
     return requests
   }
@@ -1302,9 +1302,9 @@ class TokenAccount {
    */
   recentPendingRequests (count = 5, offset = 0) {
     const requests = []
-    if (count > this.pendingChain.length) count = this.pendingChain.length
-    for (let i = this.pendingChain.length - 1 - offset; i > this.pendingChain.length - 1 - count - offset; i--) {
-      requests.push(this.pendingChain)
+    if (count > this._pendingChain.length) count = this._pendingChain.length
+    for (let i = this._pendingChain.length - 1 - offset; i > this._pendingChain.length - 1 - count - offset; i--) {
+      requests.push(this._pendingChain[i])
     }
     return requests
   }
@@ -1318,9 +1318,9 @@ class TokenAccount {
    */
   recentReceiveRequests (count = 5, offset = 0) {
     const requests = []
-    if (count > this.receiveChain.length) count = this.receiveChain.length
-    for (let i = this.receiveChain.length - 1 - offset; i > this.receiveChain.length - 1 - count - offset; i--) {
-      requests.push(this.receiveChain)
+    if (count > this._receiveChain.length) count = this._receiveChain.length
+    for (let i = this._receiveChain.length - 1 - offset; i > this._receiveChain.length - 1 - count - offset; i--) {
+      requests.push(this._receiveChain[i])
     }
     return requests
   }
@@ -1333,9 +1333,9 @@ class TokenAccount {
    */
   getRequestsUpTo (hash) {
     const requests = []
-    for (let i = this.chain.length - 1; i > 0; i--) {
-      requests.push(this.chain[i])
-      if (this.chain[i].hash === hash) break
+    for (let i = this._chain.length - 1; i > 0; i--) {
+      requests.push(this._chain[i])
+      if (this._chain[i].hash === hash) break
     }
     return requests
   }
@@ -1348,9 +1348,9 @@ class TokenAccount {
    */
   getPendingRequestsUpTo (hash) {
     const requests = []
-    for (let i = this.pendingChain.length - 1; i > 0; i--) {
-      requests.push(this.pendingChain[i])
-      if (this.pendingChain[i].hash === hash) break
+    for (let i = this._pendingChain.length - 1; i > 0; i--) {
+      requests.push(this._pendingChain[i])
+      if (this._pendingChain[i].hash === hash) break
     }
     return requests
   }
@@ -1363,9 +1363,9 @@ class TokenAccount {
    */
   getReceiveRequestsUpTo (hash) {
     const requests = []
-    for (let i = this.receiveChain.length - 1; i > 0; i--) {
-      requests.push(this.receiveChain[i])
-      if (this.receiveChain[i].hash === hash) break
+    for (let i = this._receiveChain.length - 1; i > 0; i--) {
+      requests.push(this._receiveChain[i])
+      if (this._receiveChain[i].hash === hash) break
     }
     return requests
   }
@@ -1375,7 +1375,7 @@ class TokenAccount {
    * @returns {void}
    */
   removePendingRequests () {
-    this.pendingChain = []
+    this._pendingChain = []
   }
 
   /**
@@ -1386,10 +1386,10 @@ class TokenAccount {
    */
   removePendingRequest (hash) {
     let found = false
-    for (let i in this.pendingChain) {
-      const request = this.pendingChain[i]
+    for (let i in this._pendingChain) {
+      const request = this._pendingChain[i]
       if (request.hash === hash) {
-        this.pendingChain.splice(i, 1)
+        this._pendingChain.splice(i, 1)
         return true
       }
     }
@@ -1406,16 +1406,16 @@ class TokenAccount {
    * @returns {Request} false if no request object of the specified hash was found
    */
   getRequest (hash) {
-    for (let j = this.chain.length - 1; j >= 0; j--) {
-      const blk = this.chain[j]
+    for (let j = this._chain.length - 1; j >= 0; j--) {
+      const blk = this._chain[j]
       if (blk.hash === hash) return blk
     }
-    for (let n = this.receiveChain.length - 1; n >= 0; n--) {
-      const blk = this.receiveChain[n]
+    for (let n = this._receiveChain.length - 1; n >= 0; n--) {
+      const blk = this._receiveChain[n]
       if (blk.hash === hash) return blk
     }
-    for (let n = this.pendingChain.length - 1; n >= 0; n--) {
-      const blk = this.receiveChain[n]
+    for (let n = this._pendingChain.length - 1; n >= 0; n--) {
+      const blk = this._receiveChain[n]
       if (blk.hash === hash) return blk
     }
     return false
@@ -1428,8 +1428,8 @@ class TokenAccount {
    * @returns {Request} false if no request object of the specified hash was found
    */
   getChainRequest (hash) {
-    for (let j = this.chain.length - 1; j >= 0; j--) {
-      const blk = this.chain[j]
+    for (let j = this._chain.length - 1; j >= 0; j--) {
+      const blk = this._chain[j]
       if (blk.hash === hash) return blk
     }
     return false
@@ -1442,8 +1442,8 @@ class TokenAccount {
    * @returns {Request} false if no request object of the specified hash was found
    */
   getPendingRequest (hash) {
-    for (let n = this.pendingChain.length - 1; n >= 0; n--) {
-      const request = this.pendingChain[n]
+    for (let n = this._pendingChain.length - 1; n >= 0; n--) {
+      const request = this._pendingChain[n]
       if (request.hash === hash) return request
     }
     return false
@@ -1456,8 +1456,8 @@ class TokenAccount {
    * @returns {Request} false if no request object of the specified hash was found
    */
   getRecieveRequest (hash) {
-    for (let n = this.receiveChain.length - 1; n >= 0; n--) {
-      const blk = this.receiveChain[n]
+    for (let n = this._receiveChain.length - 1; n >= 0; n--) {
+      const blk = this._receiveChain[n]
       if (blk.hash === hash) return blk
     }
     return false
@@ -1479,7 +1479,7 @@ class TokenAccount {
       if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
       // Todo 104 - revoke, token_send, distribute, withdraw_Fee, withdraw_logos
       // could be recieved by TokenAccount???
-      if (request.tokenID === this.tokenID &&
+      if (request.tokenID === this._tokenID &&
         request.type !== 'token_send' &&
         request.type !== 'issuance') {
         if (this.getPendingRequest(requestInfo.hash)) {
@@ -1503,29 +1503,29 @@ class TokenAccount {
    */
   toJSON () {
     const obj = {}
-    obj.tokenID = this.tokenID
-    obj.address = this.address
-    obj.tokenBalance = this.tokenBalance
-    obj.totalSupply = this.totalSupply
-    obj.tokenFeeBalance = this.tokenFeeBalance
-    obj.symbol = this.symbol
-    obj.name = this.name
-    obj.issuerInfo = this.issuerInfo
-    obj.feeRate = this.feeRate
-    obj.feeType = this.feeType
-    obj.controllers = this.controllers
-    obj.settings = this.settings
-    obj.balance = this.balance
+    obj.tokenID = this._tokenID
+    obj.address = this._address
+    obj.tokenBalance = this._tokenBalance
+    obj.totalSupply = this._totalSupply
+    obj.tokenFeeBalance = this._tokenFeeBalance
+    obj.symbol = this._symbol
+    obj.name = this._name
+    obj.issuerInfo = this._issuerInfo
+    obj.feeRate = this._feeRate
+    obj.feeType = this._feeType
+    obj.controllers = this._controllers
+    obj.settings = this._settings
+    obj.balance = this._balance
     obj.chain = []
-    for (let request of this.chain) {
+    for (let request of this._chain) {
       obj.chain.push(JSON.parse(request.toJSON()))
     }
     obj.receiveChain = []
-    for (let request of this.receiveChain) {
+    for (let request of this._receiveChain) {
       obj.receiveChain.push(JSON.parse(request.toJSON()))
     }
     obj.version = this._version
-    obj.index = this.index
+    obj.index = this._index
     return JSON.stringify(obj)
   }
 }
