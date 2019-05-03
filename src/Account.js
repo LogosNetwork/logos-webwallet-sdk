@@ -559,16 +559,16 @@ class Account {
             if (this.verifyChain() && this.verifyReceiveChain()) {
               this._synced = synced
               console.info(`${this.address} has been fully synced`)
-              resolve(true)
+              resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
             }
           } else {
             this._synced = synced
-            resolve(synced)
+            resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
           }
         } else {
           console.info(`${this.address} is empty and therefore valid`)
           this._synced = synced
-          resolve(synced)
+          resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
         }
       })
     })

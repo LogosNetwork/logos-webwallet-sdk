@@ -640,16 +640,16 @@ class TokenAccount {
             if (this.verifyChain() && this.verifyReceiveChain()) {
               this._synced = synced
               console.info(`${info.name} has been fully synced`)
-              resolve(this)
+              resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
             }
           } else {
             this._synced = synced
-            resolve(synced)
+            resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
           }
         } else {
           console.info(`${this._address} is empty and therefore valid`)
           this._synced = synced
-          resolve(synced)
+          resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
         }
       })
     })

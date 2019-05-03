@@ -12,6 +12,7 @@ class Request {
     sequence: null,
     fee: null,
     signature: null,
+    timestamp: null,
     work: null
   }) {
     /**
@@ -78,6 +79,17 @@ class Request {
       this._sequence = options.sequence
     } else {
       this._sequence = null
+    }
+
+    /**
+     * Timestamp of the request (this might not be perfectly accurate)
+     * @type {string}
+     * @private
+     */
+    if (options.timestamp !== undefined) {
+      this._timestamp = options.timestamp
+    } else {
+      this._timestamp = null
     }
 
     /**
@@ -167,6 +179,18 @@ class Request {
 
   set origin (origin) {
     this._origin = origin
+  }
+
+  /**
+   * Return the the timestamp of when the request was confirmed
+   * @type {number}
+   */
+  get timestamp () {
+    return this._timestamp
+  }
+
+  set timestamp (timestamp) {
+    this._timestamp = timestamp
   }
 
   /**
@@ -284,6 +308,7 @@ class Request {
     obj.hash = this.hash
     obj.type = this.type
     obj.signature = this.signature
+    if (this.timestamp) obj.timestamp = this.timestamp
     return JSON.stringify(obj)
   }
 }

@@ -155,19 +155,6 @@ class Wallet {
     this._iterations = 10000
 
     /**
-     * MQTT host to listen for data
-     * @type {string | boolean} The mqtt websocket address (false if you don't want this)
-     * @private
-     */
-    if (options.mqtt !== undefined) {
-      this._mqtt = options.mqtt
-    } else {
-      this._mqtt = Utils.defaultMQTT
-    }
-    this._mqttConnected = false
-    this._mqttConnect()
-
-    /**
      * Seed used to generate accounts
      * @type {Hexadecimal64Length} The 32 byte seed hex encoded
      * @private
@@ -189,7 +176,6 @@ class Wallet {
         let accountOptions = options.accounts[account]
         accountOptions.wallet = this
         this._accounts[account] = new Account(accountOptions)
-        if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account}`)
       }
     } else {
       this._accounts = {}
@@ -206,11 +192,23 @@ class Wallet {
         let accountOptions = options.tokenAccounts[account]
         accountOptions.wallet = this
         this._tokenAccounts[account] = new TokenAccount(accountOptions)
-        if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account}`)
       }
     } else {
       this._tokenAccounts = {}
     }
+
+    /**
+     * MQTT host to listen for data
+     * @type {string | boolean} The mqtt websocket address (false if you don't want this)
+     * @private
+     */
+    if (options.mqtt !== undefined) {
+      this._mqtt = options.mqtt
+    } else {
+      this._mqtt = Utils.defaultMQTT
+    }
+    this._mqttConnected = false
+    this._mqttConnect()
   }
 
   /**
@@ -606,19 +604,42 @@ class Wallet {
    * @returns {boolean}
    */
   async sync (force = false) {
-    for (let account in this._accounts) {
-      if (!this._accounts[account].synced || force) {
-        let isSynced = await this._accounts[account].isSynced()
-        if (!isSynced) await this._accounts[account].sync()
+    return new Promise((resolve, reject) => {
+      let isSyncedPromises = []
+      for (let account in this._accounts) {
+        if (!this._accounts[account].synced || force) {
+          isSyncedPromises.push(this._accounts[account].isSynced())
+        }
       }
-    }
-    for (let tokenAccount in this._tokenAccounts) {
-      if (!this._tokenAccounts[tokenAccount].synced || force) {
-        let isSynced = await this._tokenAccounts[tokenAccount].isSynced()
-        if (!isSynced) await this._tokenAccounts[tokenAccount].sync()
+      for (let tokenAccount in this._tokenAccounts) {
+        if (!this._tokenAccounts[tokenAccount].synced || force) {
+          isSyncedPromises.push(this._tokenAccounts[tokenAccount].isSynced())
+        }
       }
-    }
-    return true
+      if (isSyncedPromises.length > 0) {
+        Promise.all(isSyncedPromises).then((values) => {
+          let syncPromises = []
+          for (let isSynced of values) {
+            if (!isSynced.synced) {
+              if (isSynced.type === 'LogosAccount') {
+                syncPromises.push(this._accounts[isSynced.account].sync())
+              } else if (isSynced.type === 'TokenAccount') {
+                syncPromises.push(this._tokenAccounts[isSynced.account].sync())
+              }
+            }
+          }
+          if (syncPromises.length > 0) {
+            Promise.all(syncPromises).then((responses) => {
+              resolve(true)
+            })
+          } else {
+            resolve(true)
+          }
+        })
+      } else {
+        resolve(true)
+      }
+    })
   }
 
   /**
