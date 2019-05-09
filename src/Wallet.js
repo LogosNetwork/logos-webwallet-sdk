@@ -129,7 +129,7 @@ class Wallet {
      * @private
      */
     if (options.validateSync !== undefined) {
-      this._validateSync = options.tokenSync
+      this._validateSync = options.validateSync
     } else {
       this._validateSync = true
     }
