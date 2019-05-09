@@ -21,9 +21,10 @@ class Wallet {
     walletID: false,
     remoteWork: true,
     batchSends: true,
-    fullSync: false,
+    fullSync: true,
     lazyErrors: false,
-    syncTokens: false,
+    tokenSync: false,
+    validateSync: true,
     mqtt: Utils.defaultMQTT,
     rpc: Utils.defaultRPC,
     version: 1
@@ -106,7 +107,7 @@ class Wallet {
     if (options.fullSync !== undefined) {
       this._fullSync = options.fullSync
     } else {
-      this._fullSync = false
+      this._fullSync = true
     }
 
     /**
@@ -114,10 +115,23 @@ class Wallet {
      * @type {boolean}
      * @private
      */
-    if (options.syncTokens !== undefined) {
-      this._syncTokens = options.syncTokens
+    if (options.tokenSync !== undefined) {
+      this._tokenSync = options.tokenSync
     } else {
-      this._syncTokens = false
+      this._tokenSync = false
+    }
+
+    /**
+     * Validate Sync
+     * if this option is true the SDK will generate hashes of each requests based on the content data and verify signatures
+     * This should always be true when using a untrusted RPC node
+     * @type {boolean}
+     * @private
+     */
+    if (options.validateSync !== undefined) {
+      this._validateSync = options.tokenSync
+    } else {
+      this._validateSync = true
     }
 
     /**
@@ -250,7 +264,9 @@ class Wallet {
   }
 
   /**
-   * Full Sync the entire requestchain or prune version only
+   * Full Sync - syncs the entire send and recieve chains
+   * This is recommend to be true when using an untrusted RPC node
+   * In the future this will be safe when we have BLS sig validation of Request Blocks
    * @type {boolean}
    */
   get fullSync () {
@@ -265,12 +281,26 @@ class Wallet {
    * Sync Tokens - Syncs all associated token's of the accounts on the account sync instead of on use
    * @type {boolean}
    */
-  get syncTokens () {
-    return this._syncTokens
+  get tokenSync () {
+    return this._tokenSync
   }
 
-  set syncTokens (val) {
-    this._syncTokens = val
+  set tokenSync (val) {
+    this._tokenSync = val
+  }
+
+  /**
+   * Validate Sync
+   * if this option is true the SDK will generate hashes of each requests based on the content data and verify signatures
+   * This should always be true when using a untrusted RPC node
+   * @type {boolean}
+   */
+  get validateSync () {
+    return this._validateSync
+  }
+
+  set validateSync (val) {
+    this._validateSync = val
   }
 
   /**
@@ -852,7 +882,8 @@ class Wallet {
     obj.batchSends = this._batchSends
     obj.fullSync = this._fullSync
     obj.lazyErrors = this._lazyErrors
-    obj.syncTokens = this._syncTokens
+    obj.tokenSync = this._tokenSync
+    obj.validateSync = this._validateSync
     obj.mqtt = this._mqtt
     obj.rpc = this._rpc
     obj.version = this._version

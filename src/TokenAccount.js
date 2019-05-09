@@ -637,9 +637,15 @@ class TokenAccount {
             synced = false
           }
           if (synced) {
-            if (this.verifyChain() && this.verifyReceiveChain()) {
+            if (this.wallet.validateSync) {
+              if (this.verifyChain() && this.verifyReceiveChain()) {
+                this._synced = synced
+                console.info(`${info.name} has been fully synced and validated`)
+                resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
+              }
+            } else {
+              console.info(`Finished Syncing: Requests were not validated`)
               this._synced = synced
-              console.info(`${info.name} has been fully synced`)
               resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
             }
           } else {
@@ -691,9 +697,15 @@ class TokenAccount {
               for (const requestInfo of history.reverse()) {
                 this.addConfirmedRequest(requestInfo)
               }
-              if (this.verifyChain() && this.verifyReceiveChain()) {
+              if (this.wallet.validateSync) {
+                if (this.verifyChain() && this.verifyReceiveChain()) {
+                  this._synced = true
+                  console.info(`${info.name} has been fully synced and validated`)
+                  resolve(this)
+                }
+              } else {
+                console.info(`Finished Syncing: Requests were not validated`)
                 this._synced = true
-                console.info(`${info.name} has been fully synced`)
                 resolve(this)
               }
             } else {

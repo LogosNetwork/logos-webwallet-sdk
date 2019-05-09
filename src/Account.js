@@ -372,7 +372,7 @@ class Account {
     let tokenAddress = Utils.parseAccount(tokenID)
     if (!this.tokens.includes(tokenAddress)) {
       this._tokens.push(tokenAddress)
-      if (this.wallet.syncTokens) {
+      if (this.wallet.tokenSync) {
         await this.wallet.createTokenAccount(tokenAddress)
       }
     }
@@ -556,9 +556,15 @@ class Account {
           }
           if (synced) {
             this.updateBalancesFromChain()
-            if (this.verifyChain() && this.verifyReceiveChain()) {
+            if (this.wallet.validateSync) {
+              if (this.verifyChain() && this.verifyReceiveChain()) {
+                this._synced = synced
+                console.info(`${this.address} has been fully synced and validated`)
+                resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
+              }
+            } else {
+              console.info(`Finished Syncing: Requests were not validated`)
               this._synced = synced
-              console.info(`${this.address} has been fully synced`)
               resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
             }
           } else {
@@ -595,9 +601,15 @@ class Account {
               await this.addConfirmedRequest(requestInfo)
             }
             this.updateBalancesFromChain()
-            if (this.verifyChain() && this.verifyReceiveChain()) {
+            if (this.wallet.validateSync) {
+              if (this.verifyChain() && this.verifyReceiveChain()) {
+                this._synced = true
+                console.info(`${this.address} has been fully synced and validated`)
+                resolve(this)
+              }
+            } else {
+              console.info(`Finished Syncing: Requests were not validated`)
               this._synced = true
-              console.info(`${this.address} has been fully synced`)
               resolve(this)
             }
           } else {
