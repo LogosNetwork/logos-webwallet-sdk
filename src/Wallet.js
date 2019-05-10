@@ -427,6 +427,24 @@ class Wallet {
   }
 
   /**
+   * Return boolean if all the accounts in the wallet are synced
+   * @type {Boolean}
+   */
+  get synced () {
+    for (let address in this._tokenAccounts) {
+      if (!this._tokenAccounts[address].synced) {
+        return false
+      }
+    }
+    for (let address in this._accounts) {
+      if (!this._accounts[address].synced) {
+        return false
+      }
+    }
+    return true
+  }
+
+  /**
    * Return all the requests that are pending in every account associated to this wallet
    * @type {Request[]}
    * @readonly
