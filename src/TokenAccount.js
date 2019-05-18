@@ -14,6 +14,7 @@ const Distribute = require('./Requests/Distribute.js')
 const Issuance = require('./Requests/Issuance.js')
 const WithdrawFee = require('./Requests/WithdrawFee.js')
 const WithdrawLogos = require('./Requests/WithdrawLogos.js')
+const TokenSend = require('./Requests/TokenSend.js')
 const Logos = require('@logosnetwork/logos-rpc-client')
 
 /**
@@ -331,8 +332,16 @@ class TokenAccount {
     } else {
       this._version = 1
     }
-
+    this._type = 'TokenAccount'
     this._synced = false
+  }
+
+  /**
+   * The type of the account (LogosAccount or TokenAccount)
+   * @type {String}
+   */
+  get type () {
+    return this._type
   }
 
   /**
@@ -627,6 +636,17 @@ class TokenAccount {
       RPC.accounts.info(this._address).then(async info => {
         let synced = true
         if (info && info.frontier) {
+          this._tokenBalance = info.token_balance
+          this._totalSupply = info.total_supply
+          this._tokenFeeBalance = info.token_fee_balance
+          this._symbol = info.symbol
+          this._name = info.name
+          this._issuerInfo = info.issuer_info
+          this._feeRate = info.fee_rate
+          this._feeType = info.fee_type.toLowerCase()
+          this._controllers = Utils.deserializeControllers(info.controllers)
+          this._settings = Utils.deserializeSettings(info.settings)
+          this._balance = info.balance
           if (info.frontier !== Utils.GENESIS_HASH) {
             if (this._chain.length === 0 || this._chain[this._chain.length - 1].hash !== info.frontier) {
               synced = false
@@ -1246,6 +1266,11 @@ class TokenAccount {
       request = new Issuance(requestInfo)
       this._addToReceiveChain(request)
       return request
+    } else if (requestInfo.type === 'token_send') {
+      request = new TokenSend(requestInfo)
+      if (request.tokenFee) {
+        this._tokenFeeBalance = bigInt(this._tokenFeeBalance).plus(request.tokenFee).toString()
+      }
     } else {
       console.error(`MQTT sent ${this._name} an unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
       return null
@@ -1529,6 +1554,7 @@ class TokenAccount {
     obj.settings = this._settings
     obj.balance = this._balance
     obj.chain = []
+    obj.type = this._type
     for (let request of this._chain) {
       obj.chain.push(JSON.parse(request.toJSON()))
     }

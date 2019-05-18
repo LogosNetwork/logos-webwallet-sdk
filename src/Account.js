@@ -270,6 +270,15 @@ class Account {
     }
 
     this._synced = false
+    this._type = 'LogosAccount'
+  }
+
+  /**
+   * The type of the account (LogosAccount or TokenAccount)
+   * @type {String}
+   */
+  get type () {
+    return this._type
   }
 
   /**
@@ -1825,6 +1834,7 @@ class Account {
     obj.tokenBalances = this.tokenBalances
     obj.tokens = this.tokens
     obj.representative = this.representative
+    obj.type = this.type
     obj.chain = []
     for (let request of this.chain) {
       obj.chain.push(JSON.parse(request.toJSON()))
