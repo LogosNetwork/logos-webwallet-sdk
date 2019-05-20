@@ -1,6 +1,6 @@
 {
   "name": "@logosnetwork/logos-webwallet-sdk",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Create Logos wallets without a full Logos node",
   "keywords": [
     "Logos",

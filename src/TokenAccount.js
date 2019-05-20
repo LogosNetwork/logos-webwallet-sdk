@@ -227,6 +227,17 @@ class TokenAccount {
     }
 
     /**
+     * Account Statuses
+     *
+     * @type {Object}
+     */
+    if (options.accountStatuses !== undefined) {
+      this._accountStatuses = options.accountStatuses
+    } else {
+      this._accountStatuses = {}
+    }
+
+    /**
      * Chain of the account
      * @type {Request[]}
      * @private
@@ -381,6 +392,19 @@ class TokenAccount {
    */
   get tokenID () {
     return this._tokenID
+  }
+
+  /**
+   * The accounts statuses (Frozen / Whitelisted)
+   * @type {string}
+   * @readonly
+   */
+  get accountStatuses () {
+    return this._accountStatuses
+  }
+
+  set accountStatuses (statuses) {
+    this._accountStatuses = statuses
   }
 
   /**
@@ -715,7 +739,10 @@ class TokenAccount {
             if (history) {
               // Add Genesis to latest
               for (const requestInfo of history.reverse()) {
-                this.addConfirmedRequest(requestInfo)
+                let request = this.addConfirmedRequest(requestInfo)
+                if (request.type === 'adjust_user_status') {
+                  this.updateAccountStatusFromRequest(request)
+                }
               }
               if (this.wallet.validateSync) {
                 if (this.verifyChain() && this.verifyReceiveChain()) {
@@ -775,7 +802,7 @@ class TokenAccount {
       }
       // Handle if TK account is SRC?
     } else if (request.type === 'adjust_user_status') {
-      // Nothing to update here :)
+      this.updateAccountStatusFromRequest(request)
     } else if (request.type === 'adjust_fee') {
       this._feeRate = request.feeRate
       this._feeType = request.feeType
@@ -841,8 +868,13 @@ class TokenAccount {
       this._settings = request.settings
       this._balance = '0'
       this._pendingBalance = '0'
+    } else if (request.type === 'token_send') {
+      if (request.tokenFee) {
+        this._tokenFeeBalance = bigInt(this._tokenFeeBalance).plus(request.tokenFee).toString()
+      }
     }
-    if (request.type !== 'send' && request.type !== 'issuance' && request.type !== 'withdraw_logos') {
+    if (request.type !== 'send' && request.type !== 'issuance' &&
+      request.type !== 'token_send' && request.type !== 'withdraw_logos') {
       this._balance = bigInt(this._balance).minus(bigInt(request.fee)).toString()
     }
   }
@@ -1120,12 +1152,12 @@ class TokenAccount {
         try {
           await request.publish(this._wallet.rpc)
         } catch (err) {
-          request.published = false
-          // Wallet setting to reject the request and clear the invalid request?
+          console.error(err)
+          this.removePendingRequests()
         }
         return request
       } else {
-        // Wallet setting to reject the request and clear the invalid request?
+        console.info(`Request is already pending!`)
       }
     } else {
       return null
@@ -1148,9 +1180,7 @@ class TokenAccount {
       }
     }
     this._pendingChain.push(request)
-    if (this._pendingChain.length === 1) {
-      this.broadcastRequest()
-    }
+    this.broadcastRequest()
     return request
   }
 
@@ -1268,9 +1298,7 @@ class TokenAccount {
       return request
     } else if (requestInfo.type === 'token_send') {
       request = new TokenSend(requestInfo)
-      if (request.tokenFee) {
-        this._tokenFeeBalance = bigInt(this._tokenFeeBalance).plus(request.tokenFee).toString()
-      }
+      return request
     } else {
       console.error(`MQTT sent ${this._name} an unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
       return null
@@ -1501,6 +1529,48 @@ class TokenAccount {
   }
 
   /**
+   * Returns the status of the given address for this token
+   *
+   * @param {LogosAddress} address - The address of the account
+   * @returns {Object} status of the account { whitelisted and frozen }
+   */
+  getAccountStatus (address) {
+    if (this._accountStatuses.hasOwnProperty(address)) {
+      return this._accountStatuses[address]
+    } else {
+      return {
+        whitelisted: false,
+        frozen: false
+      }
+    }
+  }
+
+  /**
+   * Returns the status of the given address for this token
+   *
+   * @param {AdjustUserStatus} request - The adjust_user_status request
+   * @returns {Object} status of the account { whitelisted and frozen }
+   */
+  updateAccountStatusFromRequest (request) {
+    if (!this._accountStatuses[request.account]) {
+      this._accountStatuses[request.account] = {
+        frozen: false,
+        whitelisted: false
+      }
+    }
+    if (request.status === 'frozen') {
+      this._accountStatuses[request.account].frozen = true
+    } else if (request.status === 'unfrozen') {
+      this._accountStatuses[request.account].frozen = false
+    } else if (request.status === 'whitelisted') {
+      this._accountStatuses[request.account].whitelisted = true
+    } else if (request.status === 'not_whitelisted') {
+      this._accountStatuses[request.account].whitelisted = false
+    }
+    return this._accountStatuses[request.account]
+  }
+
+  /**
    * Confirms the request in the local chain
    *
    * @param {MQTTRequestOptions} requestInfo The request from MQTT
@@ -1550,6 +1620,7 @@ class TokenAccount {
     obj.issuerInfo = this._issuerInfo
     obj.feeRate = this._feeRate
     obj.feeType = this._feeType
+    obj.accountStatuses = this._accountStatuses
     obj.controllers = this._controllers
     obj.settings = this._settings
     obj.balance = this._balance

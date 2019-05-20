@@ -1160,12 +1160,12 @@ class Account {
         try {
           await request.publish(this.wallet.rpc)
         } catch (err) {
-          request.published = false
-          // Wallet setting to reject the request and clear the invalid request?
+          console.error(err)
+          this.removePendingRequests()
         }
         return request
       } else {
-        // Wallet setting to reject the request and clear the invalid request?
+        console.info(`Request is already pending!`)
       }
     } else {
       return null
@@ -1190,9 +1190,7 @@ class Account {
     }
     console.info(`Added Request: ${request.type} ${request.sequence} to Pending Chain`)
     this._pendingChain.push(request)
-    if (this._pendingChain.length === 1) {
-      this.broadcastRequest()
-    }
+    this.broadcastRequest()
     return request
   }
 
@@ -1814,9 +1812,7 @@ class Account {
         issuance.sign(this._privateKey)
         this._pendingChain.push(issuance)
       }
-      if (this._pendingChain.length === 1) {
-        this.broadcastRequest()
-      }
+      this.broadcastRequest()
     }
   }
 
