@@ -644,8 +644,8 @@ class Account {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
-                this._tokenBalances = info.tokens
-                this._pendingTokenBalances = info.tokens
+                this._tokenBalances = { ...info.tokens }
+                this._pendingTokenBalances = { ...info.tokens }
               }
               this._synced = true
               console.info(`${this.address} has been lazy synced`)
@@ -662,8 +662,8 @@ class Account {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
-                this._tokenBalances = info.tokens
-                this._pendingTokenBalances = info.tokens
+                this._tokenBalances = { ...info.tokens }
+                this._pendingTokenBalances = { ...info.tokens }
               }
             }
             this._synced = true
@@ -720,7 +720,7 @@ class Account {
       }
     })
     this._balance = sum.toString()
-    this._tokenBalances = tokenSums
+    this._tokenBalances = { ...tokenSums }
     this._pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -742,7 +742,7 @@ class Account {
       }
     })
     this._pendingBalance = sum.toString()
-    this._pendingTokenBalances = tokenSums
+    this._pendingTokenBalances = { ...tokenSums }
   }
 
   /**
@@ -788,7 +788,7 @@ class Account {
       }
     }
     this._balance = sum.toString()
-    this._tokenBalances = tokenSums
+    this._tokenBalances = { ...tokenSums }
     this._pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -810,7 +810,7 @@ class Account {
       }
     })
     this._pendingBalance = sum.toString()
-    this._pendingTokenBalances = tokenSums
+    this._pendingTokenBalances = { ...tokenSums }
   }
 
   /**
@@ -1009,7 +1009,7 @@ class Account {
   removePendingRequests () {
     this._pendingChain = []
     this._pendingBalance = this._balance
-    this._pendingTokenBalances = this._tokenBalances
+    this._pendingTokenBalances = { ...this._tokenBalances }
   }
 
   /**
