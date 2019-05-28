@@ -187,6 +187,9 @@ class Wallet {
     if (options.accounts !== undefined) {
       this._accounts = {}
       for (let account in options.accounts) {
+        if (this._currentAccountAddress === null) {
+          this._currentAccountAddress = account
+        }
         let accountOptions = options.accounts[account]
         accountOptions.wallet = this
         this._accounts[account] = new Account(accountOptions)
