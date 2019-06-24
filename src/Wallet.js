@@ -225,7 +225,7 @@ class Wallet {
       this._mqtt = Utils.defaultMQTT
     }
     this._mqttConnected = false
-    this._mqttConnect()
+    this.mqttConnect()
   }
 
   /**
@@ -389,9 +389,9 @@ class Wallet {
   }
 
   set mqtt (val) {
-    this._mqttDisconnect()
+    this.mqttDisconnect()
     this._mqtt = val
-    this._mqttConnect()
+    this.mqttConnect()
   }
 
   /**
@@ -828,9 +828,8 @@ class Wallet {
    * Disconnect from the mqtt
    *
    * @returns {void}
-   * @private
    */
-  _mqttDisconnect () {
+  mqttDisconnect () {
     this._mqttClient.end()
   }
 
@@ -838,9 +837,8 @@ class Wallet {
    * Connect to the mqtt
    *
    * @returns {void}
-   * @private
    */
-  _mqttConnect () {
+  mqttConnect () {
     if (this._mqtt) {
       this._mqttClient = mqtt.connect(this._mqtt)
       this._mqttClient.on('connect', () => {
