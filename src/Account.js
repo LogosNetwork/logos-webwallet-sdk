@@ -1151,7 +1151,7 @@ class Account {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpcClient)
+          await request.publish(this.wallet.rpc)
         } catch (err) {
           console.error(err)
           this.removePendingRequests()

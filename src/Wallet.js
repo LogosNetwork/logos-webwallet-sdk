@@ -702,11 +702,14 @@ class Wallet {
    * @returns {RPCClient}
    */
   rpcClient (delegateIndex = 0) {
-    if (this.rpc === null) return null
-    return new Logos({
-      url: `http://${this.rpc.delegates[delegateIndex]}:55000`,
-      proxyURL: this.rpc.proxy
-    })
+    if (this.rpc) {
+      return new Logos({
+        url: `http://${this.rpc.delegates[delegateIndex]}:55000`,
+        proxyURL: this.rpc.proxy
+      })
+    } else {
+      return null
+    }
   }
 
   /**

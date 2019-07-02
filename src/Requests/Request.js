@@ -267,10 +267,10 @@ class Request {
 
   /**
    * Publishes the request
-   * @param {function} rpcClient - rpc function
+   * @param {RPCOptions} options - rpc options
    * @returns {Promise<Object>} response of transcation publish
    */
-  async publish (rpcClient) {
+  async publish (options) {
     let delegateId = null
     if (this.previous !== Utils.GENESIS_HASH) {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32
@@ -278,7 +278,10 @@ class Request {
       // TODO 104 if token id and not token_send or issuance then use that else use origin
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
-    const RPC = rpcClient(delegateId)
+    const RPC = new Logos({
+      url: `https://${options.delegates[delegateId]}:55000`,
+      proxyURL: options.proxy
+    })
     console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
     let response = await RPC.requests.publish(this.toJSON())
     if (response.hash) {
