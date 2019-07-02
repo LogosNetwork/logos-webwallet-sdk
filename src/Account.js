@@ -547,10 +547,7 @@ class Account {
    */
   isSynced () {
     return new Promise((resolve, reject) => {
-      const RPC = new Logos({
-        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this.wallet.rpc.proxy
-      })
+      const RPC = this.wallet.rpcClient()
       RPC.accounts.info(this.address).then(async info => {
         let synced = true
         if (info && info.frontier) {
@@ -598,10 +595,7 @@ class Account {
       this._synced = false
       this._chain = []
       this._receiveChain = []
-      const RPC = new Logos({
-        url: `http://${this.wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this.wallet.rpc.proxy
-      })
+      const RPC = this.wallet.rpcClient()
       if (this.wallet.fullSync) {
         RPC.accounts.history(this.address, -1, true).then(async history => {
           if (history) {
@@ -1158,7 +1152,7 @@ class Account {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpc)
+          await request.publish(this.wallet.rpcClient)
         } catch (err) {
           console.error(err)
           this.removePendingRequests()

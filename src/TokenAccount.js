@@ -653,10 +653,7 @@ class TokenAccount {
    */
   isSynced () {
     return new Promise((resolve, reject) => {
-      const RPC = new Logos({
-        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this._wallet.rpc.proxy
-      })
+      const RPC = this.wallet.rpcClient()
       RPC.accounts.info(this._address).then(async info => {
         let synced = true
         if (info && info.frontier) {
@@ -714,10 +711,7 @@ class TokenAccount {
       this._synced = false
       this._chain = []
       this._receiveChain = []
-      const RPC = new Logos({
-        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this._wallet.rpc.proxy
-      })
+      const RPC = this.wallet.rpcClient()
 
       RPC.accounts.info(this._address).then(info => {
         if (!info || !info.type || info.type !== 'TokenAccount') {
@@ -932,10 +926,7 @@ class TokenAccount {
       console.warn('Cannot client-side validate if an account has funds without RPC enabled')
       return true
     } else {
-      const RPC = new Logos({
-        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this._wallet.rpc.proxy
-      })
+      const RPC = this.wallet.rpcClient()
       let info = await RPC.accounts.info(address)
       return bigInt(info.tokens[this._tokenID].balance).greaterOrEquals(bigInt(amount))
     }
@@ -953,10 +944,7 @@ class TokenAccount {
       console.warn('Cannot client-side validate destination without RPC enabled')
       return true
     } else {
-      const RPC = new Logos({
-        url: `http://${this._wallet.rpc.delegates[0]}:55000`,
-        proxyURL: this._wallet.rpc.proxy
-      })
+      const RPC = this.wallet.rpcClient()
       let info = await RPC.accounts.info(address)
       if (info.type !== 'LogosAccount') return false
       let tokenInfo = null
@@ -1150,7 +1138,7 @@ class TokenAccount {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this._wallet.rpc)
+          await request.publish(this._wallet.rpcClient)
         } catch (err) {
           console.error(err)
           this.removePendingRequests()

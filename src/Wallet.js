@@ -694,6 +694,20 @@ class Wallet {
   }
 
   /**
+   * Returns a Logos RPC Client Instance using the given delegate id
+   *
+   * @param {number} delegateIndex - The delegate you wish to connect to
+   * @returns {RPCClient}
+   */
+  rpcClient(delegateIndex = 0) {
+    if (this.rpc === null) return null
+    return new Logos({
+      url: `http://${this.rpc.delegates[delegateIndex]}:55000`,
+      proxyURL: this.rpc.proxy
+    })
+  }
+
+  /**
    * Constructs the wallet from an encrypted base64 encoded wallet
    *
    * @param {string} - encrypted wallet
