@@ -7,6 +7,8 @@ const nacl = require('tweetnacl/nacl')
 const blake = require('blakejs')
 const bigInt = require('big-integer')
 const mqtt = require('mqtt')
+const Logos = require('@logosnetwork/logos-rpc-client')
+
 /**
  * The main hub for interacting with the Logos Accounts and Requests.
  */
@@ -699,7 +701,7 @@ class Wallet {
    * @param {number} delegateIndex - The delegate you wish to connect to
    * @returns {RPCClient}
    */
-  rpcClient(delegateIndex = 0) {
+  rpcClient (delegateIndex = 0) {
     if (this.rpc === null) return null
     return new Logos({
       url: `http://${this.rpc.delegates[delegateIndex]}:55000`,

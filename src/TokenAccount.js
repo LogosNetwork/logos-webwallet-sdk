@@ -15,7 +15,6 @@ const Issuance = require('./Requests/Issuance.js')
 const WithdrawFee = require('./Requests/WithdrawFee.js')
 const WithdrawLogos = require('./Requests/WithdrawLogos.js')
 const TokenSend = require('./Requests/TokenSend.js')
-const Logos = require('@logosnetwork/logos-rpc-client')
 
 /**
  * TokenAccount contain the keys, chains, and balances.
