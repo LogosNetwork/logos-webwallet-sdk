@@ -1,6 +1,8 @@
 const Utils = require('../Utils')
 const nacl = require('tweetnacl/nacl')
 const blake = require('blakejs')
+const Logos = require('@logosnetwork/logos-rpc-client')
+
 /**
  * The base class for all Requests.
  */
