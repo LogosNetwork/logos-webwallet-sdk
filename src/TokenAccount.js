@@ -672,9 +672,11 @@ class TokenAccount {
               synced = false
             }
           }
-          let receiveBlock = await RPC.requests.info(info.receive_tip)
-          if (this._receiveChain.length === 0 || this._receiveChain[this._receiveChain.length - 1].hash !== receiveBlock.send_hash) {
-            synced = false
+          if (synced) {
+            let receiveBlock = await RPC.requests.info(info.receive_tip)
+            if (this._receiveChain.length === 0 || this._receiveChain[this._receiveChain.length - 1].hash !== receiveBlock.send_hash) {
+              synced = false
+            }
           }
           if (synced) {
             if (this.wallet.validateSync) {
@@ -693,9 +695,15 @@ class TokenAccount {
             resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
           }
         } else {
-          console.info(`${this._address} is empty and therefore valid`)
-          this._synced = synced
-          resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
+          if (this.receiveChain.length === 0 && this.chain.length === 0) {
+            console.info(`${this.address} is empty and therefore valid`)
+            this._synced = synced
+            resolve({ account: this.address, synced: this._synced, type: 'TokenAccount' })
+          } else {
+            console.error(`${this.address} is not opened according to the RPC. This is a critical error if in a production enviroment. On testnet this just means the network has been restarted.`)
+            this._synced = false
+            resolve({ account: this.address, synced: this._synced, type: 'TokenAccount', remove: true })
+          }
         }
       })
     })

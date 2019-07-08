@@ -677,7 +677,11 @@ class Wallet {
               if (isSynced.type === 'LogosAccount') {
                 syncPromises.push(this._accounts[isSynced.account].sync())
               } else if (isSynced.type === 'TokenAccount') {
-                syncPromises.push(this._tokenAccounts[isSynced.account].sync())
+                if (isSynced.remove) {
+                  delete this._tokenAccounts[isSynced.account]
+                } else {
+                  syncPromises.push(this._tokenAccounts[isSynced.account].sync())
+                }
               }
             }
           }
