@@ -30,7 +30,6 @@ class Account {
     tokenBalances: {},
     tokens: [],
     pendingTokenBalances: {},
-    representative: null,
     chain: [],
     receiveChain: [],
     pendingChain: [],
@@ -153,17 +152,6 @@ class Account {
       this._pendingTokenBalances = options.pendingTokenBalances
     } else {
       this._pendingTokenBalances = {}
-    }
-
-    /**
-     * Representative of the account
-     * @type {LogosAddress}
-     * @private
-     */
-    if (options.representative !== undefined) {
-      this._representative = options.representative
-    } else {
-      this._representative = null
     }
 
     /**
@@ -409,36 +397,6 @@ class Account {
   }
 
   /**
-   * The representative of the account
-   * @type {LogosAddress}
-   * @readonly
-   */
-  get representative () {
-    let rep = Utils.officialRepresentative
-    if (this._representative) {
-      rep = this._representative
-    } else {
-      // look for a state, change or open request on the chain
-      this._pendingChain.forEach(request => {
-        if (request.representative) {
-          rep = Utils.accountFromHexKey(request.representative)
-          this._representative = rep
-        }
-      })
-      // No pending change requests. Scanning previous sends to find rep
-      if (!rep) {
-        this._chain.forEach(request => {
-          if (request.representative) {
-            rep = Utils.accountFromHexKey(request.representative)
-            this._representative = rep
-          }
-        })
-      }
-    }
-    return rep
-  }
-
-  /**
    * array of confirmed requests on the account
    * @type {Request[]}
    * @readonly
@@ -602,6 +560,12 @@ class Account {
       this._synced = false
       this._chain = []
       this._receiveChain = []
+      this._pendingChain = []
+      this._tokenBalances = {}
+      this._balance = '0'
+      this._pendingBalance = '0'
+      this._tokens = []
+      this._pendingTokenBalances = {}
       const RPC = this.wallet.rpcClient()
       if (this.wallet.fullSync) {
         RPC.accounts.history(this.address, -1, true).then(async history => {
@@ -1830,7 +1794,6 @@ class Account {
     obj.balance = this.balance
     obj.tokenBalances = this.tokenBalances
     obj.tokens = this.tokens
-    obj.representative = this.representative
     obj.type = this.type
     obj.chain = []
     for (let request of this.chain) {
