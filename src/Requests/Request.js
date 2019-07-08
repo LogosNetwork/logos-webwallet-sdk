@@ -281,7 +281,7 @@ class Request {
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
     const RPC = new Logos({
-      url: `https://${options.delegates[delegateId]}:55000`,
+      url: `http://${options.delegates[delegateId]}:55000`,
       proxyURL: options.proxy
     })
     console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
