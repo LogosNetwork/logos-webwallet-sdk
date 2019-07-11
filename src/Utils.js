@@ -491,7 +491,7 @@ const accountFromHexKey = function (hex) {
   } else {
     let e = new Error()
     e.code = 1
-    e.message = 'Failed to execute \'accountFromHexKey\' on \'' + hex +'\': The ' +
+    e.message = 'Failed to execute \'accountFromHexKey\' on \'' + hex + '\': The ' +
       'hex provided is not a valid hex.'
     e.name = 'Invalid Hex'
     throw e
@@ -509,7 +509,7 @@ const keyFromAccount = (account) => {
     } else {
       let e = new Error()
       e.code = 2
-      e.message = 'Failed to execute \'keyFromAccount\' on \'' + account +'\': The ' +
+      e.message = 'Failed to execute \'keyFromAccount\' on \'' + account + '\': The ' +
         'checksum of the address is not valid.'
       e.name = 'Checksum incorrect'
       throw e
@@ -519,13 +519,12 @@ const keyFromAccount = (account) => {
   } else {
     let e = new Error()
     e.code = 1
-    e.message = 'Failed to execute \'keyFromAccount\' on \'' + account +'\': The ' +
+    e.message = 'Failed to execute \'keyFromAccount\' on \'' + account + '\': The ' +
       'account is not a valid logos address.'
     e.name = 'Invalid Logos Address'
     throw e
   }
 }
-
 
 const isHexKey = (hex) => {
   return /^[0-9A-Fa-f]{64}$/.test(hex)
