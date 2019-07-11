@@ -499,7 +499,7 @@ const accountFromHexKey = function (hex) {
 }
 
 const keyFromAccount = (account) => {
-  if (/^lgs_[?:13]{1}[13-9-a-km-uw-z]{59}$/.test(accountCrop)) {
+  if (/^lgs_[?:13]{1}[13-9-a-km-uw-z]{59}$/.test(account)) {
     const accountCrop = account.replace('lgs_', '')
     const keyBytes = decode(accountCrop.substring(0, 52))
     const hashBytes = decode(accountCrop.substring(52, 60))
