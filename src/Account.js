@@ -365,7 +365,7 @@ class Account {
    * @returns {LogosAddress[]} Array of all the associated tokens
    */
   async addToken (tokenID) {
-    let tokenAddress = Utils.parseAccount(tokenID)
+    let tokenAddress = Utils.accountFromHexKey(tokenID)
     if (!this.tokens.includes(tokenAddress)) {
       this._tokens.push(tokenAddress)
       if (this.wallet.tokenSync) {
@@ -1272,9 +1272,19 @@ class Account {
       }
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
-    await this.wallet.createTokenAccount(Utils.parseAccount(request.tokenID), request)
+    await this.wallet.createTokenAccount(Utils.accountFromHexKey(request.tokenID), request)
     let result = await this.addRequest(request)
     return result
+  }
+
+  /**
+   * The balance of the given token in the base units
+   * @param {Hexadecimal64Length} tokenID - Token ID of the token in question, you can also send the token account address
+   * @returns {String} the token account info object
+   * @readonly
+   */
+  tokenBalance (token) {
+    return this._tokenBalances[Utils.keyFromAccount(token)]
   }
 
   /**
@@ -1292,7 +1302,7 @@ class Account {
       if (token.token_account) token = token.token_account
     }
     if (!token || typeof token === 'object') throw new Error('You must pass a token id or token account address for token actions')
-    let tokenAccount = await this.wallet.createTokenAccount(Utils.parseAccount(token))
+    let tokenAccount = await this.wallet.createTokenAccount(Utils.accountFromHexKey(token))
     return tokenAccount
   }
 
@@ -1674,7 +1684,7 @@ class Account {
       } else {
         this.updateBalancesFromRequest(request)
       }
-      if (this.shouldCombine()) {
+      if (this._shouldCombine()) {
         this.combineRequests()
       } else {
         this.broadcastRequest()
@@ -1691,7 +1701,7 @@ class Account {
    * @param {Number} minimumSaved The minimum amount of requests saved in order to combine defaults to 1
    * @returns {Boolean}
    */
-  shouldCombine (minimumSaved = 1) {
+  _shouldCombine (minimumSaved = 1) {
     if (this.wallet.batchSends) {
       let sendTxCount = 0
       let sendCount = 0

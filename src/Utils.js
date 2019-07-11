@@ -4,7 +4,6 @@ const BLOCK_BIT_LEN = 128
 const minimumFee = '10000000000000000000000'
 const EMPTY_WORK = '0000000000000000'
 const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
-const officialRepresentative = 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'
 const blake = require('blakejs')
 const crypto = require('crypto')
 const alphabet = '13456789abcdefghijkmnopqrstuwxyz'
@@ -306,27 +305,6 @@ const stringToHex = (str) => {
   return hex
 }
 
-const accountFromHexKey = function (hex) {
-  let keyBytes = hexToUint8(hex)
-  let checksumBytes = blake.blake2b(keyBytes, null, 5).reverse()
-  let checksum = encode(checksumBytes)
-  let account = encode(keyBytes)
-  return 'lgs_' + account + checksum
-}
-
-const parseAccount = (str) => {
-  let i = str.indexOf('lgs_')
-  let acc = false
-  if (i !== -1) acc = str.slice(i, i + 64)
-  if (i === -1) acc = accountFromHexKey(str)
-  try {
-    keyFromAccount(acc)
-    return acc
-  } catch (e) {
-    return false
-  }
-}
-
 const changeEndianness = (string) => {
   const result = []
   let len = string.length - 2
@@ -489,26 +467,6 @@ const generateWork = (hash, testNet = true) => {
   })
 }
 
-const keyFromAccount = (account) => {
-  if ((account.startsWith('lgs_1') || account.startsWith('lgs_3')) && account.length === 64) {
-    const accountCrop = account.replace('lgs_', '')
-    const isValid = /^[13456789abcdefghijkmnopqrstuwxyz]+$/.test(accountCrop)
-    if (isValid) {
-      const keyBytes = decode(accountCrop.substring(0, 52))
-      const hashBytes = decode(accountCrop.substring(52, 60))
-      const blakeHash = blake.blake2b(keyBytes, null, 5).reverse()
-      if (equalArrays(hashBytes, blakeHash)) {
-        return uint8ToHex(keyBytes).toUpperCase()
-      } else {
-        throw new Error('Checksum incorrect.')
-      }
-    } else {
-      throw new Error('Invalid Logos account.')
-    }
-  }
-  throw new Error('Invalid Logos account.')
-}
-
 const byteCount = (s) => {
   return encodeURI(s).split(/%(?:u[0-9A-F]{2})?[0-9A-F]{2}|./).length - 1
 }
@@ -521,36 +479,98 @@ const isAlphanumericExtended = (s) => {
   return /^[a-z0-9-_ ]+$/i.test(s)
 }
 
+const accountFromHexKey = function (hex) {
+  if (isHexKey(hex)) {
+    let keyBytes = hexToUint8(hex)
+    let checksumBytes = blake.blake2b(keyBytes, null, 5).reverse()
+    let checksum = encode(checksumBytes)
+    let account = encode(keyBytes)
+    return 'lgs_' + account + checksum
+  } else if (isLogosAccount(hex)) {
+    return hex
+  } else {
+    let e = new Error()
+    e.code = 1
+    e.message = 'Failed to execute \'accountFromHexKey\' on \'' + hex +'\': The ' +
+      'hex provided is not a valid hex.'
+    e.name = 'Invalid Hex'
+    throw e
+  }
+}
+
+const keyFromAccount = (account) => {
+  if (/^lgs_[?:13]{1}[13-9-a-km-uw-z]{59}$/.test(accountCrop)) {
+    const accountCrop = account.replace('lgs_', '')
+    const keyBytes = decode(accountCrop.substring(0, 52))
+    const hashBytes = decode(accountCrop.substring(52, 60))
+    const blakeHash = blake.blake2b(keyBytes, null, 5).reverse()
+    if (equalArrays(hashBytes, blakeHash)) {
+      return uint8ToHex(keyBytes).toUpperCase()
+    } else {
+      let e = new Error()
+      e.code = 2
+      e.message = 'Failed to execute \'keyFromAccount\' on \'' + account +'\': The ' +
+        'checksum of the address is not valid.'
+      e.name = 'Checksum incorrect'
+      throw e
+    }
+  } else if (isHexKey(account)) {
+    return account
+  } else {
+    let e = new Error()
+    e.code = 1
+    e.message = 'Failed to execute \'keyFromAccount\' on \'' + account +'\': The ' +
+      'account is not a valid logos address.'
+    e.name = 'Invalid Logos Address'
+    throw e
+  }
+}
+
+
+const isHexKey = (hex) => {
+  return /^[0-9A-Fa-f]{64}$/.test(hex)
+}
+
+const isLogosAccount = (account) => {
+  if (/^lgs_[?:13]{1}[13-9-a-km-uw-z]{59}$/.test(account)) {
+    const accountCrop = account.replace('lgs_', '')
+    const keyBytes = decode(accountCrop.substring(0, 52))
+    const hashBytes = decode(accountCrop.substring(52, 60))
+    const blakeHash = blake.blake2b(keyBytes, null, 5).reverse()
+    return equalArrays(hashBytes, blakeHash)
+  }
+  return false
+}
+
 module.exports = {
+  EMPTY_WORK,
+  GENESIS_HASH,
+  MAXUINT128,
+  minimumFee,
+  defaultRPC,
+  defaultMQTT,
   Iso10126,
   AES,
   stringFromHex,
   stringToHex,
-  accountFromHexKey,
-  parseAccount,
   decToHex,
   hexToDec,
   hexToUint8,
   uint8ToHex,
   uint4ToHex,
-  checkWork,
-  generateWork,
-  keyFromAccount,
   changeEndianness,
-  byteCount,
   isAlphanumeric,
   isAlphanumericExtended,
-  minimumFee,
-  EMPTY_WORK,
-  GENESIS_HASH,
-  officialRepresentative,
-  defaultRPC,
-  defaultMQTT,
-  MAXUINT128,
+  byteCount,
+  checkWork,
+  generateWork,
   deserializeController,
   deserializeControllers,
   deserializeSettings,
   serializeController,
   serializeControllers,
-  convertObjectToArray
+  convertObjectToArray,
+  keyFromAccount,
+  accountFromHexKey,
+  isLogosAccount
 }

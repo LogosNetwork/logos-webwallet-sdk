@@ -322,19 +322,10 @@ class Wallet {
 
   /**
    * Array of all the accounts in the wallet
-   * @type {Account[]}
-   * @readonly
-   */
-  get accounts () {
-    return Array.from(Object.values(this._accounts))
-  }
-
-  /**
-   * Object of all the accounts in the wallet
    * @type {Map<LogosAddress, Account>}
    * @readonly
    */
-  get accountsObject () {
+  get accounts () {
     return this._accounts
   }
 
@@ -376,9 +367,9 @@ class Wallet {
    */
   get balance () {
     let totalBalance = bigInt(0)
-    Object.keys(this._accounts).forEach(account => {
+    for (let account in this._accounts) {
       totalBalance.add(bigInt(this._accounts[account].balance))
-    })
+    }
     return totalBalance.toString()
   }
 
@@ -574,7 +565,7 @@ class Wallet {
       }
     }
     accountOptions.wallet = this
-    accountOptions.label = `Account ${this.accounts.length}`
+    accountOptions.label = `Account ${Object.values(this._accounts).length}`
     const account = new Account(accountOptions)
     this.addAccount(account)
     if (this._rpc) {

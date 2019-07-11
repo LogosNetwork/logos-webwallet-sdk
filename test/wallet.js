@@ -11,7 +11,7 @@ describe('Wallet', () => {
         rpc: false
       })
       wallet.createAccount()
-      expect(wallet.accounts).to.have.a.lengthOf(1)
+      expect(Object.values(wallet.accounts)).to.have.a.lengthOf(1)
     })
     it('creates the wallet', () => {
       let wallet = new Wallet({
@@ -113,7 +113,7 @@ describe('Wallet', () => {
       expect(wallet.seed).to.have.a.lengthOf(64)
     })
     it('Gets Accounts', () => {
-      expect(wallet.accounts).to.have.a.lengthOf(2)
+      expect(Object.values(wallet.accounts)).to.have.a.lengthOf(2)
     })
   })
   describe('Send', function () {
