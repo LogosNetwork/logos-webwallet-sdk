@@ -1,4 +1,5 @@
-// Type definitions for Logos WebWallet 1.0.0
+// WARNING: Extremely Outdated!
+// Type definitions for Logos WebWallet 0.0.1
 // Project: https://github.com/LogosNetwork/logos-webwallet-sdk/
 // Definitions by:
 //   Tyler Storm <tyler@pla.bs> (https://github.com/stormtv)

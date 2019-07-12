@@ -18,10 +18,8 @@
   "main": "./src/index",
   "types": "./typings/index.d.ts",
   "scripts": {
-    "test": "npm run lint && npm run docs:test && npm run lint:typings && npm run unit:test",
+    "test": "npm run lint && npm run lint:typings && npm run unit:test",
     "unit:test": "./node_modules/.bin/mocha --reporter spec",
-    "docs": "docgen --source src --custom docs/index.yml --output docs/docs.json",
-    "docs:test": "docgen --source src --custom docs/index.yml",
     "lint": "eslint src *.js",
     "lint:fix": "eslint --fix src",
     "lint:typings": "tslint typings/index.d.ts",
