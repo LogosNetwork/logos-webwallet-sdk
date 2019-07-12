@@ -1,16 +1,16 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
 const Statuses = {
-  'frozen': 0,
-  'unfrozen': 1,
-  'whitelisted': 2,
-  'not_whitelisted': 3
+  frozen: 0,
+  unfrozen: 1,
+  whitelisted: 2,
+  not_whitelisted: 3
 }
 /**
  * The Token AdjustUserStatus class
  */
-class AdjustUserStatus extends TokenRequest {
+export default class AdjustUserStatus extends TokenRequest {
   constructor (options = {
     account: null,
     status: null
@@ -99,11 +99,11 @@ class AdjustUserStatus extends TokenRequest {
     if (!this.account) throw new Error('Account is not set.')
     if (!this.status) throw new Error('Status is not set.')
     const context = super.hash()
-    let account = Utils.hexToUint8(Utils.keyFromAccount(this.account))
-    blake.blake2bUpdate(context, account)
-    let status = Utils.hexToUint8(Utils.decToHex(Statuses[this.status], 1))
-    blake.blake2bUpdate(context, status)
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    const account = hexToUint8(keyFromAccount(this.account))
+    blake2bUpdate(context, account)
+    const status = hexToUint8(decToHex(Statuses[this.status], 1))
+    blake2bUpdate(context, status)
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -119,5 +119,3 @@ class AdjustUserStatus extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = AdjustUserStatus

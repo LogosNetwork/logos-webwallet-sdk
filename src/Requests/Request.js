@@ -1,12 +1,12 @@
-const Utils = require('../Utils')
-const nacl = require('tweetnacl/nacl')
-const blake = require('blakejs')
-const Logos = require('@logosnetwork/logos-rpc-client')
+import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK } from '../Utils'
+import nacl from 'tweetnacl/nacl'
+import { blake2bInit, blake2bUpdate } from 'blakejs'
+import Logos from '@logosnetwork/logos-rpc-client'
 
 /**
  * The base class for all Requests.
  */
-class Request {
+export default class Request {
   constructor (options = {
     origin: null,
     previous: null,
@@ -14,7 +14,7 @@ class Request {
     fee: null,
     signature: null,
     timestamp: null,
-    work: null
+    work: EMPTY_WORK
   }) {
     /**
      * Signature of the request
@@ -35,7 +35,7 @@ class Request {
     if (options.work !== undefined) {
       this._work = options.work
     } else {
-      this._work = null
+      this._work = EMPTY_WORK
     }
 
     /**
@@ -125,12 +125,7 @@ class Request {
 
   set work (hex) {
     if (!this._previous) throw new Error('Previous is not set.')
-    // TODO remove the empty work for main net
-    if (Utils.checkWork(hex, this._previous, true) || hex === '0000000000000000') {
-      this._work = hex
-    } else {
-      throw new Error('Invalid Work for this Request')
-    }
+    this._work = hex
   }
 
   /**
@@ -200,7 +195,7 @@ class Request {
    * @readonly
    */
   get origin () {
-    return Utils.keyFromAccount(this._origin)
+    return keyFromAccount(this._origin)
   }
 
   /**
@@ -213,27 +208,15 @@ class Request {
   }
 
   /**
-   * Creates a work for the request.
-   * @param {boolean} [testNet] generate PoW for test net instead of real network
-   * @returns {Hexadecimal16Length}
-   */
-  async createWork (testNet = false) {
-    if (!this._previous) throw new Error('Previous is not set.')
-    let work = await Utils.generateWork(this._previous, testNet)
-    this._work = work
-    return work
-  }
-
-  /**
    * Creates a signature for the request
    * @param {Hexadecimal64Length} privateKey - private key in hex
    * @returns {boolean} if the signature is valid
    */
   sign (privateKey) {
-    privateKey = Utils.hexToUint8(privateKey)
+    privateKey = hexToUint8(privateKey)
     if (privateKey.length !== 32) throw new Error('Invalid Private Key length. Should be 32 bytes.')
-    let hash = Utils.hexToUint8(this.hash)
-    this.signature = Utils.uint8ToHex(nacl.sign.detached(hash, privateKey))
+    const hash = hexToUint8(this.hash)
+    this.signature = uint8ToHex(nacl.sign.detached(hash, privateKey))
     return this.verify()
   }
 
@@ -247,12 +230,12 @@ class Request {
     if (this.fee === null) throw new Error('Transaction fee is not set.')
     if (!this.origin) throw new Error('Origin account is not set.')
     if (!this.type) throw new Error('Request type is not defined.')
-    const context = blake.blake2bInit(32, null)
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.typeValue, 1)))
-    blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-    blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.fee, 16)))
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(this.sequence, 4))))
+    const context = blake2bInit(32, null)
+    blake2bUpdate(context, hexToUint8(decToHex(this.typeValue, 1)))
+    blake2bUpdate(context, hexToUint8(this.origin))
+    blake2bUpdate(context, hexToUint8(this.previous))
+    blake2bUpdate(context, hexToUint8(decToHex(this.fee, 16)))
+    blake2bUpdate(context, hexToUint8(changeEndianness(decToHex(this.sequence, 4))))
     return context
   }
 
@@ -264,7 +247,7 @@ class Request {
     if (!this.hash) throw new Error('Hash is not set.')
     if (!this.signature) throw new Error('Signature is not set.')
     if (!this.origin) throw new Error('Origin account is not set.')
-    return nacl.sign.detached.verify(Utils.hexToUint8(this.hash), Utils.hexToUint8(this.signature), Utils.hexToUint8(this.origin))
+    return nacl.sign.detached.verify(hexToUint8(this.hash), hexToUint8(this.signature), hexToUint8(this.origin))
   }
 
   /**
@@ -274,7 +257,7 @@ class Request {
    */
   async publish (options) {
     let delegateId = null
-    if (this.previous !== Utils.GENESIS_HASH) {
+    if (this.previous !== GENESIS_HASH) {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32
     } else {
       // TODO 104 if token id and not token_send or issuance then use that else use origin
@@ -285,7 +268,7 @@ class Request {
       proxyURL: options.proxy
     })
     console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
-    let response = await RPC.requests.publish(this.toJSON())
+    const response = await RPC.requests.publish(this.toJSON())
     if (response.hash) {
       console.info(`Delegate ${delegateId} accepted ${this.type} ${this.sequence}`)
       return response
@@ -313,5 +296,3 @@ class Request {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = Request

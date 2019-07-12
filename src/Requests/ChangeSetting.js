@@ -1,17 +1,17 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
 const Settings = {
-  'issuance': 0,
-  'revoke': 2,
-  'freeze': 4,
-  'adjust_fee': 6,
-  'whitelist': 8
+  issuance: 0,
+  revoke: 2,
+  freeze: 4,
+  adjust_fee: 6,
+  whitelist: 8
 }
 /**
  * The Token Change Setting class for Change Setting Requests.
  */
-class ChangeSetting extends TokenRequest {
+export default class ChangeSetting extends TokenRequest {
   constructor (options = {
     setting: null,
     value: null
@@ -105,12 +105,12 @@ class ChangeSetting extends TokenRequest {
     if (!this.setting) throw new Error('Settings is not set.')
     if (this.value === null) throw new Error('Value is not set.')
     const context = super.hash()
-    let setting = Utils.hexToUint8(Utils.decToHex(Settings[this.setting], 1))
-    blake.blake2bUpdate(context, setting)
-    let value = Utils.hexToUint8(Utils.decToHex((+this.value), 1))
-    blake.blake2bUpdate(context, value)
+    const setting = hexToUint8(decToHex(Settings[this.setting], 1))
+    blake2bUpdate(context, setting)
+    const value = hexToUint8(decToHex((+this.value), 1))
+    blake2bUpdate(context, value)
 
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -126,5 +126,3 @@ class ChangeSetting extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = ChangeSetting

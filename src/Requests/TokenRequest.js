@@ -1,11 +1,10 @@
-const Utils = require('../Utils')
-const Request = require('./Request')
-const blake = require('blakejs')
-
+import Request from './Request'
+import { hexToUint8, keyFromAccount, accountFromHexKey } from '../Utils'
+import { blake2bUpdate } from 'blakejs'
 /**
  * The TokenRequest class.
  */
-class TokenRequest extends Request {
+export default class TokenRequest extends Request {
   constructor (options = {
     tokenID: null
   }) {
@@ -21,9 +20,9 @@ class TokenRequest extends Request {
     } else if (options.token_id !== undefined) {
       this._tokenID = options.token_id
     } else if (options.tokenAccount) {
-      this._tokenID = Utils.keyFromAccount(options.tokenAccount)
+      this._tokenID = keyFromAccount(options.tokenAccount)
     } else if (options.token_account) {
-      this._tokenID = Utils.keyFromAccount(options.token_account)
+      this._tokenID = keyFromAccount(options.token_account)
     } else {
       this._tokenID = null
     }
@@ -31,7 +30,7 @@ class TokenRequest extends Request {
 
   set tokenID (val) {
     if (val.startsWith('lgs_')) {
-      this._tokenID = Utils.keyFromAccount(val)
+      this._tokenID = keyFromAccount(val)
     } else {
       this._tokenID = val
     }
@@ -51,9 +50,9 @@ class TokenRequest extends Request {
    */
   hash () {
     if (!this.tokenID) throw new Error('TokenID is not set.')
-    let context = super.hash()
-    let tokenID = Utils.hexToUint8(this.tokenID)
-    blake.blake2bUpdate(context, tokenID)
+    const context = super.hash()
+    const tokenID = hexToUint8(this.tokenID)
+    blake2bUpdate(context, tokenID)
     return context
   }
 
@@ -64,9 +63,7 @@ class TokenRequest extends Request {
   toJSON () {
     const obj = JSON.parse(super.toJSON())
     obj.token_id = this.tokenID
-    obj.token_account = Utils.accountFromHexKey(this.tokenID)
+    obj.token_account = accountFromHexKey(this.tokenID)
     return JSON.stringify(obj)
   }
 }
-
-module.exports = TokenRequest

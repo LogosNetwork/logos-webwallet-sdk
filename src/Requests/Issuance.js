@@ -1,17 +1,16 @@
-const Utils = require('../Utils')
-const Request = require('./Request')
-const blake = require('blakejs')
-const bigInt = require('big-integer')
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, deserializeController, deserializeControllers, accountFromHexKey, byteCount, stringToHex, isAlphanumeric, isAlphanumericExtended, changeEndianness, serializeControllers, convertObjectToArray } from '../Utils'
+import { blake2bUpdate, blake2bFinal, blake2bInit } from 'blakejs'
+import bigInt from 'big-integer'
 
 /**
  * The Token Issuance class for Token Issuance Requests.
  */
-class Issuance extends Request {
+export default class Issuance extends Request {
   constructor (options = {
     tokenID: null,
     symbol: null,
     name: null,
-    totalSupply: Utils.MAXUINT128,
+    totalSupply: MAXUINT128,
     feeType: 'flat',
     feeRate: '0',
     settings: {
@@ -76,7 +75,7 @@ class Issuance extends Request {
     } else if (options.total_supply !== undefined) {
       this._totalSupply = options.total_supply
     } else {
-      this._totalSupply = Utils.MAXUINT128
+      this._totalSupply = MAXUINT128
     }
 
     /**
@@ -111,7 +110,7 @@ class Issuance extends Request {
      * @private
      */
     if (options.settings !== undefined) {
-      this._settings = Utils.deserializeSettings(options.settings)
+      this._settings = deserializeSettings(options.settings)
     } else {
       this._settings = {
         issuance: false,
@@ -133,10 +132,10 @@ class Issuance extends Request {
      * @private
      */
     if (options.controllers !== undefined) {
-      this._controllers = Utils.deserializeControllers(options.controllers)
+      this._controllers = deserializeControllers(options.controllers)
     } else {
       this._controllers = [{
-        account: Utils.accountFromHexKey(this.origin),
+        account: accountFromHexKey(this.origin),
         privileges: {
           change_issuance: false,
           change_modify_issuance: false,
@@ -198,19 +197,19 @@ class Issuance extends Request {
       if (!this.previous) throw new Error('Previous is not set.')
       if (!this.symbol) throw new Error('Symbol is not set.')
       if (!this.name) throw new Error('Name is not set.')
-      const context = blake.blake2bInit(32, null)
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.origin))
-      blake.blake2bUpdate(context, Utils.hexToUint8(this.previous))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.stringToHex(this.symbol + this.name)))
-      let tokenID = Utils.uint8ToHex(blake.blake2bFinal(context))
+      const context = blake2bInit(32, null)
+      blake2bUpdate(context, hexToUint8(this.origin))
+      blake2bUpdate(context, hexToUint8(this.previous))
+      blake2bUpdate(context, hexToUint8(stringToHex(this.symbol + this.name)))
+      const tokenID = uint8ToHex(blake2bFinal(context))
       this.tokenID = tokenID
       return this.tokenID
     }
   }
 
   set symbol (val) {
-    if (Utils.byteCount(val) > 8) throw new Error('Token Symbol - Invalid Size. Max Size 8 Bytes')
-    if (!Utils.isAlphanumeric(val)) throw new Error('Token Symbol - Non-alphanumeric characters')
+    if (byteCount(val) > 8) throw new Error('Token Symbol - Invalid Size. Max Size 8 Bytes')
+    if (!isAlphanumeric(val)) throw new Error('Token Symbol - Non-alphanumeric characters')
     this._tokenID = null
     this._symbol = val
   }
@@ -224,8 +223,8 @@ class Issuance extends Request {
   }
 
   set name (val) {
-    if (Utils.byteCount(val) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
-    if (!Utils.isAlphanumericExtended(val)) throw new Error('Token Name - Invalid Characters (alphanumeric, space, hypen, and underscore are allowed)')
+    if (byteCount(val) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
+    if (!isAlphanumericExtended(val)) throw new Error('Token Name - Invalid Characters (alphanumeric, space, hypen, and underscore are allowed)')
     this._tokenID = null
     this._name = val
   }
@@ -247,7 +246,7 @@ class Issuance extends Request {
   }
 
   set totalSupply (val) {
-    if (bigInt(val).gt(bigInt(Utils.MAXUINT128))) throw new Error(`Invalid Total Supply - Maximum supply is ${Utils.MAXUINT128}`)
+    if (bigInt(val).gt(bigInt(MAXUINT128))) throw new Error(`Invalid Total Supply - Maximum supply is ${MAXUINT128}`)
     this._totalSupply = val
   }
 
@@ -285,7 +284,7 @@ class Issuance extends Request {
   }
 
   set settings (val) {
-    val = Utils.deserializeSettings(val)
+    val = deserializeSettings(val)
     this.validateSettings(val)
     this._settings = val
   }
@@ -299,8 +298,8 @@ class Issuance extends Request {
   }
 
   set controllers (val) {
-    val = Utils.deserializeControllers(val)
-    for (let controller of val) {
+    val = deserializeControllers(val)
+    for (const controller of val) {
       this.validateController(controller)
     }
     this._controllers = val
@@ -315,7 +314,7 @@ class Issuance extends Request {
   }
 
   set issuerInfo (val) {
-    if (Utils.byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
+    if (byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
     this._issuerInfo = val
   }
 
@@ -397,7 +396,7 @@ class Issuance extends Request {
    */
   addController (controller) {
     if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
-    controller = Utils.deserializeController(controller)
+    controller = deserializeController(controller)
     if (this.validateController(controller)) {
       this._controllers.push(controller)
     }
@@ -406,7 +405,7 @@ class Issuance extends Request {
 
   getObjectBits (obj) {
     let bits = ''
-    for (let val in obj) {
+    for (const val in obj) {
       if (typeof obj[val] === 'boolean') bits = (+obj[val]) + bits
     }
     return bits
@@ -422,17 +421,17 @@ class Issuance extends Request {
   get hash () {
     // Validate Symbol
     if (!this.symbol) throw new Error('Symbol is not set.')
-    if (Utils.byteCount(this.symbol) > 8) throw new Error('Token Symbol - Invalid Size. Max Size 8 Bytes')
-    if (!Utils.isAlphanumeric(this.symbol)) throw new Error('Token Symbol - Non-alphanumeric characters')
+    if (byteCount(this.symbol) > 8) throw new Error('Token Symbol - Invalid Size. Max Size 8 Bytes')
+    if (!isAlphanumeric(this.symbol)) throw new Error('Token Symbol - Non-alphanumeric characters')
 
     // Validate Name
     if (!this.name) throw new Error('Name is not set.')
-    if (Utils.byteCount(this.name) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
-    if (!Utils.isAlphanumericExtended(this.name)) throw new Error('Token Name - Non-alphanumeric characters')
+    if (byteCount(this.name) > 32) throw new Error('Token Name - Invalid Size. Max Size 32 Bytes')
+    if (!isAlphanumericExtended(this.name)) throw new Error('Token Name - Non-alphanumeric characters')
 
     // Validate Total Supply
     if (!this.totalSupply) throw new Error('Total Supply is not set.')
-    if (bigInt(this.totalSupply).gt(bigInt(Utils.MAXUINT128))) throw new Error(`Invalid Total Supply - Maximum supply is ${Utils.MAXUINT128}`)
+    if (bigInt(this.totalSupply).gt(bigInt(MAXUINT128))) throw new Error(`Invalid Total Supply - Maximum supply is ${MAXUINT128}`)
 
     // Validate Fee Type
     if (!this.feeType) throw new Error('Fee Type is not set.')
@@ -451,47 +450,47 @@ class Issuance extends Request {
 
     // Validate Issuer Info
     if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
-    if (Utils.byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
+    if (byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
 
-    let context = super.hash()
+    const context = super.hash()
 
-    let tokenID = Utils.hexToUint8(this.tokenID)
-    blake.blake2bUpdate(context, tokenID)
+    const tokenID = hexToUint8(this.tokenID)
+    blake2bUpdate(context, tokenID)
 
-    let symbol = Utils.hexToUint8(Utils.stringToHex(this.symbol))
-    blake.blake2bUpdate(context, symbol)
+    const symbol = hexToUint8(stringToHex(this.symbol))
+    blake2bUpdate(context, symbol)
 
-    let name = Utils.hexToUint8(Utils.stringToHex(this.name))
-    blake.blake2bUpdate(context, name)
+    const name = hexToUint8(stringToHex(this.name))
+    blake2bUpdate(context, name)
 
-    let totalSupply = Utils.hexToUint8(Utils.decToHex(this.totalSupply, 16))
-    blake.blake2bUpdate(context, totalSupply)
+    const totalSupply = hexToUint8(decToHex(this.totalSupply, 16))
+    blake2bUpdate(context, totalSupply)
 
-    let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
-    blake.blake2bUpdate(context, feeType)
+    const feeType = hexToUint8(decToHex(+(this.feeType === 'flat'), 1))
+    blake2bUpdate(context, feeType)
 
-    let feeRate = Utils.hexToUint8(Utils.decToHex(this.feeRate, 16))
-    blake.blake2bUpdate(context, feeRate)
+    const feeRate = hexToUint8(decToHex(this.feeRate, 16))
+    blake2bUpdate(context, feeRate)
 
-    let settings = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.settings), 2), 8)))
-    blake.blake2bUpdate(context, settings)
+    const settings = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(this.settings), 2), 8)))
+    blake2bUpdate(context, settings)
 
-    let accounts = []
-    for (let controller of this.controllers) {
+    const accounts = []
+    for (const controller of this.controllers) {
       this.validateController(controller)
-      let account = Utils.hexToUint8(Utils.keyFromAccount(controller.account))
+      const account = hexToUint8(keyFromAccount(controller.account))
       if (accounts.includes(account)) throw new Error('Duplicate Controllers are not allowed')
       accounts.push(account)
-      blake.blake2bUpdate(context, account)
+      blake2bUpdate(context, account)
 
-      let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(controller.privileges), 2), 8)))
-      blake.blake2bUpdate(context, privileges)
+      const privileges = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(controller.privileges), 2), 8)))
+      blake2bUpdate(context, privileges)
     }
 
-    let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
-    blake.blake2bUpdate(context, issuerInfo)
+    const issuerInfo = hexToUint8(stringToHex(this.issuerInfo))
+    blake2bUpdate(context, issuerInfo)
 
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -502,18 +501,16 @@ class Issuance extends Request {
   toJSON (pretty = false) {
     const obj = JSON.parse(super.toJSON())
     obj.token_id = this.tokenID
-    obj.token_account = Utils.accountFromHexKey(this.tokenID)
+    obj.token_account = accountFromHexKey(this.tokenID)
     obj.symbol = this.symbol
     obj.name = this.name
     obj.total_supply = this.totalSupply
     obj.fee_type = this.feeType
     obj.fee_rate = this.feeRate
-    obj.settings = Utils.convertObjectToArray(this.settings)
-    obj.controllers = Utils.serializeControllers(this.controllers)
+    obj.settings = convertObjectToArray(this.settings)
+    obj.controllers = serializeControllers(this.controllers)
     obj.issuer_info = this.issuerInfo
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }
 }
-
-module.exports = Issuance

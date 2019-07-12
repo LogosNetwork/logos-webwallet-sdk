@@ -1,12 +1,12 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
-const bigInt = require('big-integer')
+import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
+import bigInt from 'big-integer'
 
 /**
  * The Token AdjustFee class.
  */
-class AdjustFee extends TokenRequest {
+export default class AdjustFee extends TokenRequest {
   constructor (options = {
     feeType: 'flat',
     feeRate: '0'
@@ -100,11 +100,11 @@ class AdjustFee extends TokenRequest {
     if (!this.feeRate) throw new Error('Fee Rate is not set.')
     if (this.feeType === 'percentage' && bigInt(this.feeRate).greater(bigInt('100'))) throw new Error('Fee Type is percentage and exceeds the maximum of 100')
     const context = super.hash()
-    let feeType = Utils.hexToUint8(Utils.decToHex(+(this.feeType === 'flat'), 1))
-    blake.blake2bUpdate(context, feeType)
-    let feeRate = Utils.hexToUint8(Utils.decToHex(this.feeRate, 16))
-    blake.blake2bUpdate(context, feeRate)
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    const feeType = hexToUint8(decToHex(+(this.feeType === 'flat'), 1))
+    blake2bUpdate(context, feeType)
+    const feeRate = hexToUint8(decToHex(this.feeRate, 16))
+    blake2bUpdate(context, feeRate)
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -120,5 +120,3 @@ class AdjustFee extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = AdjustFee

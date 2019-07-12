@@ -1,11 +1,11 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
 
 /**
  * The Token IssueAdditional class for Token IssueAdditional Requests.
  */
-class IssueAdditional extends TokenRequest {
+export default class IssueAdditional extends TokenRequest {
   constructor (options = {
     amount: '0'
   }) {
@@ -68,10 +68,10 @@ class IssueAdditional extends TokenRequest {
    */
   get hash () {
     if (this.amount === null) throw new Error('Amount is not set.')
-    let context = super.hash()
-    let amount = Utils.hexToUint8(Utils.decToHex(this.amount, 16))
-    blake.blake2bUpdate(context, amount)
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    const context = super.hash()
+    const amount = hexToUint8(decToHex(this.amount, 16))
+    blake2bUpdate(context, amount)
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -86,5 +86,3 @@ class IssueAdditional extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = IssueAdditional

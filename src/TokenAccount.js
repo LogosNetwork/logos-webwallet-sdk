@@ -243,7 +243,7 @@ class TokenAccount {
      */
     if (options.chain !== undefined) {
       this._chain = []
-      for (let request of options.chain) {
+      for (const request of options.chain) {
         if (request.type === 'issue_additional') {
           this._chain.push(new IssueAdditional(request))
         } else if (request.type === 'change_setting') {
@@ -281,7 +281,7 @@ class TokenAccount {
      */
     if (options.receiveChain !== undefined) {
       this._receiveChain = []
-      for (let request of options.receiveChain) {
+      for (const request of options.receiveChain) {
         if (request.type === 'send') {
           this._receiveChain.push(new Send(request))
         } else if (request.type === 'issuance') {
@@ -301,7 +301,7 @@ class TokenAccount {
      */
     if (options.pendingChain !== undefined) {
       this._pendingChain = []
-      for (let request of options.pendingChain) {
+      for (const request of options.pendingChain) {
         if (request.type === 'issue_additional') {
           this._pendingChain.push(new IssueAdditional(request))
         } else if (request.type === 'change_setting') {
@@ -673,7 +673,7 @@ class TokenAccount {
             }
           }
           if (synced) {
-            let receiveBlock = await RPC.requests.info(info.receive_tip)
+            const receiveBlock = await RPC.requests.info(info.receive_tip)
             if (this._receiveChain.length === 0 || this._receiveChain[this._receiveChain.length - 1].hash !== receiveBlock.send_hash) {
               synced = false
             }
@@ -740,7 +740,7 @@ class TokenAccount {
             if (history) {
               // Add Genesis to latest
               for (const requestInfo of history.reverse()) {
-                let request = this.addConfirmedRequest(requestInfo)
+                const request = this.addConfirmedRequest(requestInfo)
                 if (request.type === 'adjust_user_status') {
                   this.updateAccountStatusFromRequest(request)
                 }
@@ -765,7 +765,7 @@ class TokenAccount {
         } else {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
-              let request = this.addConfirmedRequest(val)
+              const request = this.addConfirmedRequest(val)
               if (request !== null && !request.verify()) {
                 throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
               }
@@ -810,22 +810,22 @@ class TokenAccount {
     } else if (request.type === 'update_issuer_info') {
       this._issuerInfo = request.issuerInfo
     } else if (request.type === 'update_controller') {
-      let updatedPrivs = Utils.serializeController(request.controller).privileges
+      const updatedPrivs = Utils.serializeController(request.controller).privileges
       if (request.action === 'remove' && updatedPrivs.length === 0) {
         this._controllers = this._controllers.filter(controller => controller.account !== request.controller.account)
       } else if (request.action === 'remove' && updatedPrivs.length > 0) {
-        for (let controller of this._controllers) {
+        for (const controller of this._controllers) {
           if (controller.account === request.controller.account) {
-            for (let priv of updatedPrivs) {
+            for (const priv of updatedPrivs) {
               controller.privileges[priv] = false
             }
           }
         }
       } else if (request.action === 'add') {
         if (this._controllers.some(controller => controller.account === request.controller.account)) {
-          for (let controller of this._controllers) {
+          for (const controller of this._controllers) {
             if (controller.account === request.controller.account) {
-              for (let priv of updatedPrivs) {
+              for (const priv of updatedPrivs) {
                 controller.privileges[priv] = true
               }
             }
@@ -849,7 +849,7 @@ class TokenAccount {
         this._balance = bigInt(this._balance).plus(bigInt(request.transaction.amount)).toString()
       }
     } else if (request.type === 'send') {
-      for (let transaction of request.transactions) {
+      for (const transaction of request.transactions) {
         if (transaction.destination === this._address) {
           this._balance = bigInt(this._balance).plus(bigInt(transaction.amount)).toString()
         }
@@ -887,7 +887,7 @@ class TokenAccount {
    * @returns {Boolean}
    */
   isController (address) {
-    for (let controller of this._controllers) {
+    for (const controller of this._controllers) {
       if (controller.account === address) {
         return true
       }
@@ -913,7 +913,7 @@ class TokenAccount {
    * @returns {Boolean}
    */
   controllerPrivilege (address, privilege) {
-    for (let controller of this._controllers) {
+    for (const controller of this._controllers) {
       if (controller.account === address) {
         return controller.privileges[privilege]
       }
@@ -934,7 +934,7 @@ class TokenAccount {
       return true
     } else {
       const RPC = this.wallet.rpcClient()
-      let info = await RPC.accounts.info(address)
+      const info = await RPC.accounts.info(address)
       return bigInt(info.tokens[this._tokenID].balance).greaterOrEquals(bigInt(amount))
     }
   }
@@ -952,7 +952,7 @@ class TokenAccount {
       return true
     } else {
       const RPC = this.wallet.rpcClient()
-      let info = await RPC.accounts.info(address)
+      const info = await RPC.accounts.info(address)
       if (info.type !== 'LogosAccount') return false
       let tokenInfo = null
       if (info && info.tokens && info.tokens[this._tokenID]) {
@@ -1141,7 +1141,7 @@ class TokenAccount {
    */
   async broadcastRequest () {
     if (this._wallet.rpc && this._pendingChain.length > 0) {
-      let request = this._pendingChain[0]
+      const request = this._pendingChain[0]
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
@@ -1167,13 +1167,6 @@ class TokenAccount {
    * @returns {Request}
    */
   async addRequest (request) {
-    if (request.work === null) {
-      if (this._wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
     this._pendingChain.push(request)
     this.broadcastRequest()
     return request
@@ -1224,9 +1217,9 @@ class TokenAccount {
   addConfirmedRequest (requestInfo) {
     let request = null
     if (requestInfo.type === 'send') {
-      let request = new Send(requestInfo)
+      const request = new Send(requestInfo)
       if (requestInfo.transactions && requestInfo.transactions.length > 0) {
-        for (let trans of requestInfo.transactions) {
+        for (const trans of requestInfo.transactions) {
           if (trans.destination === this._address) {
             this._addToReceiveChain(request)
             break
@@ -1445,8 +1438,8 @@ class TokenAccount {
    * @returns {boolean}
    */
   removePendingRequest (hash) {
-    let found = false
-    for (let i in this._pendingChain) {
+    const found = false
+    for (const i in this._pendingChain) {
       const request = this._pendingChain[i]
       if (request.hash === hash) {
         this._pendingChain.splice(i, 1)
@@ -1530,7 +1523,7 @@ class TokenAccount {
    * @returns {Object} status of the account { whitelisted and frozen }
    */
   getAccountStatus (address) {
-    if (this._accountStatuses.hasOwnProperty(address)) {
+    if (Object.prototype.hasOwnProperty.call(this._accountStatuses, address)) {
       return this._accountStatuses[address]
     } else {
       return {
@@ -1576,7 +1569,7 @@ class TokenAccount {
    */
   async processRequest (requestInfo) {
     // Confirm the requests / updates balances / broadcasts next block
-    let request = this.addConfirmedRequest(requestInfo)
+    const request = this.addConfirmedRequest(requestInfo)
     if (request !== null) {
       if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
       // Todo 104 - revoke, token_send, distribute, withdraw_Fee, withdraw_logos
@@ -1621,11 +1614,11 @@ class TokenAccount {
     obj.balance = this._balance
     obj.chain = []
     obj.type = this._type
-    for (let request of this._chain) {
+    for (const request of this._chain) {
       obj.chain.push(JSON.parse(request.toJSON()))
     }
     obj.receiveChain = []
-    for (let request of this._receiveChain) {
+    for (const request of this._receiveChain) {
       obj.receiveChain.push(JSON.parse(request.toJSON()))
     }
     obj.version = this._version

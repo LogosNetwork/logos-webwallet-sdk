@@ -1,15 +1,15 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
 const Actions = {
-  'add': 0,
-  'remove': 1
+  add: 0,
+  remove: 1
 }
 
 /**
  * The Token UpdateController class.
  */
-class UpdateController extends TokenRequest {
+export default class UpdateController extends TokenRequest {
   constructor (options = {
     action: null,
     controller: null
@@ -22,7 +22,7 @@ class UpdateController extends TokenRequest {
      * @private
      */
     if (options.controller !== undefined) {
-      this._controller = Utils.deserializeController(options.controller)
+      this._controller = deserializeController(options.controller)
     } else {
       this._controller = null
     }
@@ -89,7 +89,7 @@ class UpdateController extends TokenRequest {
 
   getObjectBits (obj) {
     let bits = ''
-    for (let val in obj) {
+    for (const val in obj) {
       if (typeof obj[val] === 'boolean') bits = (+obj[val]) + bits
     }
     return bits
@@ -140,14 +140,14 @@ class UpdateController extends TokenRequest {
     if (!this.action) throw new Error('action is not set.')
     if (typeof Actions[this.action] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
     const context = super.hash()
-    let action = Utils.hexToUint8(Utils.decToHex(Actions[this.action], 1))
-    blake.blake2bUpdate(context, action)
-    let account = Utils.hexToUint8(Utils.keyFromAccount(this.controller.account))
-    blake.blake2bUpdate(context, account)
-    let privileges = Utils.hexToUint8(Utils.changeEndianness(Utils.decToHex(parseInt(this.getObjectBits(this.controller.privileges), 2), 8)))
-    blake.blake2bUpdate(context, privileges)
+    const action = hexToUint8(decToHex(Actions[this.action], 1))
+    blake2bUpdate(context, action)
+    const account = hexToUint8(keyFromAccount(this.controller.account))
+    blake2bUpdate(context, account)
+    const privileges = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(this.controller.privileges), 2), 8)))
+    blake2bUpdate(context, privileges)
 
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -158,10 +158,8 @@ class UpdateController extends TokenRequest {
   toJSON (pretty = false) {
     const obj = JSON.parse(super.toJSON())
     obj.action = this.action
-    obj.controller = Utils.serializeController(this.controller)
+    obj.controller = serializeController(this.controller)
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)
   }
 }
-
-module.exports = UpdateController

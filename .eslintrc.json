@@ -1,0 +1,23 @@
+{
+  "extends": [
+      "standard"
+  ],
+  "env": {
+      "browser": true,
+      "amd": true
+  },
+  "globals": {
+      "it": "readonly",
+      "expect": "readonly",
+      "describe": "readonly"
+  },
+  "parserOptions": {
+      "ecmaVersion": 10,
+      "sourceType": "module"
+  },
+  "rules": {
+      "arrow-parens": 0,
+      "generator-star-spacing": 0,
+      "no-trailing-spaces": [ 0, { "skipBlankLines": true } ]
+  }
+}

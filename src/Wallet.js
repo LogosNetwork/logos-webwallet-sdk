@@ -1,18 +1,18 @@
-const Utils = require('./Utils')
-const Account = require('./Account')
-const TokenAccount = require('./TokenAccount')
-const mqttRegex = require('mqtt-regex')
-const pbkdf2 = require('pbkdf2')
-const nacl = require('tweetnacl/nacl')
-const blake = require('blakejs')
-const bigInt = require('big-integer')
-const mqtt = require('mqtt')
-const Logos = require('@logosnetwork/logos-rpc-client')
+import mqttPattern from './mqttPattern'
+import Logos from '@logosnetwork/logos-rpc-client'
+import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils'
+import { pbkdf2Sync } from 'pbkdf2'
+import nacl from 'tweetnacl/nacl'
+import { blake2bInit, blake2bFinal, blake2bUpdate } from 'blakejs'
+import bigInt from 'big-integer'
+import { connect } from 'mqtt'
+import Account from './Account'
+import TokenAccount from './TokenAccount'
 
 /**
  * The main hub for interacting with the Logos Accounts and Requests.
  */
-class Wallet {
+export default class Wallet {
   constructor (options = {
     password: null,
     seed: null,
@@ -21,14 +21,13 @@ class Wallet {
     accounts: {},
     tokenAccounts: {},
     walletID: false,
-    remoteWork: true,
     batchSends: true,
     fullSync: true,
     lazyErrors: false,
     tokenSync: false,
     validateSync: true,
-    mqtt: Utils.defaultMQTT,
-    rpc: Utils.defaultRPC,
+    mqtt: defaultMQTT,
+    rpc: defaultRPC,
     version: 1
   }) {
     this.loadOptions(options)
@@ -76,18 +75,7 @@ class Wallet {
     if (options.walletID !== undefined) {
       this._walletID = options.walletID
     } else {
-      this._walletID = Utils.uint8ToHex(nacl.randomBytes(32))
-    }
-
-    /**
-     * Remote work enabled
-     * @type {boolean}
-     * @private
-     */
-    if (options.remoteWork !== undefined) {
-      this._remoteWork = options.remoteWork
-    } else {
-      this._remoteWork = true
+      this._walletID = uint8ToHex(nacl.randomBytes(32))
     }
 
     /**
@@ -158,7 +146,7 @@ class Wallet {
     if (options.rpc !== undefined) {
       this._rpc = options.rpc
     } else {
-      this._rpc = Utils.defaultRPC
+      this._rpc = defaultRPC
     }
 
     /**
@@ -178,7 +166,7 @@ class Wallet {
     if (options.seed !== undefined) {
       this._seed = options.seed
     } else {
-      this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
+      this._seed = uint8ToHex(nacl.randomBytes(32))
     }
 
     /**
@@ -188,11 +176,11 @@ class Wallet {
      */
     if (options.accounts !== undefined) {
       this._accounts = {}
-      for (let account in options.accounts) {
+      for (const account in options.accounts) {
         if (this._currentAccountAddress === null) {
           this._currentAccountAddress = account
         }
-        let accountOptions = options.accounts[account]
+        const accountOptions = options.accounts[account]
         accountOptions.wallet = this
         this._accounts[account] = new Account(accountOptions)
       }
@@ -207,8 +195,8 @@ class Wallet {
      */
     if (options.tokenAccounts !== undefined) {
       this._tokenAccounts = {}
-      for (let account in options.tokenAccounts) {
-        let accountOptions = options.tokenAccounts[account]
+      for (const account in options.tokenAccounts) {
+        const accountOptions = options.tokenAccounts[account]
         accountOptions.wallet = this
         this._tokenAccounts[account] = new TokenAccount(accountOptions)
       }
@@ -224,7 +212,7 @@ class Wallet {
     if (options.mqtt !== undefined) {
       this._mqtt = options.mqtt
     } else {
-      this._mqtt = Utils.defaultMQTT
+      this._mqtt = defaultMQTT
     }
     this._mqttConnected = false
     this.mqttConnect()
@@ -252,20 +240,6 @@ class Wallet {
 
   set batchSends (val) {
     this._batchSends = val
-  }
-
-  /**
-   * Should the webwallet SDK get work from remote server
-   * True - Remote Work Server
-   * False - Locally create it (Need to have WASM)
-   * @type {boolean}
-   */
-  get remoteWork () {
-    return this._remoteWork
-  }
-
-  set remoteWork (val) {
-    this._remoteWork = val
   }
 
   /**
@@ -356,7 +330,7 @@ class Wallet {
   }
 
   set currentAccountAddress (address) {
-    if (!this._accounts.hasOwnProperty(address)) throw new Error(`Account ${address} does not exist in this wallet.`)
+    if (!Object.prototype.hasOwnProperty.call(this._accounts, address)) throw new Error(`Account ${address} does not exist in this wallet.`)
     this._currentAccountAddress = address
   }
 
@@ -366,8 +340,8 @@ class Wallet {
    * @readonly
    */
   get balance () {
-    let totalBalance = bigInt(0)
-    for (let account in this._accounts) {
+    const totalBalance = bigInt(0)
+    for (const account in this._accounts) {
       totalBalance.add(bigInt(this._accounts[account].balance))
     }
     return totalBalance.toString()
@@ -427,12 +401,12 @@ class Wallet {
    * @type {Boolean}
    */
   get synced () {
-    for (let address in this._tokenAccounts) {
+    for (const address in this._tokenAccounts) {
       if (!this._tokenAccounts[address].synced) {
         return false
       }
     }
-    for (let address in this._accounts) {
+    for (const address in this._accounts) {
       if (!this._accounts[address].synced) {
         return false
       }
@@ -446,7 +420,7 @@ class Wallet {
    * @readonly
    */
   get pendingRequests () {
-    let pendingRequests = []
+    const pendingRequests = []
     Object.keys(this._accounts).forEach(account => {
       pendingRequests.concat(account.pendingChain)
     })
@@ -462,7 +436,7 @@ class Wallet {
    */
   createSeed (overwrite = false) {
     if (this._seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
-    this._seed = Utils.uint8ToHex(nacl.randomBytes(32))
+    this._seed = uint8ToHex(nacl.randomBytes(32))
     return this._seed
   }
 
@@ -595,7 +569,7 @@ class Wallet {
    */
   getRequest (hash) {
     Object.keys(this._accounts).forEach(account => {
-      let request = account.getRequest(hash)
+      const request = account.getRequest(hash)
       if (request !== false) {
         return request
       }
@@ -610,12 +584,12 @@ class Wallet {
    */
   encrypt () {
     let encryptedWallet = this.toJSON()
-    encryptedWallet = Utils.stringToHex(encryptedWallet)
+    encryptedWallet = stringToHex(encryptedWallet)
     encryptedWallet = Buffer.from(encryptedWallet, 'hex')
 
-    const context = blake.blake2bInit(32)
-    blake.blake2bUpdate(context, encryptedWallet)
-    const checksum = blake.blake2bFinal(context)
+    const context = blake2bInit(32)
+    blake2bUpdate(context, encryptedWallet)
+    const checksum = blake2bFinal(context)
 
     const salt = Buffer.from(nacl.randomBytes(16))
     let localPassword = ''
@@ -624,13 +598,13 @@ class Wallet {
     } else {
       localPassword = this._password
     }
-    const key = pbkdf2.pbkdf2Sync(localPassword, salt, this._iterations, 32, 'sha512')
+    const key = pbkdf2Sync(localPassword, salt, this._iterations, 32, 'sha512')
 
     const options = {
-      mode: Utils.AES.CBC,
-      padding: Utils.Iso10126
+      mode: AES.CBC,
+      padding: Iso10126
     }
-    const encryptedBytes = Utils.AES.encrypt(encryptedWallet, key, salt, options)
+    const encryptedBytes = AES.encrypt(encryptedWallet, key, salt, options)
 
     const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
 
@@ -649,21 +623,21 @@ class Wallet {
    */
   async sync (force = false) {
     return new Promise((resolve, reject) => {
-      let isSyncedPromises = []
-      for (let account in this._accounts) {
+      const isSyncedPromises = []
+      for (const account in this._accounts) {
         if (!this._accounts[account].synced || force) {
           isSyncedPromises.push(this._accounts[account].isSynced())
         }
       }
-      for (let tokenAccount in this._tokenAccounts) {
+      for (const tokenAccount in this._tokenAccounts) {
         if (!this._tokenAccounts[tokenAccount].synced || force) {
           isSyncedPromises.push(this._tokenAccounts[tokenAccount].isSynced())
         }
       }
       if (isSyncedPromises.length > 0) {
         Promise.all(isSyncedPromises).then((values) => {
-          let syncPromises = []
-          for (let isSynced of values) {
+          const syncPromises = []
+          for (const isSynced of values) {
             if (!isSynced.synced) {
               if (isSynced.type === 'LogosAccount') {
                 syncPromises.push(this._accounts[isSynced.account].sync())
@@ -740,15 +714,15 @@ class Wallet {
     } else {
       localPassword = this._password
     }
-    const key = pbkdf2.pbkdf2Sync(localPassword, salt, this._iterations, 32, 'sha512')
+    const key = pbkdf2Sync(localPassword, salt, this._iterations, 32, 'sha512')
 
     const options = {}
-    options.padding = options.padding || Utils.Iso10126
-    const decryptedBytes = Utils.AES.decrypt(payload, key, salt, options)
+    options.padding = options.padding || Iso10126
+    const decryptedBytes = AES.decrypt(payload, key, salt, options)
 
-    const context = blake.blake2bInit(32)
-    blake.blake2bUpdate(context, decryptedBytes)
-    const hash = Utils.uint8ToHex(blake.blake2bFinal(context))
+    const context = blake2bInit(32)
+    blake2bUpdate(context, decryptedBytes)
+    const hash = uint8ToHex(blake2bFinal(context))
 
     if (hash !== checksum.toString('hex').toUpperCase()) return false
     return decryptedBytes
@@ -763,19 +737,19 @@ class Wallet {
    */
   _generateAccountOptionsFromSeed (index) {
     if (this._seed.length !== 64) throw new Error('Invalid Seed.')
-    const indexBytes = Utils.hexToUint8(Utils.decToHex(index, 4))
+    const indexBytes = hexToUint8(decToHex(index, 4))
 
-    const context = blake.blake2bInit(32)
-    blake.blake2bUpdate(context, Utils.hexToUint8(this._seed))
-    blake.blake2bUpdate(context, indexBytes)
+    const context = blake2bInit(32)
+    blake2bUpdate(context, hexToUint8(this._seed))
+    blake2bUpdate(context, indexBytes)
 
-    const privateKey = blake.blake2bFinal(context)
+    const privateKey = blake2bFinal(context)
     const publicKey = nacl.sign.keyPair.fromSecretKey(privateKey).publicKey
-    const address = Utils.accountFromHexKey(Utils.uint8ToHex(publicKey))
+    const address = accountFromHexKey(uint8ToHex(publicKey))
 
     return {
-      privateKey: Utils.uint8ToHex(privateKey),
-      publicKey: Utils.uint8ToHex(publicKey),
+      privateKey: uint8ToHex(privateKey),
+      publicKey: uint8ToHex(publicKey),
       address: address,
       index: index
     }
@@ -791,11 +765,11 @@ class Wallet {
   _generateAccountOptionsFromPrivateKey (privateKey) {
     if (privateKey.length !== 64) throw new Error('Invalid Private Key length. Should be 32 bytes.')
     if (!/[0-9A-F]{64}/i.test(privateKey)) throw new Error('Invalid Hex Private Key.')
-    const publicKey = nacl.sign.keyPair.fromSecretKey(Utils.hexToUint8(privateKey)).publicKey
-    const address = Utils.accountFromHexKey(Utils.uint8ToHex(publicKey))
+    const publicKey = nacl.sign.keyPair.fromSecretKey(hexToUint8(privateKey)).publicKey
+    const address = accountFromHexKey(uint8ToHex(publicKey))
     return {
       privateKey: privateKey,
-      publicKey: Utils.uint8ToHex(publicKey),
+      publicKey: uint8ToHex(publicKey),
       address: address
     }
   }
@@ -854,7 +828,7 @@ class Wallet {
    */
   mqttConnect () {
     if (this._mqtt) {
-      this._mqttClient = mqtt.connect(this._mqtt)
+      this._mqttClient = connect(this._mqtt)
       this._mqttClient.on('connect', () => {
         console.info('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
@@ -871,13 +845,12 @@ class Wallet {
         console.info('Webwallet SDK disconnected from MQTT')
       })
       this._mqttClient.on('message', (topic, request) => {
-        const accountMqttRegex = mqttRegex('account/+address').exec
         request = JSON.parse(request.toString())
         if (topic === 'delegateChange') {
           console.info(`MQTT Delegate Change`)
           this._rpc.delegates = Object.values(request)
         } else {
-          let params = accountMqttRegex(topic)
+          const params = mqttPattern('account/+address', topic)
           if (params) {
             if (this._accounts[params.address]) {
               console.info(`MQTT Confirmation - Account - ${request.type} - ${request.sequence}`)
@@ -903,15 +876,14 @@ class Wallet {
     obj.deterministicKeyIndex = this._deterministicKeyIndex
     obj.currentAccountAddress = this._currentAccountAddress
     obj.accounts = {}
-    for (let account in this._accounts) {
+    for (const account in this._accounts) {
       obj.accounts[account] = JSON.parse(this._accounts[account].toJSON())
     }
     obj.tokenAccounts = {}
-    for (let account in this._tokenAccounts) {
+    for (const account in this._tokenAccounts) {
       obj.tokenAccounts[account] = JSON.parse(this._tokenAccounts[account].toJSON())
     }
     obj.walletID = this._walletID
-    obj.remoteWork = this._remoteWork
     obj.batchSends = this._batchSends
     obj.fullSync = this._fullSync
     obj.lazyErrors = this._lazyErrors
@@ -923,5 +895,3 @@ class Wallet {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = Wallet

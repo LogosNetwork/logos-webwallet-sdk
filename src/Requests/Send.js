@@ -1,12 +1,11 @@
-const Utils = require('../Utils')
-const Request = require('./Request')
-const blake = require('blakejs')
-const bigInt = require('big-integer')
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import bigInt from 'big-integer'
 
 /**
  * The Send class for Send Requests.
  */
-class Send extends Request {
+export default class Send extends Request {
   constructor (options = {
     transactions: []
   }) {
@@ -48,7 +47,7 @@ class Send extends Request {
    */
   get totalAmount () {
     let totalAmount = bigInt(0)
-    for (let transaction of this._transactions) {
+    for (const transaction of this._transactions) {
       totalAmount = totalAmount.plus(bigInt(transaction.amount))
     }
     return totalAmount.toString()
@@ -81,12 +80,12 @@ class Send extends Request {
    */
   get hash () {
     if (!this.transactions) throw new Error('Transactions are not set.')
-    let context = super.hash()
-    for (let transaction of this.transactions) {
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
+    const context = super.hash()
+    for (const transaction of this.transactions) {
+      blake2bUpdate(context, hexToUint8(keyFromAccount(transaction.destination)))
+      blake2bUpdate(context, hexToUint8(decToHex(transaction.amount, 16)))
     }
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -113,5 +112,3 @@ class Send extends Request {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = Send

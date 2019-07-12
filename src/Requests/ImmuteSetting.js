@@ -1,17 +1,18 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
+
 const Settings = {
-  'issuance': 0,
-  'revoke': 2,
-  'freeze': 4,
-  'adjust_fee': 6,
-  'whitelist': 8
+  issuance: 0,
+  revoke: 2,
+  freeze: 4,
+  adjust_fee: 6,
+  whitelist: 8
 }
 /**
  * The Token ImmuteSetting class for Token ImmuteSetting Requests.
  */
-class ImmuteSetting extends TokenRequest {
+export default class ImmuteSetting extends TokenRequest {
   constructor (options = {
     setting: null
   }) {
@@ -76,9 +77,9 @@ class ImmuteSetting extends TokenRequest {
     if (!this.setting) throw new Error('setting is not set.')
     if (typeof Settings[this.setting] !== 'number') throw new Error('Invalid setting option')
     const context = super.hash()
-    let setting = Utils.hexToUint8(Utils.decToHex(Settings[this.setting], 1))
-    blake.blake2bUpdate(context, setting)
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    const setting = hexToUint8(decToHex(Settings[this.setting], 1))
+    blake2bUpdate(context, setting)
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -93,5 +94,3 @@ class ImmuteSetting extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = ImmuteSetting

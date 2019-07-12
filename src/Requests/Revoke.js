@@ -1,11 +1,11 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
 
 /**
  * The Token Revoke class for Token Revoke Requests.
  */
-class Revoke extends TokenRequest {
+export default class Revoke extends TokenRequest {
   constructor (options = {
     source: null,
     transaction: null
@@ -97,13 +97,13 @@ class Revoke extends TokenRequest {
     if (!this.transaction.amount) throw new Error('transaction amount is not set.')
     if (!this.source) throw new Error('Source account is not set.')
     const context = super.hash()
-    let source = Utils.hexToUint8(Utils.keyFromAccount(this.source))
-    blake.blake2bUpdate(context, source)
-    let account = Utils.hexToUint8(Utils.keyFromAccount(this.transaction.destination))
-    blake.blake2bUpdate(context, account)
-    let amount = Utils.hexToUint8(Utils.decToHex(this.transaction.amount, 16))
-    blake.blake2bUpdate(context, amount)
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    const source = hexToUint8(keyFromAccount(this.source))
+    blake2bUpdate(context, source)
+    const account = hexToUint8(keyFromAccount(this.transaction.destination))
+    blake2bUpdate(context, account)
+    const amount = hexToUint8(decToHex(this.transaction.amount, 16))
+    blake2bUpdate(context, amount)
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -119,5 +119,3 @@ class Revoke extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = Revoke

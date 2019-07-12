@@ -1,11 +1,11 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
 
 /**
  * The Token Withdraw Logos class for Token Withdraw Logos Request.
  */
-class WithdrawLogos extends TokenRequest {
+export default class WithdrawLogos extends TokenRequest {
   constructor (options = {
     transaction: null
   }) {
@@ -73,11 +73,11 @@ class WithdrawLogos extends TokenRequest {
     if (!this.transaction.destination) throw new Error('transaction destination is not set.')
     if (!this.transaction.amount) throw new Error('transaction amount is not set.')
     const context = super.hash()
-    let account = Utils.hexToUint8(Utils.keyFromAccount(this.transaction.destination))
-    blake.blake2bUpdate(context, account)
-    let amount = Utils.hexToUint8(Utils.decToHex(this.transaction.amount, 16))
-    blake.blake2bUpdate(context, amount)
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    const account = hexToUint8(keyFromAccount(this.transaction.destination))
+    blake2bUpdate(context, account)
+    const amount = hexToUint8(decToHex(this.transaction.amount, 16))
+    blake2bUpdate(context, amount)
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -92,5 +92,3 @@ class WithdrawLogos extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = WithdrawLogos

@@ -1,11 +1,11 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
+import { hexToUint8, uint8ToHex, byteCount, stringToHex } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
 
 /**
  * The Token UpdateIssuerInfo class.
  */
-class UpdateIssuerInfo extends TokenRequest {
+export default class UpdateIssuerInfo extends TokenRequest {
   constructor (options = {
     issuerInfo: ''
   }) {
@@ -39,7 +39,7 @@ class UpdateIssuerInfo extends TokenRequest {
   }
 
   set issuerInfo (val) {
-    if (Utils.byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
+    if (byteCount(val) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
     this._issuerInfo = val
   }
 
@@ -70,11 +70,11 @@ class UpdateIssuerInfo extends TokenRequest {
    */
   get hash () {
     if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
-    if (Utils.byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
+    if (byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
     const context = super.hash()
-    let issuerInfo = Utils.hexToUint8(Utils.stringToHex(this.issuerInfo))
-    blake.blake2bUpdate(context, issuerInfo)
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    const issuerInfo = hexToUint8(stringToHex(this.issuerInfo))
+    blake2bUpdate(context, issuerInfo)
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -89,5 +89,3 @@ class UpdateIssuerInfo extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = UpdateIssuerInfo

@@ -1,12 +1,12 @@
-const Utils = require('../Utils')
-const TokenRequest = require('./TokenRequest')
-const blake = require('blakejs')
-const bigInt = require('big-integer')
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import TokenRequest from './TokenRequest'
+import bigInt from 'big-integer'
 
 /**
  * The Token Send class
  */
-class TokenSend extends TokenRequest {
+export default class TokenSend extends TokenRequest {
   constructor (options = {
     transactions: [],
     tokenFee: '0'
@@ -74,7 +74,7 @@ class TokenSend extends TokenRequest {
    */
   get totalAmount () {
     let totalAmount = bigInt(0)
-    for (let transaction of this._transactions) {
+    for (const transaction of this._transactions) {
       totalAmount = totalAmount.plus(bigInt(transaction.amount))
     }
     return totalAmount.toString()
@@ -109,12 +109,12 @@ class TokenSend extends TokenRequest {
     if (this.transaction === null) throw new Error('transaction is not set.')
     if (this.tokenFee === null) throw new Error('token fee is not set.')
     const context = super.hash()
-    for (let transaction of this.transactions) {
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.keyFromAccount(transaction.destination)))
-      blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(transaction.amount, 16)))
+    for (const transaction of this.transactions) {
+      blake2bUpdate(context, hexToUint8(keyFromAccount(transaction.destination)))
+      blake2bUpdate(context, hexToUint8(decToHex(transaction.amount, 16)))
     }
-    blake.blake2bUpdate(context, Utils.hexToUint8(Utils.decToHex(this.tokenFee, 16)))
-    return Utils.uint8ToHex(blake.blake2bFinal(context))
+    blake2bUpdate(context, hexToUint8(decToHex(this.tokenFee, 16)))
+    return uint8ToHex(blake2bFinal(context))
   }
 
   /**
@@ -142,5 +142,3 @@ class TokenSend extends TokenRequest {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = TokenSend

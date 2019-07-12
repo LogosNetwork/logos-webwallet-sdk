@@ -161,7 +161,7 @@ class Account {
      */
     if (options.chain !== undefined) {
       this._chain = []
-      for (let request of options.chain) {
+      for (const request of options.chain) {
         if (request.type === 'send') {
           this._chain.push(new Send(request))
         } else if (request.type === 'token_send') {
@@ -181,7 +181,7 @@ class Account {
      */
     if (options.receiveChain !== undefined) {
       this._receiveChain = []
-      for (let request of options.receiveChain) {
+      for (const request of options.receiveChain) {
         if (request.type === 'send') {
           this._receiveChain.push(new Send(request))
         } else if (request.type === 'token_send') {
@@ -207,7 +207,7 @@ class Account {
      */
     if (options.pendingChain !== undefined) {
       this._pendingChain = []
-      for (let request of options.pendingChain) {
+      for (const request of options.pendingChain) {
         if (request.type === 'send') {
           this._pendingChain.push(new Send(request))
         } else if (request.type === 'token_send') {
@@ -365,7 +365,7 @@ class Account {
    * @returns {LogosAddress[]} Array of all the associated tokens
    */
   async addToken (tokenID) {
-    let tokenAddress = Utils.accountFromHexKey(tokenID)
+    const tokenAddress = Utils.accountFromHexKey(tokenID)
     if (!this.tokens.includes(tokenAddress)) {
       this._tokens.push(tokenAddress)
       if (this.wallet.tokenSync) {
@@ -514,7 +514,7 @@ class Account {
             }
           }
           if (synced) {
-            let receiveBlock = await RPC.requests.info(info.receive_tip)
+            const receiveBlock = await RPC.requests.info(info.receive_tip)
             if (this.receiveChain.length === 0 || this.receiveChain[this.receiveChain.length - 1].hash !== receiveBlock.send_hash) {
               synced = false
             }
@@ -596,7 +596,7 @@ class Account {
         RPC.accounts.info(this.address).then(info => {
           if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(async val => {
-              let request = await this.addConfirmedRequest(val)
+              const request = await this.addConfirmedRequest(val)
               if (request !== null && !request.verify()) {
                 throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
               }
@@ -605,7 +605,7 @@ class Account {
                 this._pendingBalance = info.balance
               }
               if (info.tokens) {
-                for (let pairs of Object.entries(info.tokens)) {
+                for (const pairs of Object.entries(info.tokens)) {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
@@ -623,7 +623,7 @@ class Account {
                 this._pendingBalance = info.balance
               }
               if (info.tokens) {
-                for (let pairs of Object.entries(info.tokens)) {
+                for (const pairs of Object.entries(info.tokens)) {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
@@ -647,10 +647,10 @@ class Account {
   updateBalancesFromChain () {
     if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
-    let tokenSums = {}
+    const tokenSums = {}
     this._receiveChain.forEach(request => {
       if (request.type === 'send') {
-        for (let transaction of request.transactions) {
+        for (const transaction of request.transactions) {
           if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
@@ -660,7 +660,7 @@ class Account {
           sum = sum.plus(bigInt(request.transaction.amount))
         }
       } else if (request.type === 'token_send') {
-        for (let transaction of request.transactions) {
+        for (const transaction of request.transactions) {
           if (transaction.destination === this.address) {
             tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount)).toString()
           }
@@ -689,7 +689,7 @@ class Account {
     this._pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
-        for (let transaction of pendingRequest.transactions) {
+        for (const transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
@@ -697,7 +697,7 @@ class Account {
       } else if (pendingRequest.type === 'token_send') {
         sum = sum.minus(bigInt(pendingRequest.fee))
         tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee)).toString()
-        for (let transaction of pendingRequest.transactions) {
+        for (const transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
             tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).plus(bigInt(transaction.amount)).toString()
           }
@@ -718,12 +718,12 @@ class Account {
    */
   updateBalancesFromRequest (request) {
     let sum = bigInt(this._balance)
-    let tokenSums = this.tokenBalances
+    const tokenSums = this.tokenBalances
     if (request.type === 'send') {
       if (request.originAccount === this.address) {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
       }
-      for (let transaction of request.transactions) {
+      for (const transaction of request.transactions) {
         if (transaction.destination === this.address) {
           sum = sum.plus(bigInt(transaction.amount))
         }
@@ -733,7 +733,7 @@ class Account {
       if (request.originAccount === this.address) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).toString()
       }
-      for (let transaction of request.transactions) {
+      for (const transaction of request.transactions) {
         if (transaction.destination === this.address) {
           tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount)).toString()
         }
@@ -757,7 +757,7 @@ class Account {
     this._pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
-        for (let transaction of pendingRequest.transactions) {
+        for (const transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
@@ -765,7 +765,7 @@ class Account {
       } else if (pendingRequest.type === 'token_send') {
         sum = sum.minus(bigInt(pendingRequest.fee))
         tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee)).toString()
-        for (let transaction of pendingRequest.transactions) {
+        for (const transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
             tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).plus(bigInt(transaction.amount)).toString()
           }
@@ -803,7 +803,7 @@ class Account {
       // If the request has transactions pointed to us
       // add the request to the receive chain
       if (request.transactions && request.transactions.length > 0) {
-        for (let trans of request.transactions) {
+        for (const trans of request.transactions) {
           if (trans.destination === this.address) {
             this._addToReceiveChain(request)
             break
@@ -984,8 +984,8 @@ class Account {
    * @returns {boolean}
    */
   removePendingRequest (hash) {
-    let found = false
-    for (let i in this._pendingChain) {
+    const found = false
+    for (const i in this._pendingChain) {
       const request = this._pendingChain[i]
       if (request.hash === hash) {
         this._pendingChain.splice(i, 1)
@@ -1077,7 +1077,7 @@ class Account {
       }
       return true
     } else if (request.type === 'token_send') {
-      let tokenAccount = await this.getTokenAccount(request.tokenID)
+      const tokenAccount = await this.getTokenAccount(request.tokenID)
       if (bigInt(this._balance).minus(request.fee).lesser(0)) {
         console.error(`Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends`)
         return false
@@ -1119,7 +1119,7 @@ class Account {
    */
   async broadcastRequest () {
     if (this.wallet.rpc && this._pendingChain.length > 0) {
-      let request = this._pendingChain[0]
+      const request = this._pendingChain[0]
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
@@ -1146,13 +1146,6 @@ class Account {
    */
   async addRequest (request) {
     request.sign(this._privateKey)
-    if (request.work === null) {
-      if (this.wallet.remoteWork) {
-        request.work = Utils.EMPTY_WORK
-      } else {
-        request.work = await request.createWork(true)
-      }
-    }
     console.info(`Added Request: ${request.type} ${request.sequence} to Pending Chain`)
     this._pendingChain.push(request)
     this.broadcastRequest()
@@ -1206,9 +1199,8 @@ class Account {
    */
   async createSendRequest (transactions) {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
-    let request = new Send({
+    const request = new Send({
       signature: null,
-      work: null,
       previous: this.previous,
       fee: Utils.minimumFee,
       transactions: transactions,
@@ -1221,7 +1213,7 @@ class Account {
       }
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
-    let result = await this.addRequest(request)
+    const result = await this.addRequest(request)
     return result
   }
 
@@ -1238,9 +1230,8 @@ class Account {
     if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
     if (!options.symbol) throw new Error('You must pass symbol as a part of the TokenOptions')
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
-    let request = new Issuance({
+    const request = new Issuance({
       signature: null,
-      work: null,
       previous: this.previous,
       fee: Utils.minimumFee,
       sequence: this.sequence,
@@ -1273,7 +1264,7 @@ class Account {
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     await this.wallet.createTokenAccount(Utils.accountFromHexKey(request.tokenID), request)
-    let result = await this.addRequest(request)
+    const result = await this.addRequest(request)
     return result
   }
 
@@ -1302,7 +1293,7 @@ class Account {
       if (token.token_account) token = token.token_account
     }
     if (!token || typeof token === 'object') throw new Error('You must pass a token id or token account address for token actions')
-    let tokenAccount = await this.wallet.createTokenAccount(Utils.accountFromHexKey(token))
+    const tokenAccount = await this.wallet.createTokenAccount(Utils.accountFromHexKey(token))
     return tokenAccount
   }
 
@@ -1320,10 +1311,9 @@ class Account {
     if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     if (!transactions) throw new Error('You must pass transaction in the token send options')
     if (!token) throw new Error('You must pass token which is either tokenID or tokenAddress')
-    let tokenAccount = await this.getTokenAccount(token)
-    let request = new TokenSend({
+    const tokenAccount = await this.getTokenAccount(token)
+    const request = new TokenSend({
       signature: null,
-      work: null,
       previous: this.previous,
       fee: Utils.minimumFee,
       sequence: this.sequence,
@@ -1346,7 +1336,7 @@ class Account {
     }
     this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
     this._pendingTokenBalances[tokenAccount.tokenID] = bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
-    let result = await this.addRequest(request)
+    const result = await this.addRequest(request)
     return result
   }
 
@@ -1358,11 +1348,10 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createIssueAdditionalRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (options.amount === undefined) throw new Error('You must pass amount in options')
-    let request = new IssueAdditional({
+    const request = new IssueAdditional({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1371,7 +1360,7 @@ class Account {
       amount: options.amount
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1383,10 +1372,9 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createChangeSettingRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
-    let request = new ChangeSetting({
+    const tokenAccount = await this.getTokenAccount(options)
+    const request = new ChangeSetting({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1396,7 +1384,7 @@ class Account {
     request.setting = options.setting
     request.value = options.value
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1408,10 +1396,9 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createImmuteSettingRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
-    let request = new ImmuteSetting({
+    const tokenAccount = await this.getTokenAccount(options)
+    const request = new ImmuteSetting({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1420,7 +1407,7 @@ class Account {
     })
     request.setting = options.setting
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1432,12 +1419,11 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createRevokeRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in the options')
     if (!options.source) throw new Error('You must source in the options')
-    let request = new Revoke({
+    const request = new Revoke({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1447,7 +1433,7 @@ class Account {
       transaction: options.transaction
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1459,11 +1445,10 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createAdjustUserStatusRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.account) throw new Error('You must pass account in options')
-    let request = new AdjustUserStatus({
+    const request = new AdjustUserStatus({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1473,7 +1458,7 @@ class Account {
     })
     request.status = options.status
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1485,12 +1470,11 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createAdjustFeeRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.feeRate) throw new Error('You must pass feeRate in options')
     if (!options.feeType) throw new Error('You must pass feeType in options')
-    let request = new AdjustFee({
+    const request = new AdjustFee({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1500,7 +1484,7 @@ class Account {
       feeType: options.feeType
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1512,11 +1496,10 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createUpdateIssuerInfoRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.issuerInfo) throw new Error('You must pass issuerInfo in the options')
-    let request = new UpdateIssuerInfo({
+    const request = new UpdateIssuerInfo({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1525,7 +1508,7 @@ class Account {
     })
     request.issuerInfo = options.issuerInfo
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1537,12 +1520,11 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createUpdateControllerRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.controller) throw new Error('You must pass controller in the options')
     if (!options.action) throw new Error('You must pass action in the options')
-    let request = new UpdateController({
+    const request = new UpdateController({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1552,7 +1534,7 @@ class Account {
     })
     request.action = options.action
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1564,11 +1546,10 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createBurnRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (options.amount === undefined) throw new Error('You must pass amount in options')
-    let request = new Burn({
+    const request = new Burn({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1577,7 +1558,7 @@ class Account {
       amount: options.amount
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1589,11 +1570,10 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createDistributeRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
-    let request = new Distribute({
+    const request = new Distribute({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1602,7 +1582,7 @@ class Account {
       transaction: options.transaction
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1614,11 +1594,10 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createWithdrawFeeRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
-    let request = new WithdrawFee({
+    const request = new WithdrawFee({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1627,7 +1606,7 @@ class Account {
       transaction: options.transaction
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1639,11 +1618,10 @@ class Account {
    * @returns {Promise<Request>} the request object
    */
   async createWithdrawLogosRequest (options) {
-    let tokenAccount = await this.getTokenAccount(options)
+    const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
-    let request = new WithdrawLogos({
+    const request = new WithdrawLogos({
       signature: null,
-      work: null,
       previous: tokenAccount.previous,
       fee: Utils.minimumFee,
       sequence: tokenAccount.sequence,
@@ -1652,7 +1630,7 @@ class Account {
       transaction: options.transaction
     })
     request.sign(this._privateKey)
-    let result = await tokenAccount.addRequest(request)
+    const result = await tokenAccount.addRequest(request)
     return result
   }
 
@@ -1664,7 +1642,7 @@ class Account {
    */
   async processRequest (requestInfo) {
     // Confirm the requests / updates balances / broadcasts next block
-    let request = await this.addConfirmedRequest(requestInfo)
+    const request = await this.addConfirmedRequest(requestInfo)
     if (request !== null) {
       if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
       if (request.originAccount === this._address &&
@@ -1707,7 +1685,7 @@ class Account {
       let sendCount = 0
       let tokenTxCount = 0
       let tokenCount = 0
-      for (let request of this._pendingChain) {
+      for (const request of this._pendingChain) {
         if (request.type === 'send') {
           sendCount++
           sendTxCount += request.transactions.length
@@ -1730,14 +1708,14 @@ class Account {
   async combineRequests () {
     let sendCounter = 0
     let tokenCounter = 0
-    let logosTransactionsToCombine = [
+    const logosTransactionsToCombine = [
       []
     ]
-    let issuances = []
-    let tokenTransactionsToCombine = new Map()
-    for (let request of this._pendingChain) {
+    const issuances = []
+    const tokenTransactionsToCombine = new Map()
+    for (const request of this._pendingChain) {
       if (request.type === 'send') {
-        for (let transaction of request.transactions) {
+        for (const transaction of request.transactions) {
           if (logosTransactionsToCombine[sendCounter].length < 8) {
             logosTransactionsToCombine[sendCounter].push(transaction)
           } else {
@@ -1750,7 +1728,7 @@ class Account {
         if (tokenTransactionsToCombine.has(request.tokenID)) {
           tokenAggregates = tokenTransactionsToCombine.get(request.tokenID)
         }
-        for (let transaction of request.transactions) {
+        for (const transaction of request.transactions) {
           if (tokenAggregates[tokenCounter].length < 8) {
             tokenAggregates[tokenCounter].push(transaction)
           } else {
@@ -1768,7 +1746,7 @@ class Account {
     this.removePendingRequests()
 
     // Add Token Sends
-    for (let [tokenID, tokenTransactions] of tokenTransactionsToCombine) {
+    for (const [tokenID, tokenTransactions] of tokenTransactionsToCombine) {
       const tokenPromises = tokenTransactions.map(transactions => this.createTokenSendRequest(tokenID, transactions))
       await Promise.all(tokenPromises)
     }
@@ -1781,7 +1759,7 @@ class Account {
 
     // Add Issuances
     if (issuances.length > 0) {
-      for (let issuance of issuances) {
+      for (const issuance of issuances) {
         issuance.previous = this.previous
         issuance.sequence = this.sequence
         issuance.sign(this._privateKey)
@@ -1806,11 +1784,11 @@ class Account {
     obj.tokens = this.tokens
     obj.type = this.type
     obj.chain = []
-    for (let request of this.chain) {
+    for (const request of this.chain) {
       obj.chain.push(JSON.parse(request.toJSON()))
     }
     obj.receiveChain = []
-    for (let request of this.receiveChain) {
+    for (const request of this.receiveChain) {
       obj.receiveChain.push(JSON.parse(request.toJSON()))
     }
     obj.version = this._version
