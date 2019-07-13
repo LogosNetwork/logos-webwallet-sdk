@@ -1,29 +1,41 @@
-const Utils = require('./Utils')
-const bigInt = require('big-integer')
-const Send = require('./Requests/Send.js')
-const IssueAdditional = require('./Requests/IssueAdditional.js')
-const ChangeSetting = require('./Requests/ChangeSetting.js')
-const ImmuteSetting = require('./Requests/ImmuteSetting.js')
-const Revoke = require('./Requests/Revoke.js')
-const AdjustUserStatus = require('./Requests/AdjustUserStatus.js')
-const AdjustFee = require('./Requests/AdjustFee.js')
-const UpdateIssuerInfo = require('./Requests/UpdateIssuerInfo.js')
-const UpdateController = require('./Requests/UpdateController.js')
-const Burn = require('./Requests/Burn.js')
-const Distribute = require('./Requests/Distribute.js')
-const Issuance = require('./Requests/Issuance.js')
-const WithdrawFee = require('./Requests/WithdrawFee.js')
-const WithdrawLogos = require('./Requests/WithdrawLogos.js')
-const TokenSend = require('./Requests/TokenSend.js')
+import bigInt from 'big-integer'
+import Account from './Account'
+import {
+  accountFromHexKey,
+  keyFromAccount,
+  GENESIS_HASH,
+  deserializeControllers,
+  deserializeSettings,
+  serializeController,
+  MAXUINT128
+} from './Utils'
+import { 
+  Send,
+  Issuance,
+  IssueAdditional,
+  ChangeSetting,
+  ImmuteSetting,
+  Revoke,
+  AdjustUserStatus,
+  AdjustFee,
+  UpdateIssuerInfo,
+  UpdateController,
+  Burn,
+  Distribute,
+  WithdrawFee,
+  WithdrawLogos,
+  TokenSend 
+} from './Requests'
 
 /**
  * TokenAccount contain the keys, chains, and balances.
  */
-class TokenAccount {
+export default class TokenAccount extends Account {
   constructor (options) {
     if (!options) throw new Error('You must pass settings to initalize the token account')
     if (!options.address && !options.tokenID) throw new Error('You must initalize a token account with an address or tokenID')
     if (!options.wallet) throw new Error('You must initalize a token account with a wallet')
+    super(options)
 
     if (options.issuance !== undefined) {
       this._tokenBalance = options.issuance.totalSupply
@@ -52,7 +64,7 @@ class TokenAccount {
      */
     if (options.tokenID !== undefined) {
       this._tokenID = options.tokenID
-      this._address = Utils.accountFromHexKey(options.tokenID)
+      this._address = accountFromHexKey(options.tokenID)
     } else {
       this._tokenID = null
     }
@@ -65,7 +77,7 @@ class TokenAccount {
      */
     if (options.address !== undefined) {
       this._address = options.address
-      this._tokenID = Utils.keyFromAccount(options.address)
+      this._tokenID = keyFromAccount(options.address)
     } else {
       this._address = null
     }
@@ -624,7 +636,7 @@ class TokenAccount {
     } else if (this._chain.length > 0) {
       this._previous = this._chain[this._chain.length - 1].hash
     } else {
-      this._previous = Utils.GENESIS_HASH
+      this._previous = GENESIS_HASH
     }
     return this._previous
   }
@@ -664,10 +676,10 @@ class TokenAccount {
           this._issuerInfo = info.issuer_info
           this._feeRate = info.fee_rate
           this._feeType = info.fee_type.toLowerCase()
-          this._controllers = Utils.deserializeControllers(info.controllers)
-          this._settings = Utils.deserializeSettings(info.settings)
+          this._controllers = deserializeControllers(info.controllers)
+          this._settings = deserializeSettings(info.settings)
           this._balance = info.balance
-          if (info.frontier !== Utils.GENESIS_HASH) {
+          if (info.frontier !== GENESIS_HASH) {
             if (this._chain.length === 0 || this._chain[this._chain.length - 1].hash !== info.frontier) {
               synced = false
             }
@@ -732,8 +744,8 @@ class TokenAccount {
         this._issuerInfo = info.issuer_info
         this._feeRate = info.fee_rate
         this._feeType = info.fee_type.toLowerCase()
-        this._controllers = Utils.deserializeControllers(info.controllers)
-        this._settings = Utils.deserializeSettings(info.settings)
+        this._controllers = deserializeControllers(info.controllers)
+        this._settings = deserializeSettings(info.settings)
         this._balance = info.balance
         if (this._wallet.fullSync) {
           RPC.accounts.history(this._address, -1, true).then((history) => {
@@ -763,7 +775,7 @@ class TokenAccount {
             }
           })
         } else {
-          if (info && info.frontier && info.frontier !== Utils.GENESIS_HASH) {
+          if (info && info.frontier && info.frontier !== GENESIS_HASH) {
             RPC.requests.info(info.frontier).then(val => {
               const request = this.addConfirmedRequest(val)
               if (request !== null && !request.verify()) {
@@ -810,7 +822,7 @@ class TokenAccount {
     } else if (request.type === 'update_issuer_info') {
       this._issuerInfo = request.issuerInfo
     } else if (request.type === 'update_controller') {
-      const updatedPrivs = Utils.serializeController(request.controller).privileges
+      const updatedPrivs = serializeController(request.controller).privileges
       if (request.action === 'remove' && updatedPrivs.length === 0) {
         this._controllers = this._controllers.filter(controller => controller.account !== request.controller.account)
       } else if (request.action === 'remove' && updatedPrivs.length > 0) {
@@ -984,7 +996,7 @@ class TokenAccount {
       return false
     } else {
       if (request.type === 'issue_additional') {
-        if (bigInt(this._totalSupply).plus(bigInt(request.amount)).greater(bigInt(Utils.MAXUINT128))) {
+        if (bigInt(this._totalSupply).plus(bigInt(request.amount)).greater(bigInt(MAXUINT128))) {
           console.error('Invalid Issue Additional Request: Total Supply would exceed MAXUINT128')
           return false
         } else if (!this.hasSetting('issuance')) {
@@ -1299,7 +1311,7 @@ class TokenAccount {
    * @returns {boolean}
    */
   verifyChain () {
-    let last = Utils.GENESIS_HASH
+    let last = GENESIS_HASH
     this._chain.forEach(request => {
       if (request) {
         if (request.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
@@ -1626,5 +1638,3 @@ class TokenAccount {
     return JSON.stringify(obj)
   }
 }
-
-module.exports = TokenAccount
