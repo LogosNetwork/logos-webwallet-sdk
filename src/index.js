@@ -1,6 +1,2 @@
-module.exports = {
-  Wallet: require('./Wallet'),
-  Account: require('./Account'),
-  TokenAccount: require('./TokenAccount'),
-  Utils: require('./Utils')
-}
+export { default as Wallet } from './Wallet'
+export { default as Utils } from './Utils'
