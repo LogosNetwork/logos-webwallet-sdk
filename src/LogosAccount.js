@@ -29,11 +29,7 @@ import {
  */
 export default class LogosAccount extends Account {
   constructor (options = {
-    label: 'Account',
-    address: null,
-    publicKey: null,
     privateKey: null,
-    balance: '0',
     pendingBalance: '0',
     tokenBalances: {},
     tokens: [],
@@ -46,19 +42,6 @@ export default class LogosAccount extends Account {
     index: null
   }) {
     super(options)
-    /**
-     * Label of this account
-     *
-     * This allows you to set a readable string for each account.
-     *
-     * @type {string}
-     * @private
-     */
-    if (options.label !== undefined) {
-      this._label = options.label
-    } else {
-      this._label = 'Account'
-    }
 
     /**
      * Deterministic Key Index used to generate this account - null means generated explicitly
@@ -73,28 +56,6 @@ export default class LogosAccount extends Account {
     }
 
     /**
-     * Address of this account
-     * @type {LogosAddress}
-     * @private
-     */
-    if (options.address !== undefined) {
-      this._address = options.address
-    } else {
-      this._address = null
-    }
-
-    /**
-     * Public Key of this account
-     * @type {Hexadecimal64Length}
-     * @private
-     */
-    if (options.publicKey !== undefined) {
-      this._publicKey = options.publicKey
-    } else {
-      this._publicKey = null
-    }
-
-    /**
      * Private Key of this account
      * @type {Hexadecimal64Length}
      * @private
@@ -103,29 +64,6 @@ export default class LogosAccount extends Account {
       this._privateKey = options.privateKey
     } else {
       this._privateKey = null
-    }
-    /**
-     * Balance of this account in reason
-     * @type {string}
-     * @private
-     */
-    if (options.balance !== undefined) {
-      this._balance = options.balance
-    } else {
-      this._balance = '0'
-    }
-
-    /**
-     * Pending Balance of the account in reason
-     *
-     * pending balance is balance minus the sends that are pending
-     * @type {string}
-     * @private
-     */
-    if (options.pendingBalance !== undefined) {
-      this._pendingBalance = options.pendingBalance
-    } else {
-      this._pendingBalance = '0'
     }
 
     /**
@@ -162,111 +100,6 @@ export default class LogosAccount extends Account {
     } else {
       this._pendingTokenBalances = {}
     }
-
-    /**
-     * Chain of the account
-     * @type {Request[]}
-     * @private
-     */
-    if (options.chain !== undefined) {
-      this._chain = []
-      for (const request of options.chain) {
-        if (request.type === 'send') {
-          this._chain.push(new Send(request))
-        } else if (request.type === 'token_send') {
-          this._chain.push(new TokenSend(request))
-        } else if (request.type === 'issuance') {
-          this._chain.push(new Issuance(request))
-        }
-      }
-    } else {
-      this._chain = []
-    }
-
-    /**
-     * Receive chain of the account
-     * @type {Request[]}
-     * @private
-     */
-    if (options.receiveChain !== undefined) {
-      this._receiveChain = []
-      for (const request of options.receiveChain) {
-        if (request.type === 'send') {
-          this._receiveChain.push(new Send(request))
-        } else if (request.type === 'token_send') {
-          this._receiveChain.push(new TokenSend(request))
-        } else if (request.type === 'distribute') {
-          this._receiveChain.push(new Distribute(request))
-        } else if (request.type === 'withdraw_fee') {
-          this._receiveChain.push(new WithdrawFee(request))
-        } else if (request.type === 'revoke') {
-          this._receiveChain.push(new Revoke(request))
-        } else if (request.type === 'withdraw_logos') {
-          this._receiveChain.push(new WithdrawLogos(request))
-        }
-      }
-    } else {
-      this._receiveChain = []
-    }
-
-    /**
-     * Pending chain of the account (local unconfirmed sends)
-     * @type {Request[]}
-     * @private
-     */
-    if (options.pendingChain !== undefined) {
-      this._pendingChain = []
-      for (const request of options.pendingChain) {
-        if (request.type === 'send') {
-          this._pendingChain.push(new Send(request))
-        } else if (request.type === 'token_send') {
-          this._pendingChain.push(new TokenSend(request))
-        } else if (request.type === 'issuance') {
-          this._pendingChain.push(new Issuance(request))
-        }
-      }
-    } else {
-      this._pendingChain = []
-    }
-
-    /**
-     * Previous hexadecimal hash of the last confirmed or pending request
-     * @type {Hexadecimal64Length}
-     * @private
-     */
-    this._previous = null
-
-    /**
-     * Sequence number of the last confirmed or pending request plus one
-     * @type {number}
-     * @private
-     */
-    this._sequence = null
-
-    /**
-     * Account version of webwallet SDK
-     * @type {number}
-     * @private
-     */
-    if (options.version !== undefined) {
-      this._version = options.version
-    } else {
-      this._version = 1
-    }
-
-    /**
-     * The Wallet this account belongs to
-     * @type {Wallet}
-     * @private
-     */
-    if (options.wallet !== undefined) {
-      this._wallet = options.wallet
-    } else {
-      this._wallet = null
-    }
-
-    this._synced = false
-    this._type = 'LogosAccount'
   }
 
   /**
@@ -274,23 +107,7 @@ export default class LogosAccount extends Account {
    * @type {String}
    */
   get type () {
-    return this._type
-  }
-
-  /**
-   * If the account has been synced with the RPC or if RPC is disabled this is true
-   * @type {boolean}
-   */
-  get synced () {
-    return this._synced
-  }
-
-  /**
-   * The wallet this account belongs to
-   * @type {boolean}
-   */
-  get wallet () {
-    return this._wallet
+    return 'LogosAccount'
   }
 
   /**
@@ -303,32 +120,6 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * The label of the account
-   * @type {string}
-   */
-  get label () {
-    return this._label
-  }
-
-  /**
-   * The address of the account
-   * @type {LogosAddress}
-   * @readonly
-   */
-  get address () {
-    return this._address
-  }
-
-  /**
-   * The public key of the account
-   * @type {Hexadecimal64Length}
-   * @readonly
-   */
-  get publicKey () {
-    return this._publicKey
-  }
-
-  /**
    * The private key of the account
    * @type {Hexadecimal64Length}
    * @readonly
@@ -338,50 +129,12 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * The balance of the account in reason
-   * @type {string}
-   * @readonly
-   */
-  get balance () {
-    return this._balance
-  }
-
-  /**
-   * The pending balance of the account in reason
-   *
-   * pending balance is balance minus the sends that are pending
-   *
-   * @type {string}
-   * @readonly
-   */
-  get pendingBalance () {
-    return this._pendingBalance
-  }
-
-  /**
    * Array of associated token ids to this account (full list available only with fullsync)
    * @type {LogosAddress[]}
    * @readonly
    */
   get tokens () {
     return this._tokens
-  }
-
-  /**
-   * Adds a token to the accounts associated tokens if it doesn't already exist
-   *
-   * @param {Hexadecimal64Length} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
-   * @returns {LogosAddress[]} Array of all the associated tokens
-   */
-  async addToken (tokenID) {
-    const tokenAddress = accountFromHexKey(tokenID)
-    if (!this.tokens.includes(tokenAddress)) {
-      this._tokens.push(tokenAddress)
-      if (this.wallet.tokenSync) {
-        await this.wallet.createTokenAccount(tokenAddress)
-      }
-    }
-    return this.tokens
   }
 
   /**
@@ -406,105 +159,30 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * array of confirmed requests on the account
-   * @type {Request[]}
+   * The balance of the given token in the base units
+   * @param {Hexadecimal64Length} tokenID - Token ID of the token in question, you can also send the token account address
+   * @returns {String} the token account info object
    * @readonly
    */
-  get chain () {
-    return this._chain
+  tokenBalance (token) {
+    return this.tokenBalances[keyFromAccount(token)]
   }
 
   /**
-   * array of confirmed receive requests on the account
-   * @type {Request[]}
-   * @readonly
-   */
-  get receiveChain () {
-    return this._receiveChain
-  }
-
-  /**
-   * array of pending requests on the account
+   * Adds a token to the accounts associated tokens if it doesn't already exist
    *
-   * These requests have been sent for consensus but we haven't heard back on if they are confirmed yet.
-   *
-   * @type {Request[]}
-   * @readonly
+   * @param {Hexadecimal64Length} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
+   * @returns {LogosAddress[]} Array of all the associated tokens
    */
-  get pendingChain () {
-    return this._pendingChain
-  }
-
-  /**
-   * Gets the total number of requests on the send chain
-   *
-   * @type {number} count of all the requests
-   * @readonly
-   */
-  get requestCount () {
-    return this._chain.length
-  }
-
-  /**
-   * Gets the total number of requests on the pending chain
-   *
-   * @type {number} count of all the requests
-   * @readonly
-   */
-  get pendingRequestCount () {
-    return this._pendingChain.length
-  }
-
-  /**
-   * Gets the total number of requests on the receive chain
-   *
-   * @type {number} count of all the requests
-   * @readonly
-   */
-  get receiveCount () {
-    return this._receiveChain.length
-  }
-
-  set label (label) {
-    this._label = label
-  }
-
-  set synced (val) {
-    this._synced = val
-  }
-
-  /**
-   * Return the previous request as hash
-   * @type {Hexadecimal64Length}
-   * @returns {Hexadecimal64Length} hash of the previous transaction
-   * @readonly
-   */
-  get previous () {
-    if (this._pendingChain.length > 0) {
-      this._previous = this._pendingChain[this.pendingChain.length - 1].hash
-    } else if (this._chain.length > 0) {
-      this._previous = this._chain[this._chain.length - 1].hash
-    } else {
-      this._previous = GENESIS_HASH
+  async addToken (tokenID) {
+    const tokenAddress = accountFromHexKey(tokenID)
+    if (!this.tokens.includes(tokenAddress)) {
+      this.tokens.push(tokenAddress)
+      if (this.wallet.tokenSync) {
+        await this.wallet.createTokenAccount(tokenAddress)
+      }
     }
-    return this._previous
-  }
-
-  /**
-   * Return the sequence value
-   * @type {number}
-   * @returns {number} sequence of for the next transaction
-   * @readonly
-   */
-  get sequence () {
-    if (this._pendingChain.length > 0) {
-      this._sequence = this._pendingChain[this.pendingChain.length - 1].sequence
-    } else if (this._chain.length > 0) {
-      this._sequence = this._chain[this._chain.length - 1].sequence
-    } else {
-      this._sequence = -1
-    }
-    return parseInt(this._sequence) + 1
+    return this.tokens
   }
 
   /**
@@ -532,28 +210,28 @@ export default class LogosAccount extends Account {
             this.updateBalancesFromChain()
             if (this.wallet.validateSync) {
               if (this.verifyChain() && this.verifyReceiveChain()) {
-                this._synced = synced
+                this.synced = synced
                 console.info(`${this.address} has been fully synced and validated`)
-                resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
+                resolve({ account: this.address, synced: this.synced, type: 'LogosAccount' })
               }
             } else {
               console.info(`Finished Syncing: Requests were not validated`)
-              this._synced = synced
-              resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
+              this.synced = synced
+              resolve({ account: this.address, synced: this.synced, type: 'LogosAccount' })
             }
           } else {
-            this._synced = synced
-            resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
+            this.synced = synced
+            resolve({ account: this.address, synced: this.synced, type: 'LogosAccount' })
           }
         } else {
           if (this.receiveChain.length === 0 && this.chain.length === 0) {
             console.info(`${this.address} is empty and therefore valid`)
-            this._synced = synced
-            resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
+            this.synced = synced
+            resolve({ account: this.address, synced: this.synced, type: 'LogosAccount' })
           } else {
             console.error(`${this.address} is not opened according to the RPC. This is a critical error if in a production enviroment. On testnet this just means the network has been restarted.`)
-            this._synced = false
-            resolve({ account: this.address, synced: this._synced, type: 'LogosAccount' })
+            this.synced = false
+            resolve({ account: this.address, synced: this.synced, type: 'LogosAccount' })
           }
         }
       })
@@ -566,15 +244,15 @@ export default class LogosAccount extends Account {
    */
   sync () {
     return new Promise((resolve, reject) => {
-      this._synced = false
-      this._chain = []
-      this._receiveChain = []
-      this._pendingChain = []
-      this._tokenBalances = {}
-      this._balance = '0'
-      this._pendingBalance = '0'
-      this._tokens = []
-      this._pendingTokenBalances = {}
+      this.synced = false
+      this.chain = []
+      this.receiveChain = []
+      this.pendingChain = []
+      this.tokenBalances = {}
+      this.balance = '0'
+      this.pendingBalance = '0'
+      this.tokens = []
+      this.pendingTokenBalances = {}
       const RPC = this.wallet.rpcClient()
       if (this.wallet.fullSync) {
         RPC.accounts.history(this.address, -1, true).then(async history => {
@@ -586,17 +264,17 @@ export default class LogosAccount extends Account {
             this.updateBalancesFromChain()
             if (this.wallet.validateSync) {
               if (this.verifyChain() && this.verifyReceiveChain()) {
-                this._synced = true
+                this.synced = true
                 console.info(`${this.address} has been fully synced and validated`)
                 resolve(this)
               }
             } else {
               console.info(`Finished Syncing: Requests were not validated`)
-              this._synced = true
+              this.synced = true
               resolve(this)
             }
           } else {
-            this._synced = true
+            this.synced = true
             console.info(`${this.address} is empty and therefore valid`)
             resolve(this)
           }
@@ -610,37 +288,37 @@ export default class LogosAccount extends Account {
                 throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
               }
               if (info.balance) {
-                this._balance = info.balance
-                this._pendingBalance = info.balance
+                this.balance = info.balance
+                this.pendingBalance = info.balance
               }
               if (info.tokens) {
                 for (const pairs of Object.entries(info.tokens)) {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
-                this._tokenBalances = { ...info.tokens }
-                this._pendingTokenBalances = { ...info.tokens }
+                this.tokenBalances = { ...info.tokens }
+                this.pendingTokenBalances = { ...info.tokens }
               }
-              this._synced = true
+              this.synced = true
               console.info(`${this.address} has been lazy synced`)
               resolve(this)
             })
           } else {
             if (info) {
               if (info.balance) {
-                this._balance = info.balance
-                this._pendingBalance = info.balance
+                this.balance = info.balance
+                this.pendingBalance = info.balance
               }
               if (info.tokens) {
                 for (const pairs of Object.entries(info.tokens)) {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
-                this._tokenBalances = { ...info.tokens }
-                this._pendingTokenBalances = { ...info.tokens }
+                this.tokenBalances = { ...info.tokens }
+                this.pendingTokenBalances = { ...info.tokens }
               }
             }
-            this._synced = true
+            this.synced = true
             console.info(`${this.address} is empty and therefore valid`)
             resolve(this)
           }
@@ -654,10 +332,10 @@ export default class LogosAccount extends Account {
    * @returns {void}
    */
   updateBalancesFromChain () {
-    if (this._chain.length + this._pendingChain.length + this._receiveChain.length === 0) return bigInt(0)
+    if (this.chain.length + this.pendingChain.length + this.receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
     const tokenSums = {}
-    this._receiveChain.forEach(request => {
+    this.receiveChain.forEach(request => {
       if (request.type === 'send') {
         for (const transaction of request.transactions) {
           if (transaction.destination === this.address) {
@@ -683,7 +361,7 @@ export default class LogosAccount extends Account {
         }
       }
     })
-    this._chain.forEach(request => {
+    this.chain.forEach(request => {
       if (request.type === 'send') {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
       } else if (request.type === 'token_send') {
@@ -693,9 +371,9 @@ export default class LogosAccount extends Account {
         sum = sum.minus(bigInt(request.fee))
       }
     })
-    this._balance = sum.toString()
-    this._tokenBalances = { ...tokenSums }
-    this._pendingChain.forEach(pendingRequest => {
+    this.balance = sum.toString()
+    this.tokenBalances = { ...tokenSums }
+    this.pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
         for (const transaction of pendingRequest.transactions) {
@@ -715,8 +393,8 @@ export default class LogosAccount extends Account {
         sum = sum.minus(bigInt(pendingRequest.fee))
       }
     })
-    this._pendingBalance = sum.toString()
-    this._pendingTokenBalances = { ...tokenSums }
+    this.pendingBalance = sum.toString()
+    this.pendingTokenBalances = { ...tokenSums }
   }
 
   /**
@@ -726,7 +404,7 @@ export default class LogosAccount extends Account {
    * @returns {void}
    */
   updateBalancesFromRequest (request) {
-    let sum = bigInt(this._balance)
+    let sum = bigInt(this.balance)
     const tokenSums = this.tokenBalances
     if (request.type === 'send') {
       if (request.originAccount === this.address) {
@@ -761,9 +439,9 @@ export default class LogosAccount extends Account {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount)).toString()
       }
     }
-    this._balance = sum.toString()
-    this._tokenBalances = { ...tokenSums }
-    this._pendingChain.forEach(pendingRequest => {
+    this.balance = sum.toString()
+    this.tokenBalances = { ...tokenSums }
+    this.pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
         for (const transaction of pendingRequest.transactions) {
@@ -783,8 +461,8 @@ export default class LogosAccount extends Account {
         sum = sum.minus(bigInt(pendingRequest.fee))
       }
     })
-    this._pendingBalance = sum.toString()
-    this._pendingTokenBalances = { ...tokenSums }
+    this.pendingBalance = sum.toString()
+    this.pendingTokenBalances = { ...tokenSums }
   }
 
   /**
@@ -841,139 +519,9 @@ export default class LogosAccount extends Account {
       this._addToReceiveChain(request)
       return request
     } else {
-      console.error(`MQTT sent ${this._address} an unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
+      console.error(`MQTT sent ${this.address} an unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
       return null
     }
-  }
-
-  /**
-   * Verify the integrity of the send & pending chains
-   *
-   * @returns {boolean}
-   */
-  verifyChain () {
-    let last = GENESIS_HASH
-    this.chain.forEach(request => {
-      if (request) {
-        if (request.previous !== last) throw new Error('Invalid Chain (prev != current hash)')
-        if (!request.verify()) throw new Error('Invalid request in this chain')
-        last = request.hash
-      }
-    })
-    this.pendingChain.forEach(request => {
-      if (request) {
-        if (request.previous !== last) throw new Error('Invalid Pending Chain (prev != current hash)')
-        if (!request.verify()) throw new Error('Invalid request in the pending chain')
-        last = request.hash
-      }
-    })
-    return true
-  }
-
-  /**
-   * Verify the integrity of the receive chain
-   *
-   * @throws An exception if there is an invalid request in the receive requestchain
-   * @returns {boolean}
-   */
-  verifyReceiveChain () {
-    this.receiveChain.forEach(request => {
-      if (!request.verify()) throw new Error('Invalid request in the receive chain')
-    })
-    return true
-  }
-
-  /**
-   * Retreives requests from the send chain
-   *
-   * @param {number} count - Number of requests you wish to retrieve
-   * @param {number} offset - Number of requests back from the frontier tip you wish to start at
-   * @returns {Request[]} all the requests
-   */
-  recentRequests (count = 5, offset = 0) {
-    const requests = []
-    if (count > this._chain.length) count = this._chain.length
-    for (let i = this._chain.length - 1 - offset; i > this._chain.length - 1 - count - offset; i--) {
-      requests.push(this._chain[i])
-    }
-    return requests
-  }
-
-  /**
-   * Retreives pending requests from the send chain
-   *
-   * @param {number} count - Number of requests you wish to retrieve
-   * @param {number} offset - Number of requests back from the frontier tip you wish to start at
-   * @returns {Request[]} all the requests
-   */
-  recentPendingRequests (count = 5, offset = 0) {
-    const requests = []
-    if (count > this._pendingChain.length) count = this._pendingChain.length
-    for (let i = this._pendingChain.length - 1 - offset; i > this._pendingChain.length - 1 - count - offset; i--) {
-      requests.push(this._pendingChain[i])
-    }
-    return requests
-  }
-
-  /**
-   * Retreives requests from the receive chain
-   *
-   * @param {number} count - Number of requests you wish to retrieve
-   * @param {number} offset - Number of requests back from the frontier tip you wish to start at
-   * @returns {Request[]} all the requests
-   */
-  recentReceiveRequests (count = 5, offset = 0) {
-    const requests = []
-    if (count > this._receiveChain.length) count = this._receiveChain.length
-    for (let i = this._receiveChain.length - 1 - offset; i > this._receiveChain.length - 1 - count - offset; i--) {
-      requests.push(this._receiveChain[i])
-    }
-    return requests
-  }
-
-  /**
-   * Gets the requests up to a certain hash from the send chain
-   *
-   * @param {Hexadecimal64Length} hash - Hash of the request you wish to stop retrieving requests at
-   * @returns {Request[]} all the requests up to and including the specified request
-   */
-  getRequestsUpTo (hash) {
-    const requests = []
-    for (let i = this._chain.length - 1; i > 0; i--) {
-      requests.push(this._chain[i])
-      if (this._chain[i].hash === hash) break
-    }
-    return requests
-  }
-
-  /**
-   * Gets the requests up to a certain hash from the pending chain
-   *
-   * @param {Hexadecimal64Length} hash - Hash of the request you wish to stop retrieving requests at
-   * @returns {Request[]} all the requests up to and including the specified request
-   */
-  getPendingRequestsUpTo (hash) {
-    const requests = []
-    for (let i = this._pendingChain.length - 1; i > 0; i--) {
-      requests.push(this._pendingChain[i])
-      if (this._pendingChain[i].hash === hash) break
-    }
-    return requests
-  }
-
-  /**
-   * Gets the requests up to a certain hash from the receive chain
-   *
-   * @param {Hexadecimal64Length} hash - Hash of the request you wish to stop retrieving requests at
-   * @returns {Request[]} all the requests up to and including the specified request
-   */
-  getReceiveRequestsUpTo (hash) {
-    const requests = []
-    for (let i = this._receiveChain.length - 1; i > 0; i--) {
-      requests.push(this._receiveChain[i])
-      if (this._receiveChain[i].hash === hash) break
-    }
-    return requests
   }
 
   /**
@@ -981,94 +529,8 @@ export default class LogosAccount extends Account {
    * @returns {void}
    */
   removePendingRequests () {
-    this._pendingChain = []
-    this._pendingBalance = this._balance
-    this._pendingTokenBalances = { ...this._tokenBalances }
-  }
-
-  /**
-   * Called when a request is confirmed to remove it from the pending request pool
-   *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are confirming
-   * @returns {boolean}
-   */
-  removePendingRequest (hash) {
-    const found = false
-    for (const i in this._pendingChain) {
-      const request = this._pendingChain[i]
-      if (request.hash === hash) {
-        this._pendingChain.splice(i, 1)
-        return true
-      }
-    }
-    if (!found) {
-      console.warn('Not found')
-      return false
-    }
-  }
-
-  /**
-   * Finds the request object of the specified request hash
-   *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} null if no request object of the specified hash was found
-   */
-  getRequest (hash) {
-    for (let j = this._chain.length - 1; j >= 0; j--) {
-      const blk = this._chain[j]
-      if (blk.hash === hash) return blk
-    }
-    for (let n = this._receiveChain.length - 1; n >= 0; n--) {
-      const blk = this._receiveChain[n]
-      if (blk.hash === hash) return blk
-    }
-    for (let n = this._pendingChain.length - 1; n >= 0; n--) {
-      const blk = this._receiveChain[n]
-      if (blk.hash === hash) return blk
-    }
-    return false
-  }
-
-  /**
-   * Finds the request object of the specified request hash in the confirmed chain
-   *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} false if no request object of the specified hash was found
-   */
-  getChainRequest (hash) {
-    for (let j = this._chain.length - 1; j >= 0; j--) {
-      const blk = this._chain[j]
-      if (blk.hash === hash) return blk
-    }
-    return false
-  }
-
-  /**
-   * Finds the request object of the specified request hash in the pending chain
-   *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} false if no request object of the specified hash was found
-   */
-  getPendingRequest (hash) {
-    for (let n = this._pendingChain.length - 1; n >= 0; n--) {
-      const request = this._pendingChain[n]
-      if (request.hash === hash) return request
-    }
-    return false
-  }
-
-  /**
-   * Finds the request object of the specified request hash in the recieve chain
-   *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} false if no request object of the specified hash was found
-   */
-  getRecieveRequest (hash) {
-    for (let n = this._receiveChain.length - 1; n >= 0; n--) {
-      const blk = this._receiveChain[n]
-      if (blk.hash === hash) return blk
-    }
-    return false
+    super.removePendingRequest()
+    this.pendingTokenBalances = { ...this.tokenBalances }
   }
 
   /**
@@ -1080,18 +542,18 @@ export default class LogosAccount extends Account {
   async validateRequest (request) {
     // Validate current values are appropriate for sends
     if (request.type === 'send') {
-      if (bigInt(this._balance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
+      if (bigInt(this.balance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
         console.error(`Invalid Request: Not Enough Funds including fee to send that amount`)
         return false
       }
       return true
     } else if (request.type === 'token_send') {
       const tokenAccount = await this.getTokenAccount(request.tokenID)
-      if (bigInt(this._balance).minus(request.fee).lesser(0)) {
+      if (bigInt(this.balance).minus(request.fee).lesser(0)) {
         console.error(`Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends`)
         return false
       }
-      if (!this._tokenBalances[tokenAccount.tokenID]) {
+      if (!this.tokenBalances[tokenAccount.tokenID]) {
         console.error(`Invalid Token Send Request: User doesn't have a token account with the specified token`)
         return false
       }
@@ -1107,7 +569,7 @@ export default class LogosAccount extends Account {
         console.error(`Invalid Token Send Request: Requests token is less than the required percentage token fee of ${tokenAccount.feeRate}%`)
         return false
       }
-      if (bigInt(this._tokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).lesser(0)) {
+      if (bigInt(this.tokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).lesser(0)) {
         console.error(`Invalid Token Send Request: Not Enough Token to pay the token fee for token sends`)
         return false
       }
@@ -1122,31 +584,6 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * Broadcasts the first pending request
-   *
-   * @returns {Request}
-   */
-  async broadcastRequest () {
-    if (this.wallet.rpc && this._pendingChain.length > 0) {
-      const request = this._pendingChain[0]
-      if (!request.published && await this.validateRequest(request)) {
-        request.published = true
-        try {
-          await request.publish(this.wallet.rpc)
-        } catch (err) {
-          console.error(err)
-          this.removePendingRequests()
-        }
-        return request
-      } else {
-        console.info(`Request is already pending!`)
-      }
-    } else {
-      return null
-    }
-  }
-
-  /**
    * Adds the request to the pending chain and publishes it
    *
    * @param {Request} request - Request information from the RPC or MQTT
@@ -1154,47 +591,8 @@ export default class LogosAccount extends Account {
    * @returns {Request}
    */
   async addRequest (request) {
-    request.sign(this._privateKey)
-    console.info(`Added Request: ${request.type} ${request.sequence} to Pending Chain`)
-    this._pendingChain.push(request)
-    this.broadcastRequest()
-    return request
-  }
-
-  /**
-   * Adds the request to the Receive chain if it doesn't already exist
-   *
-   * @param {Request} request - Request Object
-   * @returns {void}
-   */
-  _addToReceiveChain (request) {
-    let addBlock = true
-    for (let j = this._receiveChain.length - 1; j >= 0; j--) {
-      const blk = this._receiveChain[j]
-      if (blk.hash === request.hash) {
-        addBlock = false
-        break
-      }
-    }
-    if (addBlock) this._receiveChain.push(request)
-  }
-
-  /**
-   * Adds the request to the Send chain if it doesn't already exist
-   *
-   * @param {Request} request - Request Object
-   * @returns {void}
-   */
-  _addToSendChain (request) {
-    let addBlock = true
-    for (let j = this._chain.length - 1; j >= 0; j--) {
-      const blk = this._chain[j]
-      if (blk.hash === request.hash) {
-        addBlock = false
-        break
-      }
-    }
-    if (addBlock) this._chain.push(request)
+    request.sign(this.privateKey)
+    return super.addRequest(request)
   }
 
   /**
@@ -1207,7 +605,7 @@ export default class LogosAccount extends Account {
    * @returns {Promise<Request>} the request object
    */
   async createSendRequest (transactions) {
-    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     const request = new Send({
       signature: null,
       previous: this.previous,
@@ -1217,11 +615,11 @@ export default class LogosAccount extends Account {
       origin: this.address
     })
     if (!this.wallet.lazyErrors) {
-      if (bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
+      if (bigInt(this.pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
         throw new Error('Invalid Request: Not Enough Funds including fee to send that amount')
       }
     }
-    this._pendingBalance = bigInt(this._pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
+    this.pendingBalance = bigInt(this.pendingBalance).minus(bigInt(request.totalAmount)).minus(request.fee).toString()
     const result = await this.addRequest(request)
     return result
   }
@@ -1238,7 +636,7 @@ export default class LogosAccount extends Account {
   async createTokenIssuanceRequest (options) {
     if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
     if (!options.symbol) throw new Error('You must pass symbol as a part of the TokenOptions')
-    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     const request = new Issuance({
       signature: null,
       previous: this.previous,
@@ -1267,24 +665,14 @@ export default class LogosAccount extends Account {
       request.issuerInfo = options.issuerInfo
     }
     if (!this.wallet.lazyErrors) {
-      if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
+      if (bigInt(this.pendingBalance).minus(request.fee).lesser(0)) {
         throw new Error('Invalid Request: Not Enough Logos to afford the fee to issue a token')
       }
     }
-    this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
+    this.pendingBalance = bigInt(this.pendingBalance).minus(request.fee).toString()
     await this.wallet.createTokenAccount(accountFromHexKey(request.tokenID), request)
     const result = await this.addRequest(request)
     return result
-  }
-
-  /**
-   * The balance of the given token in the base units
-   * @param {Hexadecimal64Length} tokenID - Token ID of the token in question, you can also send the token account address
-   * @returns {String} the token account info object
-   * @readonly
-   */
-  tokenBalance (token) {
-    return this._tokenBalances[keyFromAccount(token)]
   }
 
   /**
@@ -1317,7 +705,7 @@ export default class LogosAccount extends Account {
    * @returns {Promise<Request>} the request object
    */
   async createTokenSendRequest (token, transactions) {
-    if (this._synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
+    if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     if (!transactions) throw new Error('You must pass transaction in the token send options')
     if (!token) throw new Error('You must pass token which is either tokenID or tokenAddress')
     const tokenAccount = await this.getTokenAccount(token)
@@ -1336,15 +724,15 @@ export default class LogosAccount extends Account {
       request.tokenFee = bigInt(request.totalAmount).multiply(bigInt(tokenAccount.feeRate)).divide(100).toString()
     }
     if (!this.wallet.lazyErrors) {
-      if (bigInt(this._pendingBalance).minus(request.fee).lesser(0)) {
+      if (bigInt(this.pendingBalance).minus(request.fee).lesser(0)) {
         throw new Error('Invalid Request: Not Enough Logos to pay the logos fee for token sends')
       }
-      if (bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
+      if (bigInt(this.pendingTokenBalances[tokenAccount.tokenID]).minus(request.totalAmount).minus(request.tokenFee).lesser(0)) {
         throw new Error('Invalid Request: Not Enough Token to pay the for the token fee and the token send amounts')
       }
     }
-    this._pendingBalance = bigInt(this._pendingBalance).minus(request.fee).toString()
-    this._pendingTokenBalances[tokenAccount.tokenID] = bigInt(this._pendingTokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
+    this.pendingBalance = bigInt(this.pendingBalance).minus(request.fee).toString()
+    this.pendingTokenBalances[tokenAccount.tokenID] = bigInt(this.pendingTokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(request.tokenFee).toString()
     const result = await this.addRequest(request)
     return result
   }
@@ -1368,7 +756,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID,
       amount: options.amount
     })
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1392,7 +780,7 @@ export default class LogosAccount extends Account {
     })
     request.setting = options.setting
     request.value = options.value
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1415,7 +803,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID
     })
     request.setting = options.setting
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1441,7 +829,7 @@ export default class LogosAccount extends Account {
       source: options.source,
       transaction: options.transaction
     })
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1466,7 +854,7 @@ export default class LogosAccount extends Account {
       account: options.account
     })
     request.status = options.status
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1492,7 +880,7 @@ export default class LogosAccount extends Account {
       feeRate: options.feeRate,
       feeType: options.feeType
     })
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1516,7 +904,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID
     })
     request.issuerInfo = options.issuerInfo
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1542,7 +930,7 @@ export default class LogosAccount extends Account {
       controller: options.controller
     })
     request.action = options.action
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1566,7 +954,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID,
       amount: options.amount
     })
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1590,7 +978,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID,
       transaction: options.transaction
     })
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1614,7 +1002,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID,
       transaction: options.transaction
     })
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1638,7 +1026,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID,
       transaction: options.transaction
     })
-    request.sign(this._privateKey)
+    request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
   }
@@ -1654,7 +1042,7 @@ export default class LogosAccount extends Account {
     const request = await this.addConfirmedRequest(requestInfo)
     if (request !== null) {
       if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
-      if (request.originAccount === this._address &&
+      if (request.originAccount === this.address &&
         (request.type === 'send' || request.type === 'token_send' || request.type === 'issuance')) {
         if (this.getPendingRequest(requestInfo.hash)) {
           this.removePendingRequest(requestInfo.hash)
@@ -1671,7 +1059,7 @@ export default class LogosAccount extends Account {
       } else {
         this.updateBalancesFromRequest(request)
       }
-      if (this._shouldCombine()) {
+      if (this.shouldCombine()) {
         this.combineRequests()
       } else {
         this.broadcastRequest()
@@ -1694,7 +1082,7 @@ export default class LogosAccount extends Account {
       let sendCount = 0
       let tokenTxCount = 0
       let tokenCount = 0
-      for (const request of this._pendingChain) {
+      for (const request of this.pendingChain) {
         if (request.type === 'send') {
           sendCount++
           sendTxCount += request.transactions.length
@@ -1722,7 +1110,7 @@ export default class LogosAccount extends Account {
     ]
     const issuances = []
     const tokenTransactionsToCombine = new Map()
-    for (const request of this._pendingChain) {
+    for (const request of this.pendingChain) {
       if (request.type === 'send') {
         for (const transaction of request.transactions) {
           if (logosTransactionsToCombine[sendCounter].length < 8) {
@@ -1771,8 +1159,8 @@ export default class LogosAccount extends Account {
       for (const issuance of issuances) {
         issuance.previous = this.previous
         issuance.sequence = this.sequence
-        issuance.sign(this._privateKey)
-        this._pendingChain.push(issuance)
+        issuance.sign(this.privateKey)
+        this.pendingChain.push(issuance)
       }
       this.broadcastRequest()
     }
@@ -1783,24 +1171,11 @@ export default class LogosAccount extends Account {
    * @returns {AccountJSON} JSON request
    */
   toJSON () {
-    const obj = {}
-    obj.label = this.label
-    obj.address = this.address
-    obj.publicKey = this.publicKey
+    const obj = super.toJSON()
     obj.privateKey = this.privateKey
-    obj.balance = this.balance
     obj.tokenBalances = this.tokenBalances
     obj.tokens = this.tokens
     obj.type = this.type
-    obj.chain = []
-    for (const request of this.chain) {
-      obj.chain.push(JSON.parse(request.toJSON()))
-    }
-    obj.receiveChain = []
-    for (const request of this.receiveChain) {
-      obj.receiveChain.push(JSON.parse(request.toJSON()))
-    }
-    obj.version = this._version
     obj.index = this.index
     return JSON.stringify(obj)
   }
