@@ -34,27 +34,26 @@
     "Ilya Apasov"
   ],
   "license": "MIT",
-  "unpkg": "./webpack/logoswallet.min.js",
+  "type": "module",
   "devDependencies": {
     "@babel/core": "^7.5.4",
     "@babel/preset-env": "^7.5.4",
-    "@types/node": "^12.6.2",
+    "@babel/register": "^7.4.4",
     "babel-eslint": "^10.0.2",
     "babel-loader": "^8.0.6",
     "chai": "^4.2.0",
     "eslint": "^6.0.1",
-    "eslint-config-standard": "^13.0.1",
-    "eslint-plugin-import": "^2.18.0",
-    "eslint-plugin-node": "^9.1.0",
-    "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
-    "mocha": "^6.1.4"
+    "mocha": "^6.1.4",
+    "webpack": "^4.35.3",
+    "webpack-cli": "^3.3.6"
   },
   "dependencies": {
     "@logosnetwork/logos-rpc-client": "^1.1.29",
     "assert": "^2.0.0",
     "big-integer": "^1.6.44",
     "blakejs": "^1.1.0",
+    "core-js": "^3.1.4",
     "mqtt": "^3.0.0",
     "pbkdf2": "^3.0.17",
     "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef"
