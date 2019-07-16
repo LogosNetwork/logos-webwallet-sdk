@@ -1,5 +1,5 @@
 import mqttPattern from './mqttPattern'
-import { Logos } from '@logosnetwork/logos-rpc-client'
+import Logos from '@logosnetwork/logos-rpc-client'
 import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils'
 import { pbkdf2Sync } from 'pbkdf2'
 import * as nacl from 'tweetnacl/nacl'

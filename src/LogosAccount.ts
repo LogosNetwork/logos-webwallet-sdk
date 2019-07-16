@@ -40,6 +40,10 @@ export interface LogosAccountJSON extends AccountJSON {
   index?: number
 }
 
+interface TokenBalances {
+  [tokenID: string]: string
+}
+
 /**
  * The Accounts contain the keys, chains, and balances.
  */
@@ -306,13 +310,14 @@ export default class LogosAccount extends Account {
                 this.balance = info.balance
                 this.pendingBalance = info.balance
               }
+              let tokenBalances:TokenBalances = {}
               if (info.tokens) {
-                for (const pairs of Object.entries(info.tokens)) {
-                  this.addToken(pairs[0])
-                  info.tokens[pairs[0]] = pairs[1].balance
+                for (const [tokenID, accountInfo] of Object.entries(info.tokens)) {
+                  this.addToken(tokenID)
+                  tokenBalances[tokenID] = accountInfo.balance
                 }
-                this._tokenBalances = { ...info.tokens }
-                this._pendingTokenBalances = { ...info.tokens }
+                this._tokenBalances = tokenBalances
+                this._pendingTokenBalances = tokenBalances
               }
               this.synced = true
               console.info(`${this.address} has been lazy synced`)
@@ -324,13 +329,14 @@ export default class LogosAccount extends Account {
                 this.balance = info.balance
                 this.pendingBalance = info.balance
               }
+              let tokenBalances:TokenBalances = {}
               if (info.tokens) {
-                for (const pairs of Object.entries(info.tokens)) {
-                  this.addToken(pairs[0])
-                  info.tokens[pairs[0]] = pairs[1].balance
+                for (const [tokenID, accountInfo] of Object.entries(info.tokens)) {
+                  this.addToken(tokenID)
+                  tokenBalances[tokenID] = accountInfo.balance
                 }
-                this._tokenBalances = { ...info.tokens }
-                this._pendingTokenBalances = { ...info.tokens }
+                this._tokenBalances = tokenBalances
+                this._pendingTokenBalances = tokenBalances
               }
             }
             this.synced = true

@@ -38,9 +38,58 @@ export interface TokenAccountJSON extends AccountJSON {
   feeRate?: string
   feeType?: 'flat' | 'percentage'
   accountStatuses?: AccountStatus
-  controllers?: Controller
+  controllers?: Controller[]
   settings?: Settings
   type?: string
+}
+
+interface AccountStatus {
+  [address: string]: {
+    whitelisted: boolean
+    frozen: boolean
+  }
+}
+
+interface Privileges {
+  change_issuance: boolean
+  change_modify_issuance: boolean
+  change_revoke: boolean
+  change_modify_revoke: boolean
+  change_freeze: boolean
+  change_modify_freeze: boolean
+  change_adjust_fee: boolean
+  change_modify_adjust_fee: boolean
+  change_whitelist: boolean
+  change_modify_whitelist: boolean
+  issuance: boolean
+  revoke: boolean
+  freeze: boolean
+  adjust_fee: boolean
+  whitelist: boolean
+  update_issuer_info: boolean
+  update_controller: boolean
+  burn: boolean
+  distribute: boolean
+  withdraw_fee: boolean
+  withdraw_logos: boolean
+}
+
+export interface Controller {
+  account?: string
+  privileges?: Privileges
+}
+
+export interface Settings {
+  issuance: boolean,
+  modify_issuance: boolean,
+  revoke: boolean,
+  modify_revoke: boolean,
+  freeze: boolean,
+  modify_freeze: boolean,
+  adjust_fee: boolean,
+  modify_adjust_fee: boolean,
+  whitelist: boolean,
+  modify_whitelist: boolean
 }
 
 /**
@@ -55,7 +104,7 @@ export default class TokenAccount extends Account {
   private _issuerInfo: string
   private _feeRate: string
   private _feeType: 'flat' | 'percentage'
-  private _controllers: Controller
+  private _controllers: Controller[]
   private _settings: Settings
   private _accountStatuses: AccountStatus
   // private _pendingTokenBalance: string
@@ -200,7 +249,18 @@ export default class TokenAccount extends Account {
     if (options.settings !== undefined) {
       this._settings = options.settings
     } else {
-      this._settings = {}
+      this._settings = {
+        issuance: null,
+        modify_issuance: null,
+        revoke: null,
+        modify_revoke: null,
+        freeze: null,
+        modify_freeze: null,
+        adjust_fee: null,
+        modify_adjust_fee: null,
+        whitelist: null,
+        modify_whitelist: null
+      }
     }
 
     /**
@@ -386,7 +446,7 @@ export default class TokenAccount extends Account {
           this.name = info.name
           this.issuerInfo = info.issuer_info
           this.feeRate = info.fee_rate
-          this.feeType = info.fee_type.toLowerCase()
+          this.feeType = info.fee_type
           this.controllers = deserializeControllers(info.controllers)
           this.settings = deserializeSettings(info.settings)
           this.balance = info.balance
@@ -454,7 +514,7 @@ export default class TokenAccount extends Account {
         this.name = info.name
         this.issuerInfo = info.issuer_info
         this.feeRate = info.fee_rate
-        this.feeType = info.fee_type.toLowerCase()
+        this.feeType = info.fee_type
         this.controllers = deserializeControllers(info.controllers)
         this.settings = deserializeSettings(info.settings)
         this.balance = info.balance

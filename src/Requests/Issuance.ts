@@ -2,6 +2,8 @@ import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, MAXUINT128, deseriali
 import { blake2bUpdate, blake2bFinal, blake2bInit } from 'blakejs'
 import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
+import { Settings, Controller } from '../TokenAccount'
+import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
 
 interface IssuanceOptions extends RequestOptions {
   tokenID?: string
@@ -14,8 +16,8 @@ interface IssuanceOptions extends RequestOptions {
   fee_type?: 'flat' | 'percentage'
   feeRate?: string
   fee_rate?: string
-  settings?: Settings
-  controllers?: Array<Controller>
+  settings?: Settings | RpcSettings[]
+  controllers?: Controller[] | RpcController[]
   issuerInfo?: string
   issuer_info?: string
 }
@@ -27,8 +29,8 @@ export interface IssuanceJSON extends RequestJSON {
   total_supply?: string
   fee_type?: 'flat' | 'percentage'
   fee_rate?: string
-  settings?: Settings
-  controllers?: Array<Controller>
+  settings?: RpcSettings[]
+  controllers?: RpcController[]
   issuer_info?: string
 }
 export default class Issuance extends Request {
@@ -39,7 +41,7 @@ export default class Issuance extends Request {
   private _feeType: 'flat' | 'percentage'
   private _feeRate: string
   private _settings: Settings
-  private _controllers: Array<Controller>
+  private _controllers: Controller[]
   private _issuerInfo: string
   constructor (options:IssuanceOptions = {
     tokenID: null,

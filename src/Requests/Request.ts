@@ -1,7 +1,7 @@
 import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK } from '../Utils'
 import * as nacl from 'tweetnacl/nacl'
 import { blake2bInit, blake2bUpdate } from 'blakejs'
-import { Logos } from '@logosnetwork/logos-rpc-client'
+import Logos from '@logosnetwork/logos-rpc-client'
 export interface RequestOptions {
   origin?: string
   previous?: string

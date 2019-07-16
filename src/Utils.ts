@@ -2,6 +2,8 @@
 import * as assert from 'assert'
 import { blake2b } from 'blakejs'
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto'
+import { Controller as RpcController, Settings as RpcSettings } from '@logosnetwork/logos-rpc-client/dist/api'
+import { Controller, Settings } from './TokenAccount'
 export const minimumFee = '10000000000000000000000'
 export const EMPTY_WORK = '0000000000000000'
 export const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
@@ -24,7 +26,7 @@ export const Iso10126 = {
   }
 }
 
-export const deserializeController = (controller) => {
+export const deserializeController = (controller: RpcController | Controller): Controller => {
   const defaultPrivileges = {
     change_issuance: false,
     change_modify_issuance: false,
@@ -48,7 +50,7 @@ export const deserializeController = (controller) => {
     withdraw_fee: false,
     withdraw_logos: false
   }  
-  const newController = {}
+  const newController:any = {}
   newController.account = controller.account
   newController.privileges = {}
   if (controller.privileges instanceof Array) {
@@ -85,7 +87,7 @@ export const deserializeController = (controller) => {
   return newController
 }
 
-export const deserializeControllers = (controllers) => {
+export const deserializeControllers = (controllers:RpcController[] | Controller[]): Controller[] => {
   const newControllers = []
   for (const controller of controllers) {
     newControllers.push(this.deserializeController(controller))
@@ -93,14 +95,14 @@ export const deserializeControllers = (controllers) => {
   return newControllers
 }
 
-export const serializeController = (controllerObject) => {
-  const newController = {}
+export const serializeController = (controllerObject:Controller): RpcController => {
+  const newController:any = {}
   newController.account = controllerObject.account
   newController.privileges = this.convertObjectToArray(controllerObject.privileges)
   return newController
 }
 
-export const serializeControllers = (controllersObject) => {
+export const serializeControllers = (controllersObject:Controller[]): RpcController[] => {
   const controllers = []
   for (const controller of controllersObject) {
     controllers.push(this.serializeController(controller))
@@ -108,7 +110,7 @@ export const serializeControllers = (controllersObject) => {
   return controllers
 }
 
-export const deserializeSettings = (settings) => {
+export const deserializeSettings = (settings:RpcSettings[] | Settings): Settings => {
   const defaulSettings = {
     issuance: false,
     modify_issuance: false,

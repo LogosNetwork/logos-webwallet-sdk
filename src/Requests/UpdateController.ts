@@ -1,6 +1,9 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController, accountFromHexKey } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
+import { Controller } from '../TokenAccount'
+import { Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
+
 const Actions = {
   add: 0,
   remove: 1
@@ -8,11 +11,11 @@ const Actions = {
 
 interface UpdateControllerOptions extends TokenRequestOptions {
   action?: 'add' | 'remove'
-  controller?: Controller
+  controller?: Controller | RpcController
 }
 export interface UpdateControllerJSON extends TokenRequestJSON {
   action?: 'add' | 'remove'
-  controller?: Controller
+  controller?: RpcController
 }
 export default class UpdateController extends TokenRequest {
   private _action: 'add' | 'remove'
@@ -35,7 +38,32 @@ export default class UpdateController extends TokenRequest {
     if (options.controller !== undefined) {
       this._controller = deserializeController(options.controller)
     } else {
-      this._controller = null
+      this._controller = {
+        account: accountFromHexKey(this.origin),
+        privileges: {
+          change_issuance: false,
+          change_modify_issuance: false,
+          change_revoke: false,
+          change_modify_revoke: false,
+          change_freeze: false,
+          change_modify_freeze: false,
+          change_adjust_fee: false,
+          change_modify_adjust_fee: false,
+          change_whitelist: false,
+          change_modify_whitelist: false,
+          issuance: false,
+          revoke: false,
+          freeze: false,
+          adjust_fee: false,
+          whitelist: false,
+          update_issuer_info: false,
+          update_controller: false,
+          burn: false,
+          distribute: true,
+          withdraw_fee: false,
+          withdraw_logos: false
+        }
+      }
     }
 
     /**
