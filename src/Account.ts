@@ -25,8 +25,8 @@ export interface AccountJSON {
   address?: string
   publicKey?: string
   balance?: string
-  chain?: Array<Request>
-  receiveChain?: Array<Request>
+  chain?: Array<RequestJSON>
+  receiveChain?: Array<RequestJSON>
   version?: number
 }
 
@@ -790,7 +790,7 @@ export default abstract class Account {
 
   /**
    * Returns the base account JSON
-   * @returns {string} JSON request
+   * @returns {AccountJSON} JSON request
    */
   toJSON () {
     const obj:AccountJSON = {}
@@ -800,13 +800,13 @@ export default abstract class Account {
     obj.balance = this.balance
     obj.chain = []
     for (const request of this.chain) {
-      obj.chain.push(JSON.parse(request.toJSON()))
+      obj.chain.push(request.toJSON())
     }
     obj.receiveChain = []
     for (const request of this.receiveChain) {
-      obj.receiveChain.push(JSON.parse(request.toJSON()))
+      obj.receiveChain.push(request.toJSON())
     }
     obj.version = this.version
-    return JSON.stringify(obj)
+    return obj
   }
 }

@@ -1,5 +1,5 @@
 import * as bigInt from 'big-integer'
-import Account from './Account'
+import Account, { AccountJSON } from './Account'
 import {
   accountFromHexKey,
   keyFromAccount,
@@ -26,6 +26,22 @@ import {
   WithdrawLogos,
   TokenSend 
 } from './Requests'
+
+export interface TokenAccountJSON extends AccountJSON {
+  tokenID?: string
+  tokenBalance?: string
+  totalSupply?: string
+  tokenFeeBalance?: string
+  symbol?: string
+  name?: string
+  issuerInfo?: string
+  feeRate?: string
+  feeType?: 'flat' | 'percentage'
+  accountStatuses?: AccountStatus
+  controllers?: Controller
+  settings?: Settings
+  type?: string
+}
 
 /**
  * TokenAccount contain the keys, chains, and balances.
@@ -1007,7 +1023,7 @@ export default class TokenAccount extends Account {
    * @returns {TokenAccountJSON} JSON request
    */
   toJSON () {
-    const obj = JSON.parse(super.toJSON())
+    const obj:TokenAccountJSON = super.toJSON()
     obj.tokenID = this.tokenID
     obj.tokenBalance = this.tokenBalance
     obj.totalSupply = this.totalSupply
@@ -1021,6 +1037,6 @@ export default class TokenAccount extends Account {
     obj.controllers = this.controllers
     obj.settings = this.settings
     obj.type = this.type
-    return JSON.stringify(obj)
+    return obj
   }
 }

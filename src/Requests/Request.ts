@@ -10,6 +10,7 @@ export interface RequestOptions {
   signature?: string
   timestamp?: string
   work?: string
+  type?: RequestType | string
 }
 interface RequestType {
   text: string
@@ -47,7 +48,8 @@ export default abstract class Request {
     fee: null,
     signature: null,
     timestamp: null,
-    work: EMPTY_WORK
+    work: EMPTY_WORK,
+    type: null
   }) {
     /**
      * Signature of the request

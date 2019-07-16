@@ -5,7 +5,7 @@ import {
   minimumFee
 } from './Utils'
 import * as bigInt from 'big-integer'
-import Account from './Account'
+import Account, { AccountOptions, AccountJSON } from './Account'
 import { 
   Send,
   Issuance,
@@ -24,6 +24,22 @@ import {
   TokenSend 
 } from './Requests'
 
+export interface LogosAccountOptions extends AccountOptions {
+  index?: number
+  privateKey?: string
+  tokens?: Array<string>
+  tokenBalances?: TokenBalances
+  pendingTokenBalances?: TokenBalances
+}
+
+export interface LogosAccountJSON extends AccountJSON {
+  privateKey?: string
+  tokenBalances?: TokenBalances
+  tokens?: Array<string>
+  type?: string
+  index?: number
+}
+
 /**
  * The Accounts contain the keys, chains, and balances.
  */
@@ -33,17 +49,11 @@ export default class LogosAccount extends Account {
   private _tokens: Array<string>
   private _tokenBalances: TokenBalances
   private _pendingTokenBalances: TokenBalances
-  constructor (options = {
+  constructor (options:LogosAccountOptions = {
     privateKey: null,
-    pendingBalance: '0',
     tokenBalances: {},
     tokens: [],
     pendingTokenBalances: {},
-    chain: [],
-    receiveChain: [],
-    pendingChain: [],
-    wallet: null,
-    version: 1,
     index: null
   }) {
     super(options)
@@ -341,52 +351,52 @@ export default class LogosAccount extends Account {
     let sum = bigInt(0)
     const tokenSums = {}
     this.receiveChain.forEach(request => {
-      if (request.type === 'send') {
+      if (request instanceof Send) {
         for (const transaction of request.transactions) {
           if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
-      } else if (request.type === 'withdraw_logos') {
+      } else if (request instanceof WithdrawLogos) {
         if (request.transaction.destination === this.address) {
           sum = sum.plus(bigInt(request.transaction.amount))
         }
-      } else if (request.type === 'token_send') {
+      } else if (request instanceof TokenSend) {
         for (const transaction of request.transactions) {
           if (transaction.destination === this.address) {
             tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount)).toString()
           }
         }
-      } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
+      } else if (request instanceof Distribute || request instanceof WithdrawFee || request instanceof Revoke) {
         if (request.transaction.destination === this.address) {
           tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount)).toString()
         }
-        if (request.type === 'revoke' && request.source === this.address) {
+        if (request instanceof Revoke && request.source === this.address) {
           tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount)).toString()
         }
       }
     })
     this.chain.forEach(request => {
-      if (request.type === 'send') {
+      if (request instanceof Send) {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
-      } else if (request.type === 'token_send') {
+      } else if (request instanceof TokenSend) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).toString()
         sum = sum.minus(bigInt(request.fee))
-      } else if (request.type === 'issuance') {
+      } else if (request instanceof Issuance) {
         sum = sum.minus(bigInt(request.fee))
       }
     })
     this.balance = sum.toString()
     this._tokenBalances = { ...tokenSums }
     this.pendingChain.forEach(pendingRequest => {
-      if (pendingRequest.type === 'send') {
+      if (pendingRequest instanceof Send) {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
         for (const transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
-      } else if (pendingRequest.type === 'token_send') {
+      } else if (pendingRequest instanceof TokenSend) {
         sum = sum.minus(bigInt(pendingRequest.fee))
         tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee)).toString()
         for (const transaction of pendingRequest.transactions) {
@@ -447,14 +457,14 @@ export default class LogosAccount extends Account {
     this.balance = sum.toString()
     this._tokenBalances = { ...tokenSums }
     this.pendingChain.forEach(pendingRequest => {
-      if (pendingRequest.type === 'send') {
+      if (pendingRequest instanceof Send) {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
         for (const transaction of pendingRequest.transactions) {
           if (transaction.destination === this.address) {
             sum = sum.plus(bigInt(transaction.amount))
           }
         }
-      } else if (pendingRequest.type === 'token_send') {
+      } else if (pendingRequest instanceof TokenSend) {
         sum = sum.minus(bigInt(pendingRequest.fee))
         tokenSums[pendingRequest.tokenID] = bigInt(tokenSums[pendingRequest.tokenID]).minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.tokenFee)).toString()
         for (const transaction of pendingRequest.transactions) {
@@ -1088,10 +1098,10 @@ export default class LogosAccount extends Account {
       let tokenTxCount = 0
       let tokenCount = 0
       for (const request of this.pendingChain) {
-        if (request.type === 'send') {
+        if (request instanceof Send) {
           sendCount++
           sendTxCount += request.transactions.length
-        } else if (request.type === 'token_send') {
+        } else if (request instanceof TokenSend) {
           tokenCount++
           tokenTxCount += request.transactions.length
         }
@@ -1114,9 +1124,16 @@ export default class LogosAccount extends Account {
       []
     ]
     const issuances = []
-    const tokenTransactionsToCombine = new Map()
+    type TokenAggregates = Array<Array<{
+      destination: string
+      amount: string
+    }>>
+    type TokenTransactionsCombined = {
+      [tokenID: string]: TokenAggregates
+    }
+    const tokenTransactionsToCombine:TokenTransactionsCombined = {}
     for (const request of this.pendingChain) {
-      if (request.type === 'send') {
+      if (request instanceof Send) {
         for (const transaction of request.transactions) {
           if (logosTransactionsToCombine[sendCounter].length < 8) {
             logosTransactionsToCombine[sendCounter].push(transaction)
@@ -1125,10 +1142,10 @@ export default class LogosAccount extends Account {
             logosTransactionsToCombine[sendCounter] = [transaction]
           }
         }
-      } else if (request.type === 'token_send') {
-        let tokenAggregates = [[]]
-        if (tokenTransactionsToCombine.has(request.tokenID)) {
-          tokenAggregates = tokenTransactionsToCombine.get(request.tokenID)
+      } else if (request instanceof TokenSend) {
+        let tokenAggregates:TokenAggregates = [[]]
+        if (tokenTransactionsToCombine[request.tokenID]) {
+          tokenAggregates = tokenTransactionsToCombine[request.tokenID]
         }
         for (const transaction of request.transactions) {
           if (tokenAggregates[tokenCounter].length < 8) {
@@ -1138,7 +1155,7 @@ export default class LogosAccount extends Account {
             tokenAggregates[tokenCounter] = [transaction]
           }
         }
-        tokenTransactionsToCombine.set(request.tokenID, tokenAggregates)
+        tokenTransactionsToCombine[request.tokenID] = tokenAggregates
       } else if (request.type === 'issuance') {
         issuances.push(request)
       }
@@ -1148,7 +1165,7 @@ export default class LogosAccount extends Account {
     this.removePendingRequests()
 
     // Add Token Sends
-    for (const [tokenID, tokenTransactions] of tokenTransactionsToCombine) {
+    for (const [tokenID, tokenTransactions] of Object.entries(tokenTransactionsToCombine)) {
       const tokenPromises = tokenTransactions.map(transactions => this.createTokenSendRequest(tokenID, transactions))
       await Promise.all(tokenPromises)
     }
@@ -1172,16 +1189,16 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * Returns the base account JSON
-   * @returns {string} JSON request
+   * Returns the logos account JSON
+   * @returns {LogosAccountJSON} JSON request
    */
   toJSON () {
-    const obj = JSON.parse(super.toJSON())
+    const obj:LogosAccountJSON = super.toJSON()
     obj.privateKey = this.privateKey
     obj.tokenBalances = this.tokenBalances
     obj.tokens = this.tokens
     obj.type = this.type
     obj.index = this.index
-    return JSON.stringify(obj)
+    return obj
   }
 }

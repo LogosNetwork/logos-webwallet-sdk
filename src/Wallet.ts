@@ -932,12 +932,12 @@ export default class Wallet {
     }
     let tempAccounts = {}
     for (const account in this._accounts) {
-      tempAccounts[account] = JSON.parse(this._accounts[account].toJSON())
+      tempAccounts[account] = this._accounts[account].toJSON()
     }
     obj.accounts = tempAccounts
     let tempTokenAccounts = {}
     for (const account in this._tokenAccounts) {
-      tempTokenAccounts[account] = JSON.parse(this._tokenAccounts[account].toJSON())
+      tempTokenAccounts[account] = this._tokenAccounts[account].toJSON()
     }
     obj.tokenAccounts = tempTokenAccounts
     return JSON.stringify(obj)
