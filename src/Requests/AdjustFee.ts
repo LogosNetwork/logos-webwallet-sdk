@@ -1,16 +1,20 @@
 import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import * as bigInt from 'big-integer'
 interface AdjustFeeOptions extends TokenRequestOptions {
-  feeType?: string
+  feeType?: 'flat' | 'percentage'
   feeRate?: string
-  fee_type?: string
+  fee_type?: 'flat' | 'percentage'
+  fee_rate?: string
+}
+export interface AdjustFeeJSON extends TokenRequestJSON {
+  fee_type?: 'flat' | 'percentage'
   fee_rate?: string
 }
 export default class AdjustFee extends TokenRequest {
-  _feeType: string
-  _feeRate: string
+  private _feeType: 'flat' | 'percentage'
+  private _feeRate: string
   constructor (options:AdjustFeeOptions = {
     feeType: 'flat',
     feeRate: '0',
@@ -27,9 +31,9 @@ export default class AdjustFee extends TokenRequest {
      * @private
      */
     if (options.feeType !== undefined) {
-      this._feeType = options.feeType.toLowerCase()
+      this._feeType = options.feeType
     } else if (options.fee_type !== undefined) {
-      this._feeType = options.fee_type.toLowerCase()
+      this._feeType = options.fee_type
     } else {
       this._feeType = 'flat'
     }
@@ -57,8 +61,7 @@ export default class AdjustFee extends TokenRequest {
   }
 
   set feeType (val) {
-    if (val.toLowerCase() !== 'flat' && val.toLowerCase() !== 'percentage') throw new Error('Token Fee Type - Invalid Fee Type use "flat" or "percentage"')
-    this._feeType = val.toLowerCase()
+    this._feeType = val
   }
 
   /**
@@ -94,14 +97,12 @@ export default class AdjustFee extends TokenRequest {
 
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
-   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {RequestJSON} JSON request
+   * @returns {AdjustFeeJSON} JSON request
    */
-  toJSON (pretty = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:AdjustFeeJSON = super.toJSON()
     obj.fee_type = this.feeType
     obj.fee_rate = this.feeRate
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }

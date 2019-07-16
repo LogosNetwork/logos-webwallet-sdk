@@ -1,6 +1,6 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 const Statuses = {
   frozen: 0,
   unfrozen: 1,
@@ -8,6 +8,10 @@ const Statuses = {
   not_whitelisted: 3
 }
 interface AdjustUserStatusOptions extends TokenRequestOptions {
+  account?: string
+  status?: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
+}
+export interface  AdjustUserStatusJSON extends TokenRequestJSON {
   account?: string
   status?: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
 }
@@ -91,14 +95,12 @@ export default class AdjustUserStatus extends TokenRequest {
 
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
-   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {RequestJSON} JSON request
+   * @returns {AdjustUserStatusJSON} JSON request
    */
-  toJSON (pretty = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:AdjustUserStatusJSON = super.toJSON()
     obj.account = this.account
     obj.status = this.status
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }

@@ -1,12 +1,15 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import Request, { RequestOptions } from './Request'
+import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
 interface Transaction {
   destination: string
   amount: string
 }
 interface SendOptions extends RequestOptions {
+  transactions?: Array<Transaction>
+}
+export interface SendJSON extends RequestJSON {
   transactions?: Array<Transaction>
 }
 export default class Send extends Request {
@@ -83,13 +86,11 @@ export default class Send extends Request {
 
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
-   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {string} Send Request JSON stringified
+   * @returns {SendJSON} Send Request JSON
    */
-  toJSON (pretty:boolean = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:SendJSON = super.toJSON()
     obj.transactions = this.transactions
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }

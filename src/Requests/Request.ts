@@ -10,15 +10,14 @@ export interface RequestOptions {
   signature?: string
   timestamp?: string
   work?: string
-  type?: RequestType
 }
 interface RequestType {
   text: string
   value: number
 }
-interface RequestJSON {
+export interface RequestJSON {
   previous?: string
-  sequence?: string
+  sequence?: number
   origin?: string
   fee?: string
   work?: string
@@ -48,7 +47,6 @@ export default abstract class Request {
     fee: null,
     signature: null,
     timestamp: null,
-    type: null,
     work: EMPTY_WORK
   }) {
     /**
@@ -336,7 +334,7 @@ export default abstract class Request {
       proxyURL: options.proxy
     })
     console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
-    const response = await RPC.requests.publish(this.toJSON())
+    const response = await RPC.requests.publish(JSON.stringify(this.toJSON()))
     if (response.hash) {
       console.info(`Delegate ${delegateId} accepted ${this.type} ${this.sequence}`)
       return response
@@ -348,12 +346,12 @@ export default abstract class Request {
 
   /**
    * Returns the base request JSON
-   * @returns {string} RequestJSON as string
+   * @returns {RequestJSON} RequestJSON as string
    */
   toJSON () {
     const obj:RequestJSON = {}
     obj.previous = this.previous
-    obj.sequence = this.sequence.toString()
+    obj.sequence = this.sequence
     obj.origin = this._origin
     obj.fee = this.fee
     obj.work = this.work
@@ -361,6 +359,6 @@ export default abstract class Request {
     obj.type = this.type
     obj.signature = this.signature
     if (this.timestamp) obj.timestamp = this.timestamp
-    return JSON.stringify(obj)
+    return obj
   }
 }

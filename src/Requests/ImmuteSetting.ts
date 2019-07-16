@@ -1,7 +1,9 @@
 import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest, { TokenRequestOptions } from './TokenRequest'
-
+import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
+export interface ImmuteSettingJSON extends TokenRequestJSON {
+  setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+}
 const Settings = {
   issuance: 0,
   revoke: 2,
@@ -66,13 +68,11 @@ export default class ImmuteSetting extends TokenRequest {
 
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
-   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
    * @returns {RequestJSON} JSON request
    */
-  toJSON (pretty = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:ImmuteSettingJSON = super.toJSON()
     obj.setting = this.setting
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }

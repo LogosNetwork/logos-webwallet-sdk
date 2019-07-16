@@ -1,4 +1,4 @@
-import bigInt from 'big-integer'
+import * as bigInt from 'big-integer'
 import Account from './Account'
 import {
   accountFromHexKey,
@@ -31,6 +31,19 @@ import {
  * TokenAccount contain the keys, chains, and balances.
  */
 export default class TokenAccount extends Account {
+  private _tokenBalance: string
+  private _totalSupply: string
+  private _tokenFeeBalance: string
+  private _symbol: string
+  private _name: string
+  private _issuerInfo: string
+  private _feeRate: string
+  private _feeType: 'flat' | 'percentage'
+  private _controllers: Controller
+  private _settings: Settings
+  private _accountStatuses: AccountStatus
+  // private _pendingTokenBalance: string
+  // private _pendingTotalSupply: string
   constructor (options) {
     if (!options) throw new Error('You must pass settings to initalize the token account')
     if (!options.address && !options.tokenID) throw new Error('You must initalize a token account with an address or tokenID')
@@ -550,9 +563,9 @@ export default class TokenAccount extends Account {
       }
     } else if (request.type === 'issuance') {
       this.tokenBalance = request.totalSupply
-      this.pendingTokenBalance = request.totalSupply
+      // this._pendingTokenBalance = request.totalSupply
       this.totalSupply = request.totalSupply
-      this.pendingTotalSupply = request.totalSupply
+      // this._pendingTotalSupply = request.totalSupply
       this.tokenFeeBalance = '0'
       this.symbol = request.symbol
       this.name = request.name
@@ -994,7 +1007,7 @@ export default class TokenAccount extends Account {
    * @returns {TokenAccountJSON} JSON request
    */
   toJSON () {
-    const obj = super.toJSON()
+    const obj = JSON.parse(super.toJSON())
     obj.tokenID = this.tokenID
     obj.tokenBalance = this.tokenBalance
     obj.totalSupply = this.totalSupply

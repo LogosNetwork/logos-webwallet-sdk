@@ -1,5 +1,5 @@
 
-import assert from 'assert'
+import * as assert from 'assert'
 import { blake2b } from 'blakejs'
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto'
 export const minimumFee = '10000000000000000000000'
@@ -316,11 +316,11 @@ export const decToHex = (str, bytes = null) => {
   while (sum.length) {
     hex.push(sum.pop().toString(16))
   }
-  hex = hex.join('')
-  if (hex.length % 2 !== 0) hex = '0' + hex
+  let hexConcat = hex.join('')
+  if (hex.length % 2 !== 0) hexConcat = '0' + hex
   if (bytes > hex.length / 2) {
     const diff = bytes - hex.length / 2
-    for (let i = 0; i < diff; i++) hex = '00' + hex
+    for (let i = 0; i < diff; i++) hexConcat = '00' + hex
   }
   return hex
 }
@@ -405,12 +405,7 @@ export const accountFromHexKey = (hex) => {
   } else if (isLogosAccount(hex)) {
     return hex
   } else {
-    const e = new Error()
-    e.code = 1
-    e.message = 'Failed to execute \'accountFromHexKey\' on \'' + hex + '\': The ' +
-      'hex provided is not a valid hex.'
-    e.name = 'Invalid Hex'
-    throw e
+    throw new Error(`Failed to execute 'accountFromHexKey' on '${hex}': The hex provided is not a valid hex.`)
   }
 }
 
@@ -423,22 +418,12 @@ export const keyFromAccount = (account) => {
     if (equalArrays(hashBytes, blakeHash)) {
       return uint8ToHex(keyBytes).toUpperCase()
     } else {
-      const e = new Error()
-      e.code = 2
-      e.message = 'Failed to execute \'keyFromAccount\' on \'' + account + '\': The ' +
-        'checksum of the address is not valid.'
-      e.name = 'Checksum incorrect'
-      throw e
+      throw new Error(`Failed to execute 'keyFromAccount' on '${account}': The checksum of the address is not valid.`)
     }
   } else if (isHexKey(account)) {
     return account
   } else {
-    const e = new Error()
-    e.code = 1
-    e.message = 'Failed to execute \'keyFromAccount\' on \'' + account + '\': The ' +
-      'account is not a valid logos address.'
-    e.name = 'Invalid Logos Address'
-    throw e
+    throw new Error(`Failed to execute 'keyFromAccount' on '${account}': The account is not a valid logos address.`)
   }
 }
 

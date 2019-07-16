@@ -1,12 +1,47 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, deserializeController, deserializeControllers, accountFromHexKey, byteCount, stringToHex, isAlphanumeric, isAlphanumericExtended, changeEndianness, serializeControllers, convertObjectToArray } from '../Utils'
 import { blake2bUpdate, blake2bFinal, blake2bInit } from 'blakejs'
-import bigInt from 'big-integer'
+import Request, { RequestOptions, RequestJSON } from './Request'
+import * as bigInt from 'big-integer'
 
-/**
- * The Token Issuance class for Token Issuance Requests.
- */
+interface IssuanceOptions extends RequestOptions {
+  tokenID?: string
+  token_id?: string
+  symbol?: string
+  name?: string
+  totalSupply?: string
+  total_supply?: string
+  feeType?: 'flat' | 'percentage'
+  fee_type?: 'flat' | 'percentage'
+  feeRate?: string
+  fee_rate?: string
+  settings?: Settings
+  controllers?: Array<Controller>
+  issuerInfo?: string
+  issuer_info?: string
+}
+export interface IssuanceJSON extends RequestJSON {
+  token_id?: string
+  token_account?: string
+  symbol?: string
+  name?: string
+  total_supply?: string
+  fee_type?: 'flat' | 'percentage'
+  fee_rate?: string
+  settings?: Settings
+  controllers?: Array<Controller>
+  issuer_info?: string
+}
 export default class Issuance extends Request {
-  constructor (options = {
+  private _tokenID: string
+  private _symbol: string
+  private _name: string
+  private _totalSupply: string
+  private _feeType: 'flat' | 'percentage'
+  private _feeRate: string
+  private _settings: Settings
+  private _controllers: Array<Controller>
+  private _issuerInfo: string
+  constructor (options:IssuanceOptions = {
     tokenID: null,
     symbol: null,
     name: null,
@@ -28,6 +63,10 @@ export default class Issuance extends Request {
     controllers: [],
     issuerInfo: ''
   }) {
+    options.type = {
+      text: 'issuance',
+      value: 2
+    }
     super(options)
 
     /**
@@ -84,9 +123,9 @@ export default class Issuance extends Request {
      * @private
      */
     if (options.feeType !== undefined) {
-      this._feeType = options.feeType.toLowerCase()
+      this._feeType = options.feeType
     } else if (options.fee_type !== undefined) {
-      this._feeType = options.fee_type.toLowerCase()
+      this._feeType = options.fee_type
     } else {
       this._feeType = 'flat'
     }
@@ -173,11 +212,6 @@ export default class Issuance extends Request {
       this._issuerInfo = options.issuer_info
     } else {
       this._issuerInfo = ''
-    }
-
-    this._type = {
-      text: 'issuance',
-      value: 2
     }
   }
 
@@ -319,24 +353,6 @@ export default class Issuance extends Request {
   }
 
   /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
-  }
-
-  /**
    * Validates the settings
    * @throws a shit load of errors if it is wrong
    * @returns {Boolean}
@@ -452,7 +468,7 @@ export default class Issuance extends Request {
     if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
     if (byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
 
-    const context = super.hash()
+    const context = super.requestHash()
 
     const tokenID = hexToUint8(this.tokenID)
     blake2bUpdate(context, tokenID)
@@ -495,11 +511,10 @@ export default class Issuance extends Request {
 
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
-   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {RequestJSON} JSON request
+   * @returns {IssuanceJSON} JSON request
    */
-  toJSON (pretty = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:IssuanceJSON = super.toJSON()
     obj.token_id = this.tokenID
     obj.token_account = accountFromHexKey(this.tokenID)
     obj.symbol = this.symbol
@@ -510,7 +525,6 @@ export default class Issuance extends Request {
     obj.settings = convertObjectToArray(this.settings)
     obj.controllers = serializeControllers(this.controllers)
     obj.issuer_info = this.issuerInfo
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }

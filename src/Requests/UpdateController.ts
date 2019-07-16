@@ -1,12 +1,16 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 const Actions = {
   add: 0,
   remove: 1
 }
 
 interface UpdateControllerOptions extends TokenRequestOptions {
+  action?: 'add' | 'remove'
+  controller?: Controller
+}
+export interface UpdateControllerJSON extends TokenRequestJSON {
   action?: 'add' | 'remove'
   controller?: Controller
 }
@@ -136,14 +140,12 @@ export default class UpdateController extends TokenRequest {
 
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
-   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {RequestJSON} JSON request
+   * @returns {UpdateControllerJSON} JSON request
    */
-  toJSON (pretty = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:UpdateControllerJSON = super.toJSON()
     obj.action = this.action
     obj.controller = serializeController(this.controller)
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }

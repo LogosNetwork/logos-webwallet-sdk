@@ -1,15 +1,34 @@
-export { default as AdjustFee } from './AdjustFee'
-export { default as AdjustUserStatus } from './AdjustUserStatus'
-export { default as Burn } from './Burn'
-export { default as ChangeSetting } from './ChangeSetting'
-export { default as Distribute } from './Distribute'
-export { default as ImmuteSetting } from './ImmuteSetting'
-export { default as Issuance } from './Issuance'
-export { default as IssueAdditional } from './IssueAdditional'
-export { default as Revoke } from './Revoke'
-export { default as Send } from './Send'
-export { default as TokenSend } from './TokenSend'
-export { default as UpdateController } from './UpdateController'
-export { default as UpdateIssuerInfo } from './UpdateIssuerInfo'
-export { default as WithdrawFee } from './WithdrawFee'
-export { default as WithdrawLogos } from './WithdrawLogos'
+import AdjustFee, { AdjustFeeJSON } from './AdjustFee'
+import AdjustUserStatus, { AdjustUserStatusJSON } from './AdjustUserStatus'
+import Burn, { BurnJSON } from './Burn'
+import ChangeSetting, { ChangeSettingJSON} from './ChangeSetting'
+import Distribute, { DistributeJSON } from './Distribute'
+import ImmuteSetting, { ImmuteSettingJSON } from './ImmuteSetting'
+import Issuance, { IssuanceJSON } from './Issuance'
+import IssueAdditional, {IssueAdditionalJSON } from './IssueAdditional'
+import Revoke, { RevokeJSON } from './Revoke'
+import Send, { SendJSON } from './Send'
+import TokenSend, { TokenSendJSON } from './TokenSend'
+import UpdateController, { UpdateControllerJSON } from './UpdateController'
+import UpdateIssuerInfo, { UpdateIssuerInfoJSON } from './UpdateIssuerInfo'
+import WithdrawFee, { WithdrawFeeJSON } from './WithdrawFee'
+import WithdrawLogos, { WithdrawLogosJSON } from './WithdrawLogos'
+export {
+  AdjustFee,
+  AdjustUserStatus,
+  Burn,
+  ChangeSetting,
+  Distribute,
+  ImmuteSetting,
+  Issuance,
+  IssueAdditional,
+  Revoke,
+  Send,
+  TokenSend,
+  UpdateController,
+  UpdateIssuerInfo,
+  WithdrawFee,
+  WithdrawLogos
+}
+export type Request = Send|Issuance|TokenSend|IssueAdditional|ChangeSetting|ImmuteSetting|Revoke|AdjustUserStatus|AdjustFee|UpdateIssuerInfo|UpdateController|Burn|Distribute|WithdrawFee|WithdrawLogos
+export type RequestJSON = SendJSON|IssuanceJSON|TokenSendJSON|IssueAdditionalJSON|ChangeSettingJSON|ImmuteSettingJSON|RevokeJSON|AdjustUserStatusJSON|AdjustFeeJSON|UpdateIssuerInfoJSON|UpdateControllerJSON|BurnJSON|DistributeJSON|WithdrawFeeJSON|WithdrawLogosJSON

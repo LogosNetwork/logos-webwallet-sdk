@@ -14,16 +14,33 @@ import {
   Distribute,
   WithdrawFee,
   WithdrawLogos,
-  TokenSend 
+  TokenSend,
+  Request,
+  RequestJSON
 } from './Requests'
+import Wallet from './Wallet';
 
-interface AccountJSON {
+export interface AccountJSON {
   label?: string
   address?: string
   publicKey?: string
   balance?: string
-  chain?: Array<LogosRequest>
-  receiveChain?: Array<LogosRequest>
+  chain?: Array<Request>
+  receiveChain?: Array<Request>
+  version?: number
+}
+
+export interface AccountOptions {
+  label?: string
+  address?: string
+  publicKey?: string
+  balance?: string
+  pendingBalance?: string
+  timestamp?: string
+  wallet?: Wallet
+  chain?: Array<RequestJSON>
+  receiveChain?: Array<RequestJSON>
+  pendingChain?: Array<RequestJSON>
   version?: number
 }
 
@@ -33,15 +50,15 @@ export default abstract class Account {
   private _publicKey: string
   private _balance: string
   private _pendingBalance: string
-  private _chain: Array<LogosRequest>
-  private _receiveChain: Array<LogosRequest>
-  private _pendingChain: Array<LogosRequest>
+  private _chain: Array<Request>
+  private _receiveChain: Array<Request>
+  private _pendingChain: Array<Request>
   private _previous: string
   private _sequence: number
   private _version: number
   private _wallet: Wallet
   private _synced: boolean
-  constructor (options = {
+  constructor (options:AccountOptions = {
     label: null,
     address: null,
     publicKey: null,
@@ -279,9 +296,7 @@ export default abstract class Account {
   get label () {
     if (this._label !== null) {
       return this._label
-    } else if (this.name && this.symbol) {
-      return `${this.name} (${this.symbol})`
-    }
+    } 
   }
 
   set label (label) {
@@ -733,7 +748,7 @@ export default abstract class Account {
    * @param {Request} request - Request information from the RPC or MQTT
    * @returns {Boolean}
    */
-  abstract async validateRequest(request: LogosRequest)
+  abstract async validateRequest(request: Request)
 
   /**
    * Broadcasts the first pending request

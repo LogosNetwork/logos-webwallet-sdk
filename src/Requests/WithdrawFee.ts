@@ -1,11 +1,14 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 interface Transaction {
   destination: string
   amount: string
 }
 interface WithdrawFeeOptions extends TokenRequestOptions {
+  transaction?: Transaction
+}
+export interface WithdrawFeeJSON extends TokenRequestJSON {
   transaction?: Transaction
 }
 export default class WithdrawFee extends TokenRequest {
@@ -64,13 +67,11 @@ export default class WithdrawFee extends TokenRequest {
 
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
-   * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {RequestJSON} JSON request
+   * @returns {WithdrawFeeJSON} JSON request
    */
-  toJSON (pretty = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:WithdrawFeeJSON = super.toJSON()
     obj.transaction = this.transaction
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }

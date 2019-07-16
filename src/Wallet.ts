@@ -1,18 +1,63 @@
 import mqttPattern from './mqttPattern'
-import Logos from '@logosnetwork/logos-rpc-client'
+import { Logos } from '@logosnetwork/logos-rpc-client'
 import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils'
 import { pbkdf2Sync } from 'pbkdf2'
-import nacl from 'tweetnacl/nacl'
+import * as nacl from 'tweetnacl/nacl'
 import { blake2bInit, blake2bFinal, blake2bUpdate } from 'blakejs'
-import bigInt from 'big-integer'
-import { connect } from 'mqtt'
-import LogosAccount from './LogosAccount'
-import TokenAccount from './TokenAccount'
+import * as bigInt from 'big-integer'
+import { connect, MqttClient } from 'mqtt'
+import LogosAccount, { LogosAccountJSON } from './LogosAccount'
+import TokenAccount, { TokenAccountJSON } from './TokenAccount'
 
-/**
- * The main hub for interacting with the Logos Accounts and Requests.
- */
+interface WalletJSON {
+  password: string
+  seed: string
+  deterministicKeyIndex: number
+  currentAccountAddress: string
+  accounts?: {
+    [address: string]: LogosAccountJSON
+  } 
+  tokenAccounts?: {
+    [address: string]: TokenAccountJSON
+  }
+  walletID: string
+  batchSends: boolean
+  fullSync: boolean
+  lazyErrors: boolean
+  tokenSync: boolean
+  validateSync: boolean
+  mqtt: string
+  rpc: {
+    proxy: string
+    delegates: Array<string>
+  }
+}
+
 export default class Wallet {
+  private _password: string
+  private _deterministicKeyIndex: number
+  private _currentAccountAddress: string
+  private _walletID: string
+  private _batchSends: boolean
+  private _fullSync: boolean
+  private _tokenSync: boolean
+  private _validateSync: boolean
+  private _lazyErrors: boolean
+  private _rpc: {
+    proxy: string
+    delegates: Array<string>
+  }
+  private _iterations: number
+  private _seed: string
+  private _accounts: {
+    [address: string]: LogosAccount
+  }
+  private _tokenAccounts: {
+    [address: string]: TokenAccount
+  }
+  private _mqttConnected: boolean
+  private _mqtt: string
+  private _mqttClient: MqttClient
   constructor (options = {
     password: null,
     seed: null,
@@ -421,7 +466,7 @@ export default class Wallet {
    */
   get pendingRequests () {
     const pendingRequests = []
-    Object.keys(this._accounts).forEach(account => {
+    Object.values(this._accounts).forEach(account => {
       pendingRequests.concat(account.pendingChain)
     })
     return pendingRequests
@@ -490,7 +535,7 @@ export default class Wallet {
    * @param {LogosAddress} address - address of the token account.
    * @returns {Promise<Account>}
    */
-  async createTokenAccount (address, issuance) {
+  async createTokenAccount (address: string, issuance = null) {
     if (this._tokenAccounts[address]) {
       return this._tokenAccounts[address]
     } else {
@@ -540,7 +585,7 @@ export default class Wallet {
     }
     accountOptions.wallet = this
     accountOptions.label = `Account ${Object.values(this._accounts).length}`
-    const account = new Account(accountOptions)
+    const account = new LogosAccount(accountOptions)
     this.addAccount(account)
     if (this._rpc) {
       await this._accounts[account.address].sync()
@@ -556,7 +601,7 @@ export default class Wallet {
    * @returns {void}
    */
   recalculateWalletBalancesFromChain () {
-    Object.keys(this._accounts).forEach(account => {
+    Object.values(this._accounts).forEach(account => {
       account.updateBalancesFromChain()
     })
   }
@@ -568,7 +613,7 @@ export default class Wallet {
    * @returns {Request | boolean} false if no request object of the specified hash was found
    */
   getRequest (hash) {
-    Object.keys(this._accounts).forEach(account => {
+    Object.values(this._accounts).forEach(account => {
       const request = account.getRequest(hash)
       if (request !== false) {
         return request
@@ -585,10 +630,10 @@ export default class Wallet {
   encrypt () {
     let encryptedWallet = this.toJSON()
     encryptedWallet = stringToHex(encryptedWallet)
-    encryptedWallet = Buffer.from(encryptedWallet, 'hex')
+    const WalletBuffer = Buffer.from(encryptedWallet, 'hex')
 
     const context = blake2bInit(32)
-    blake2bUpdate(context, encryptedWallet)
+    blake2bUpdate(context, WalletBuffer)
     const checksum = blake2bFinal(context)
 
     const salt = Buffer.from(nacl.randomBytes(16))
@@ -604,12 +649,12 @@ export default class Wallet {
       mode: AES.CBC,
       padding: Iso10126
     }
-    const encryptedBytes = AES.encrypt(encryptedWallet, key, salt, options)
+    const encryptedBytes = AES.encrypt(WalletBuffer, key, salt, options)
 
     const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
 
     // decrypt to check if wallet was corrupted during ecryption somehow
-    if (this._decrypt(payload).toString('hex') === false) {
+    if (this._decrypt(payload) === false) {
       return this.encrypt() // try again, shouldnt happen often
     }
     return payload.toString('hex')
@@ -716,8 +761,9 @@ export default class Wallet {
     }
     const key = pbkdf2Sync(localPassword, salt, this._iterations, 32, 'sha512')
 
-    const options = {}
-    options.padding = options.padding || Iso10126
+    const options = {
+      padding: Iso10126
+    }
     const decryptedBytes = AES.decrypt(payload, key, salt, options)
 
     const context = blake2bInit(32)
@@ -845,19 +891,19 @@ export default class Wallet {
         console.info('Webwallet SDK disconnected from MQTT')
       })
       this._mqttClient.on('message', (topic, request) => {
-        request = JSON.parse(request.toString())
+        const requestObject = JSON.parse(request.toString())
         if (topic === 'delegateChange') {
           console.info(`MQTT Delegate Change`)
-          this._rpc.delegates = Object.values(request)
+          this._rpc.delegates = Object.values(requestObject)
         } else {
-          const params = mqttPattern('account/+address', topic)
+          const params:any = mqttPattern('account/+address', topic)
           if (params) {
             if (this._accounts[params.address]) {
-              console.info(`MQTT Confirmation - Account - ${request.type} - ${request.sequence}`)
-              this._accounts[params.address].processRequest(request)
+              console.info(`MQTT Confirmation - Account - ${requestObject.type} - ${requestObject.sequence}`)
+              this._accounts[params.address].processRequest(requestObject)
             } else if (this._tokenAccounts[params.address]) {
-              console.info(`MQTT Confirmation - TK Account - ${request.type} - ${request.sequence}`)
-              this._tokenAccounts[params.address].processRequest(request)
+              console.info(`MQTT Confirmation - TK Account - ${requestObject.type} - ${requestObject.sequence}`)
+              this._tokenAccounts[params.address].processRequest(requestObject)
             }
           }
         }
@@ -870,28 +916,30 @@ export default class Wallet {
    * @returns {WalletJSON} JSON request
    */
   toJSON () {
-    const obj = {}
-    obj.password = this._password
-    obj.seed = this._seed
-    obj.deterministicKeyIndex = this._deterministicKeyIndex
-    obj.currentAccountAddress = this._currentAccountAddress
-    obj.accounts = {}
+    const obj:WalletJSON = {
+      password: this._password,
+      seed: this.seed,
+      deterministicKeyIndex: this._deterministicKeyIndex,
+      currentAccountAddress: this.currentAccountAddress,
+      walletID: this.walletID,
+      batchSends: this.batchSends,
+      fullSync: this.fullSync,
+      lazyErrors: this.lazyErrors,
+      tokenSync: this.tokenSync,
+      validateSync: this.validateSync,
+      mqtt: this.mqtt,
+      rpc: this.rpc
+    }
+    let tempAccounts = {}
     for (const account in this._accounts) {
-      obj.accounts[account] = JSON.parse(this._accounts[account].toJSON())
+      tempAccounts[account] = JSON.parse(this._accounts[account].toJSON())
     }
-    obj.tokenAccounts = {}
+    obj.accounts = tempAccounts
+    let tempTokenAccounts = {}
     for (const account in this._tokenAccounts) {
-      obj.tokenAccounts[account] = JSON.parse(this._tokenAccounts[account].toJSON())
+      tempTokenAccounts[account] = JSON.parse(this._tokenAccounts[account].toJSON())
     }
-    obj.walletID = this._walletID
-    obj.batchSends = this._batchSends
-    obj.fullSync = this._fullSync
-    obj.lazyErrors = this._lazyErrors
-    obj.tokenSync = this._tokenSync
-    obj.validateSync = this._validateSync
-    obj.mqtt = this._mqtt
-    obj.rpc = this._rpc
-    obj.version = this._version
+    obj.tokenAccounts = tempTokenAccounts
     return JSON.stringify(obj)
   }
 }

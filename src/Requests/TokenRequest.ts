@@ -1,6 +1,6 @@
 import { hexToUint8, keyFromAccount, accountFromHexKey } from '../Utils'
 import { blake2bUpdate } from 'blakejs'
-import Request, { RequestOptions } from './Request'
+import Request, { RequestOptions, RequestJSON } from './Request'
 
 /**
  * The TokenRequest class.
@@ -9,6 +9,10 @@ export interface TokenRequestOptions extends RequestOptions {
   tokenID?: string
   token_id?: string
   tokenAccount?: string
+  token_account?: string
+}
+export interface TokenRequestJSON extends RequestJSON {
+  token_id?: string
   token_account?: string
 }
 export default abstract class TokenRequest extends Request {
@@ -66,12 +70,12 @@ export default abstract class TokenRequest extends Request {
 
   /**
    * Returns the base TokenRequest JSON
-   * @returns {RequestJSON} JSON request
+   * @returns {TokenRequestJSON} JSON request
    */
   toJSON () {
-    const obj = JSON.parse(super.toJSON())
+    const obj:TokenRequestJSON = super.toJSON()
     obj.token_id = this.tokenID
     obj.token_account = accountFromHexKey(this.tokenID)
-    return JSON.stringify(obj)
+    return obj
   }
 }

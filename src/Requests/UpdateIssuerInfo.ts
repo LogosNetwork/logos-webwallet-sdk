@@ -1,9 +1,12 @@
 import { hexToUint8, uint8ToHex, byteCount, stringToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 
 interface UpdateIssuerInfoOptions extends TokenRequestOptions {
   issuerInfo?: string,
+  new_info?: string
+}
+export interface UpdateIssuerInfoJSON extends TokenRequestJSON {
   new_info?: string
 }
 export default class UpdateIssuerInfo extends TokenRequest {
@@ -64,12 +67,11 @@ export default class UpdateIssuerInfo extends TokenRequest {
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
    * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {RequestJSON} JSON request
+   * @returns {UpdateIssuerInfoJSON} JSON request
    */
-  toJSON (pretty = false) {
-    const obj = JSON.parse(super.toJSON())
+  toJSON () {
+    const obj:UpdateIssuerInfoJSON = super.toJSON()
     obj.new_info = this.issuerInfo
-    if (pretty) return JSON.stringify(obj, null, 2)
-    return JSON.stringify(obj)
+    return obj
   }
 }
