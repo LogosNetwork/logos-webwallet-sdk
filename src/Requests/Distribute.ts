@@ -1,18 +1,26 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
-
-/**
- * The Token Withdraw Fee class for Token Withdraw Fee Request.
- */
-export default class WithdrawFee extends TokenRequest {
-  constructor (options = {
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+interface Transaction {
+  destination: string
+  amount: string
+}
+interface DistributeOptions extends TokenRequestOptions {
+  transaction?: Transaction
+}
+export default class Distribute extends TokenRequest {
+  private _transaction: Transaction
+  constructor (options:DistributeOptions = {
     transaction: null
   }) {
+    options.type = {
+      text: 'distribute',
+      value: 12
+    }
     super(options)
 
     /**
-     * Transaction to withdraw the token fees
+     * Transaction to distribute the token
      * @type {string}
      * @private
      */
@@ -20,11 +28,6 @@ export default class WithdrawFee extends TokenRequest {
       this._transaction = options.transaction
     } else {
       this._transaction = null
-    }
-
-    this._type = {
-      text: 'withdraw_fee',
-      value: 13
     }
   }
 
@@ -43,24 +46,6 @@ export default class WithdrawFee extends TokenRequest {
   }
 
   /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
-  }
-
-  /**
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
@@ -69,7 +54,9 @@ export default class WithdrawFee extends TokenRequest {
    */
   get hash () {
     if (this.transaction === null) throw new Error('transaction is not set.')
-    const context = super.hash()
+    if (!this.transaction.destination) throw new Error('transaction destination is not set.')
+    if (!this.transaction.amount) throw new Error('transaction amount is not set.')
+    const context = super.requestHash()
     const account = hexToUint8(keyFromAccount(this.transaction.destination))
     blake2bUpdate(context, account)
     const amount = hexToUint8(decToHex(this.transaction.amount, 16))

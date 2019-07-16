@@ -4,7 +4,7 @@ import {
   GENESIS_HASH,
   minimumFee
 } from './Utils'
-import bigInt from 'big-integer'
+import * as bigInt from 'big-integer'
 import Account from './Account'
 import { 
   Send,
@@ -28,6 +28,11 @@ import {
  * The Accounts contain the keys, chains, and balances.
  */
 export default class LogosAccount extends Account {
+  private _index: number
+  private _privateKey: string
+  private _tokens: Array<string>
+  private _tokenBalances: TokenBalances
+  private _pendingTokenBalances: TokenBalances
   constructor (options = {
     privateKey: null,
     pendingBalance: '0',
@@ -248,11 +253,11 @@ export default class LogosAccount extends Account {
       this.chain = []
       this.receiveChain = []
       this.pendingChain = []
-      this.tokenBalances = {}
+      this._tokenBalances = {}
       this.balance = '0'
       this.pendingBalance = '0'
-      this.tokens = []
-      this.pendingTokenBalances = {}
+      this._tokens = []
+      this._pendingTokenBalances = {}
       const RPC = this.wallet.rpcClient()
       if (this.wallet.fullSync) {
         RPC.accounts.history(this.address, -1, true).then(async history => {
@@ -296,8 +301,8 @@ export default class LogosAccount extends Account {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
-                this.tokenBalances = { ...info.tokens }
-                this.pendingTokenBalances = { ...info.tokens }
+                this._tokenBalances = { ...info.tokens }
+                this._pendingTokenBalances = { ...info.tokens }
               }
               this.synced = true
               console.info(`${this.address} has been lazy synced`)
@@ -314,8 +319,8 @@ export default class LogosAccount extends Account {
                   this.addToken(pairs[0])
                   info.tokens[pairs[0]] = pairs[1].balance
                 }
-                this.tokenBalances = { ...info.tokens }
-                this.pendingTokenBalances = { ...info.tokens }
+                this._tokenBalances = { ...info.tokens }
+                this._pendingTokenBalances = { ...info.tokens }
               }
             }
             this.synced = true
@@ -372,7 +377,7 @@ export default class LogosAccount extends Account {
       }
     })
     this.balance = sum.toString()
-    this.tokenBalances = { ...tokenSums }
+    this._tokenBalances = { ...tokenSums }
     this.pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -394,7 +399,7 @@ export default class LogosAccount extends Account {
       }
     })
     this.pendingBalance = sum.toString()
-    this.pendingTokenBalances = { ...tokenSums }
+    this._pendingTokenBalances = { ...tokenSums }
   }
 
   /**
@@ -440,7 +445,7 @@ export default class LogosAccount extends Account {
       }
     }
     this.balance = sum.toString()
-    this.tokenBalances = { ...tokenSums }
+    this._tokenBalances = { ...tokenSums }
     this.pendingChain.forEach(pendingRequest => {
       if (pendingRequest.type === 'send') {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -462,7 +467,7 @@ export default class LogosAccount extends Account {
       }
     })
     this.pendingBalance = sum.toString()
-    this.pendingTokenBalances = { ...tokenSums }
+    this._pendingTokenBalances = { ...tokenSums }
   }
 
   /**
@@ -529,8 +534,8 @@ export default class LogosAccount extends Account {
    * @returns {void}
    */
   removePendingRequests () {
-    super.removePendingRequest()
-    this.pendingTokenBalances = { ...this.tokenBalances }
+    super.removePendingRequests()
+    this._pendingTokenBalances = { ...this.tokenBalances }
   }
 
   /**
@@ -1059,7 +1064,7 @@ export default class LogosAccount extends Account {
       } else {
         this.updateBalancesFromRequest(request)
       }
-      if (this.shouldCombine()) {
+      if (this._shouldCombine()) {
         this.combineRequests()
       } else {
         this.broadcastRequest()
@@ -1168,10 +1173,10 @@ export default class LogosAccount extends Account {
 
   /**
    * Returns the base account JSON
-   * @returns {AccountJSON} JSON request
+   * @returns {string} JSON request
    */
   toJSON () {
-    const obj = super.toJSON()
+    const obj = JSON.parse(super.toJSON())
     obj.privateKey = this.privateKey
     obj.tokenBalances = this.tokenBalances
     obj.tokens = this.tokens

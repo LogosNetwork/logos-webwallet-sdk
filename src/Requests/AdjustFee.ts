@@ -1,16 +1,24 @@
 import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
-import bigInt from 'big-integer'
-
-/**
- * The Token AdjustFee class.
- */
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+import * as bigInt from 'big-integer'
+interface AdjustFeeOptions extends TokenRequestOptions {
+  feeType?: string
+  feeRate?: string
+  fee_type?: string
+  fee_rate?: string
+}
 export default class AdjustFee extends TokenRequest {
-  constructor (options = {
+  _feeType: string
+  _feeRate: string
+  constructor (options:AdjustFeeOptions = {
     feeType: 'flat',
-    feeRate: '0'
+    feeRate: '0',
   }) {
+    options.type = {
+      text: 'adjust_fee',
+      value: 8
+    }
     super(options)
 
     /**
@@ -37,11 +45,6 @@ export default class AdjustFee extends TokenRequest {
       this._feeRate = options.fee_rate
     } else {
       this._feeRate = '0'
-    }
-
-    this._type = {
-      text: 'adjust_fee',
-      value: 8
     }
   }
 
@@ -71,24 +74,6 @@ export default class AdjustFee extends TokenRequest {
   }
 
   /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
-  }
-
-  /**
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
@@ -99,7 +84,7 @@ export default class AdjustFee extends TokenRequest {
     if (!this.feeType) throw new Error('Fee Type is not set.')
     if (!this.feeRate) throw new Error('Fee Rate is not set.')
     if (this.feeType === 'percentage' && bigInt(this.feeRate).greater(bigInt('100'))) throw new Error('Fee Type is percentage and exceeds the maximum of 100')
-    const context = super.hash()
+    const context = super.requestHash()
     const feeType = hexToUint8(decToHex(+(this.feeType === 'flat'), 1))
     blake2bUpdate(context, feeType)
     const feeRate = hexToUint8(decToHex(this.feeRate, 16))

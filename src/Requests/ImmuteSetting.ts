@@ -1,6 +1,6 @@
 import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
 
 const Settings = {
   issuance: 0,
@@ -9,13 +9,18 @@ const Settings = {
   adjust_fee: 6,
   whitelist: 8
 }
-/**
- * The Token ImmuteSetting class for Token ImmuteSetting Requests.
- */
+interface ImmuteSettingOptions extends TokenRequestOptions {
+  setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+}
 export default class ImmuteSetting extends TokenRequest {
-  constructor (options = {
+  private _setting: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  constructor (options:ImmuteSettingOptions = {
     setting: null
   }) {
+    options.type = {
+      text: 'immute_setting',
+      value: 5
+    }
     super(options)
 
     /**
@@ -24,20 +29,15 @@ export default class ImmuteSetting extends TokenRequest {
      * @private
      */
     if (options.setting !== undefined) {
-      this._setting = options.setting.toLowerCase()
+      this._setting = options.setting
     } else {
       this._setting = null
-    }
-
-    this._type = {
-      text: 'immute_setting',
-      value: 5
     }
   }
 
   set setting (val) {
     if (typeof Settings[val.toLowerCase()] !== 'number') throw new Error('Invalid setting option')
-    this._setting = val.toLowerCase()
+    this._setting = val
   }
 
   /**
@@ -46,24 +46,6 @@ export default class ImmuteSetting extends TokenRequest {
    */
   get setting () {
     return this._setting
-  }
-
-  /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
   }
 
   /**
@@ -76,7 +58,7 @@ export default class ImmuteSetting extends TokenRequest {
   get hash () {
     if (!this.setting) throw new Error('setting is not set.')
     if (typeof Settings[this.setting] !== 'number') throw new Error('Invalid setting option')
-    const context = super.hash()
+    const context = super.requestHash()
     const setting = hexToUint8(decToHex(Settings[this.setting], 1))
     blake2bUpdate(context, setting)
     return uint8ToHex(blake2bFinal(context))

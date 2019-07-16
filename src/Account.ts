@@ -17,7 +17,30 @@ import {
   TokenSend 
 } from './Requests'
 
-export default class Account {
+interface AccountJSON {
+  label?: string
+  address?: string
+  publicKey?: string
+  balance?: string
+  chain?: Array<LogosRequest>
+  receiveChain?: Array<LogosRequest>
+  version?: number
+}
+
+export default abstract class Account {
+  private _label: string
+  private _address: string
+  private _publicKey: string
+  private _balance: string
+  private _pendingBalance: string
+  private _chain: Array<LogosRequest>
+  private _receiveChain: Array<LogosRequest>
+  private _pendingChain: Array<LogosRequest>
+  private _previous: string
+  private _sequence: number
+  private _version: number
+  private _wallet: Wallet
+  private _synced: boolean
   constructor (options = {
     label: null,
     address: null,
@@ -420,7 +443,7 @@ export default class Account {
     } else {
       this._sequence = -1
     }
-    return parseInt(this._sequence) + 1
+    return this._sequence + 1
   }
 
   /**
@@ -581,7 +604,6 @@ export default class Account {
   removePendingRequests () {
     this._pendingChain = []
     this._pendingBalance = this._balance
-    this._pendingTokenBalances = { ...this._tokenBalances }
   }
 
   /**
@@ -595,7 +617,7 @@ export default class Account {
     for (const i in this._pendingChain) {
       const request = this._pendingChain[i]
       if (request.hash === hash) {
-        this._pendingChain.splice(i, 1)
+        this._pendingChain.splice(parseInt(i), 1)
         return true
       }
     }
@@ -706,6 +728,14 @@ export default class Account {
   }
 
   /**
+   * Validates that the account has enough funds at the current time to publish the request
+   *
+   * @param {Request} request - Request information from the RPC or MQTT
+   * @returns {Boolean}
+   */
+  abstract async validateRequest(request: LogosRequest)
+
+  /**
    * Broadcasts the first pending request
    *
    * @returns {Request}
@@ -745,17 +775,14 @@ export default class Account {
 
   /**
    * Returns the base account JSON
-   * @returns {AccountJSON} JSON request
+   * @returns {string} JSON request
    */
   toJSON () {
-    const obj = {}
+    const obj:AccountJSON = {}
     obj.label = this.label
     obj.address = this.address
     obj.publicKey = this.publicKey
     obj.balance = this.balance
-    obj.tokenBalances = this.tokenBalances
-    obj.tokens = this.tokens
-    obj.type = this.type
     obj.chain = []
     for (const request of this.chain) {
       obj.chain.push(JSON.parse(request.toJSON()))
@@ -765,6 +792,6 @@ export default class Account {
       obj.receiveChain.push(JSON.parse(request.toJSON()))
     }
     obj.version = this.version
-    return obj
+    return JSON.stringify(obj)
   }
 }

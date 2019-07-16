@@ -1,16 +1,27 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
-import bigInt from 'big-integer'
-
-/**
- * The Token Send class
- */
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+import * as bigInt from 'big-integer'
+interface Transaction {
+  destination: string
+  amount: string
+}
+interface TokenSendOptions extends TokenRequestOptions {
+  transactions?: Array<Transaction>
+  tokenFee?: string
+  token_fee?: string
+}
 export default class TokenSend extends TokenRequest {
-  constructor (options = {
+  private _transactions: Array<Transaction>
+  private _tokenFee: string
+  constructor (options:TokenSendOptions = {
     transactions: [],
     tokenFee: '0'
   }) {
+    options.type = {
+      text: 'token_send',
+      value: 15
+    }
     super(options)
 
     /**
@@ -35,11 +46,6 @@ export default class TokenSend extends TokenRequest {
       this._tokenFee = options.token_fee
     } else {
       this._tokenFee = '0'
-    }
-
-    this._type = {
-      text: 'token_send',
-      value: 15
     }
   }
 
@@ -81,24 +87,6 @@ export default class TokenSend extends TokenRequest {
   }
 
   /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
-  }
-
-  /**
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
@@ -106,9 +94,9 @@ export default class TokenSend extends TokenRequest {
    * @readonly
    */
   get hash () {
-    if (this.transaction === null) throw new Error('transaction is not set.')
+    if (this.transactions === null) throw new Error('transaction is not set.')
     if (this.tokenFee === null) throw new Error('token fee is not set.')
-    const context = super.hash()
+    const context = super.requestHash()
     for (const transaction of this.transactions) {
       blake2bUpdate(context, hexToUint8(keyFromAccount(transaction.destination)))
       blake2bUpdate(context, hexToUint8(decToHex(transaction.amount, 16)))

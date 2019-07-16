@@ -1,19 +1,26 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
 const Actions = {
   add: 0,
   remove: 1
 }
 
-/**
- * The Token UpdateController class.
- */
+interface UpdateControllerOptions extends TokenRequestOptions {
+  action?: 'add' | 'remove'
+  controller?: Controller
+}
 export default class UpdateController extends TokenRequest {
-  constructor (options = {
+  private _action: 'add' | 'remove'
+  private _controller: Controller
+  constructor (options:UpdateControllerOptions = {
     action: null,
     controller: null
   }) {
+    options.type = {
+      text: 'update_controller',
+      value: 10
+    }
     super(options)
 
     /**
@@ -33,38 +40,15 @@ export default class UpdateController extends TokenRequest {
      * @private
      */
     if (options.action !== undefined) {
-      this._action = options.action.toLowerCase()
+      this._action = options.action
     } else {
       this._action = null
     }
-
-    this._type = {
-      text: 'update_controller',
-      value: 10
-    }
-  }
-
-  /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
   }
 
   set action (val) {
     if (typeof Actions[val.toLowerCase()] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
-    this._action = val.toLowerCase()
+    this._action = val
   }
 
   /**
@@ -139,7 +123,7 @@ export default class UpdateController extends TokenRequest {
     this.validateController()
     if (!this.action) throw new Error('action is not set.')
     if (typeof Actions[this.action] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
-    const context = super.hash()
+    const context = super.requestHash()
     const action = hexToUint8(decToHex(Actions[this.action], 1))
     blake2bUpdate(context, action)
     const account = hexToUint8(keyFromAccount(this.controller.account))

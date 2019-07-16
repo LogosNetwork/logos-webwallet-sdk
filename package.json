@@ -21,8 +21,9 @@
     "unit:test": "./node_modules/.bin/mocha --reporter spec",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "src:build": "rm -rf dist && babel src --out-dir dist",
-    "prepublishOnly": "npm run test && NODE_ENV=production npm run src:build"
+    "build": "webpack",
+    "stats:webpack": "webpack --profile --json > dist/stats.json",
+    "prepublishOnly": "npm run test && NODE_ENV=production npm run build"
   },
   "author": "Tyler Storm <tyler@prometheanlabs.io>",
   "contributors": [
@@ -37,6 +38,7 @@
   "type": "module",
   "devDependencies": {
     "@babel/core": "^7.5.4",
+    "@babel/plugin-transform-runtime": "^7.5.0",
     "@babel/preset-env": "^7.5.4",
     "@babel/register": "^7.4.4",
     "babel-eslint": "^10.0.2",
@@ -49,13 +51,16 @@
     "webpack-cli": "^3.3.6"
   },
   "dependencies": {
+    "@babel/runtime": "^7.5.4",
     "@logosnetwork/logos-rpc-client": "^1.1.29",
     "assert": "^2.0.0",
+    "awesome-typescript-loader": "^5.2.1",
     "big-integer": "^1.6.44",
     "blakejs": "^1.1.0",
     "core-js": "^3.1.4",
     "mqtt": "^3.0.0",
     "pbkdf2": "^3.0.17",
+    "source-map-loader": "^0.2.4",
     "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef"
   },
   "bugs": {

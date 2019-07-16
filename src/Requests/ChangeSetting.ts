@@ -1,6 +1,6 @@
 import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
 const Settings = {
   issuance: 0,
   revoke: 2,
@@ -8,14 +8,21 @@ const Settings = {
   adjust_fee: 6,
   whitelist: 8
 }
-/**
- * The Token Change Setting class for Change Setting Requests.
- */
+interface ChangeSettingOptions extends TokenRequestOptions {
+  setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  value?: boolean
+}
 export default class ChangeSetting extends TokenRequest {
-  constructor (options = {
+  private _setting: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  private _value: boolean
+  constructor (options:ChangeSettingOptions = {
     setting: null,
     value: null
   }) {
+    options.type = {
+      text: 'change_setting',
+      value: 4
+    }
     super(options)
 
     /**
@@ -24,7 +31,7 @@ export default class ChangeSetting extends TokenRequest {
      * @private
      */
     if (options.setting !== undefined) {
-      this._setting = options.setting.toLowerCase()
+      this._setting = options.setting
     } else {
       this._setting = null
     }
@@ -35,23 +42,13 @@ export default class ChangeSetting extends TokenRequest {
      * @private
      */
     if (options.value !== undefined) {
-      if (options.value === false || options.value === 'false' || options.value === 0) {
-        this._value = false
-      } else if (options.value === true || options.value === 'true' || options.value === 1) {
-        this._value = true
-      }
+      this._value = options.value
     } else {
       this._value = null
-    }
-
-    this._type = {
-      text: 'change_setting',
-      value: 4
     }
   }
 
   set value (val) {
-    if (typeof val !== 'boolean') throw new Error('value must be a boolean')
     this._value = val
   }
 
@@ -64,8 +61,7 @@ export default class ChangeSetting extends TokenRequest {
   }
 
   set setting (val) {
-    if (typeof Settings[val.toLowerCase()] !== 'number') throw new Error('Invalid setting option')
-    this._setting = val.toLowerCase()
+    this._setting = val
   }
 
   /**
@@ -74,24 +70,6 @@ export default class ChangeSetting extends TokenRequest {
    */
   get setting () {
     return this._setting
-  }
-
-  /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
   }
 
   /**
@@ -104,7 +82,7 @@ export default class ChangeSetting extends TokenRequest {
   get hash () {
     if (!this.setting) throw new Error('Settings is not set.')
     if (this.value === null) throw new Error('Value is not set.')
-    const context = super.hash()
+    const context = super.requestHash()
     const setting = hexToUint8(decToHex(Settings[this.setting], 1))
     blake2bUpdate(context, setting)
     const value = hexToUint8(decToHex((+this.value), 1))

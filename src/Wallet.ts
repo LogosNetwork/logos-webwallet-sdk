@@ -6,7 +6,7 @@ import nacl from 'tweetnacl/nacl'
 import { blake2bInit, blake2bFinal, blake2bUpdate } from 'blakejs'
 import bigInt from 'big-integer'
 import { connect } from 'mqtt'
-import Account from './Account'
+import LogosAccount from './LogosAccount'
 import TokenAccount from './TokenAccount'
 
 /**
@@ -182,7 +182,7 @@ export default class Wallet {
         }
         const accountOptions = options.accounts[account]
         accountOptions.wallet = this
-        this._accounts[account] = new Account(accountOptions)
+        this._accounts[account] = new LogosAccount(accountOptions)
       }
     } else {
       this._accounts = {}

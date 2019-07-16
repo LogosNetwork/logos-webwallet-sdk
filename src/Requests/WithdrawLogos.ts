@@ -1,18 +1,26 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
-
-/**
- * The Token Distribute class for Token Distribute Requests.
- */
-export default class Distribute extends TokenRequest {
-  constructor (options = {
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+interface Transaction {
+  destination: string
+  amount: string
+}
+interface WithdrawLogosOptions extends TokenRequestOptions {
+  transaction?: Transaction
+}
+export default class WithdrawLogos extends TokenRequest {
+  private _transaction: Transaction
+  constructor (options:WithdrawLogosOptions = {
     transaction: null
   }) {
+    options.type = {
+      text: 'withdraw_logos',
+      value: 14
+    }
     super(options)
 
     /**
-     * Transaction to distribute the token
+     * Transaction to withdraw the token fees
      * @type {string}
      * @private
      */
@@ -21,15 +29,12 @@ export default class Distribute extends TokenRequest {
     } else {
       this._transaction = null
     }
-    this._type = {
-      text: 'distribute',
-      value: 12
-    }
   }
 
   set transaction (transaction) {
-    if (typeof transaction.destination === 'undefined') throw new Error('destination should be passed in transaction object')
-    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your token (e.g. satoshi)')
+    if (!transaction) throw new Error('transaction is was not sent.')
+    if (!transaction.destination) throw new Error('destination should be passed in transaction object')
+    if (!transaction.amount) throw new Error('amount should be passed in transaction object - pass this as the base unit logos')
     this._transaction = transaction
   }
 
@@ -39,24 +44,6 @@ export default class Distribute extends TokenRequest {
    */
   get transaction () {
     return this._transaction
-  }
-
-  /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
   }
 
   /**
@@ -70,7 +57,7 @@ export default class Distribute extends TokenRequest {
     if (this.transaction === null) throw new Error('transaction is not set.')
     if (!this.transaction.destination) throw new Error('transaction destination is not set.')
     if (!this.transaction.amount) throw new Error('transaction amount is not set.')
-    const context = super.hash()
+    const context = super.requestHash()
     const account = hexToUint8(keyFromAccount(this.transaction.destination))
     blake2bUpdate(context, account)
     const amount = hexToUint8(decToHex(this.transaction.amount, 16))

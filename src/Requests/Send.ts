@@ -1,30 +1,29 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import bigInt from 'big-integer'
-
-/**
- * The Send class for Send Requests.
- */
+import Request, { RequestOptions } from './Request'
+import * as bigInt from 'big-integer'
+interface Transaction {
+  destination: string
+  amount: string
+}
+interface SendOptions extends RequestOptions {
+  transactions?: Array<Transaction>
+}
 export default class Send extends Request {
-  constructor (options = {
+  private _transactions: Array<Transaction>
+  constructor (options:SendOptions = {
     transactions: []
   }) {
+    options.type = {
+      text: 'send',
+      value: 0
+    }
     super(options)
 
-    /**
-     * Transactions
-     * @type {Transaction[]}
-     * @private
-     */
     if (options.transactions !== undefined) {
       this._transactions = options.transactions
     } else {
       this._transactions = []
-    }
-
-    this._type = {
-      text: 'send',
-      value: 0
     }
   }
 
@@ -54,24 +53,6 @@ export default class Send extends Request {
   }
 
   /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
-  }
-
-  /**
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
@@ -80,7 +61,7 @@ export default class Send extends Request {
    */
   get hash () {
     if (!this.transactions) throw new Error('Transactions are not set.')
-    const context = super.hash()
+    const context = super.requestHash()
     for (const transaction of this.transactions) {
       blake2bUpdate(context, hexToUint8(keyFromAccount(transaction.destination)))
       blake2bUpdate(context, hexToUint8(decToHex(transaction.amount, 16)))
@@ -103,9 +84,9 @@ export default class Send extends Request {
   /**
    * Returns the request JSON ready for broadcast to the Logos Network
    * @param {boolean} pretty - if true it will format the JSON (note you can't broadcast pretty json)
-   * @returns {RequestJSON} JSON request
+   * @returns {string} Send Request JSON stringified
    */
-  toJSON (pretty = false) {
+  toJSON (pretty:boolean = false) {
     const obj = JSON.parse(super.toJSON())
     obj.transactions = this.transactions
     if (pretty) return JSON.stringify(obj, null, 2)

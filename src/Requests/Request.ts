@@ -1,19 +1,54 @@
 import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK } from '../Utils'
-import nacl from 'tweetnacl/nacl'
+import * as nacl from 'tweetnacl/nacl'
 import { blake2bInit, blake2bUpdate } from 'blakejs'
-import Logos from '@logosnetwork/logos-rpc-client'
-
+import { Logos } from '@logosnetwork/logos-rpc-client'
+export interface RequestOptions {
+  origin?: string
+  previous?: string
+  sequence?: number
+  fee?: string
+  signature?: string
+  timestamp?: string
+  work?: string
+  type?: RequestType
+}
+interface RequestType {
+  text: string
+  value: number
+}
+interface RequestJSON {
+  previous?: string
+  sequence?: string
+  origin?: string
+  fee?: string
+  work?: string
+  hash?: string
+  type?: string
+  signature?: string
+  timestamp?: string
+}
 /**
  * The base class for all Requests.
  */
-export default class Request {
-  constructor (options = {
+export default abstract class Request {
+  private _signature: string
+  private _work: string
+  private _previous: string
+  private _fee: string
+  private _origin: string
+  private _sequence: number
+  private _timestamp: string
+  private _version: number
+  private _published: boolean
+  private _type: RequestType
+  constructor (options: RequestOptions = {
     origin: null,
     previous: null,
     sequence: null,
     fee: null,
     signature: null,
     timestamp: null,
+    type: null,
     work: EMPTY_WORK
   }) {
     /**
@@ -208,6 +243,39 @@ export default class Request {
   }
 
   /**
+   * Returns the type of this request
+   * @type {string}
+   * @readonly
+   */
+  get type () {
+    return this._type.text
+  }
+
+  /**
+   * Returns the type value of this request
+   * @type {number}
+   * @readonly
+   */
+  get typeValue () {
+    return this._type.value
+  }
+
+  /**
+   * Returns the version of this request
+   * @type {number}
+   * @readonly
+   */
+  get version () {
+    return this._version
+  }
+
+  /**
+   * Returns a hash for the request
+   * @returns {string} - Hash
+   */
+  abstract get hash (): string
+
+  /**
    * Creates a signature for the request
    * @param {Hexadecimal64Length} privateKey - private key in hex
    * @returns {boolean} if the signature is valid
@@ -224,7 +292,7 @@ export default class Request {
    * Creates a Blake2b Context for the request
    * @returns {context} - Blake2b Context
    */
-  hash () {
+  requestHash () {
     if (!this.previous) throw new Error('Previous is not set.')
     if (this.sequence === null) throw new Error('Sequence is not set.')
     if (this.fee === null) throw new Error('Transaction fee is not set.')
@@ -280,10 +348,10 @@ export default class Request {
 
   /**
    * Returns the base request JSON
-   * @returns {RequestJSON} JSON request
+   * @returns {string} RequestJSON as string
    */
   toJSON () {
-    const obj = {}
+    const obj:RequestJSON = {}
     obj.previous = this.previous
     obj.sequence = this.sequence.toString()
     obj.origin = this._origin

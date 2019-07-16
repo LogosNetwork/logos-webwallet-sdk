@@ -1,18 +1,29 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
-
-/**
- * The Token Withdraw Logos class for Token Withdraw Logos Request.
- */
-export default class WithdrawLogos extends TokenRequest {
-  constructor (options = {
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+interface Transaction {
+  destination: string
+  amount: string
+}
+interface RevokeOptions extends TokenRequestOptions {
+  source?: string
+  transaction?: Transaction
+}
+export default class Revoke extends TokenRequest {
+  private _source: string
+  private _transaction: Transaction
+  constructor (options:RevokeOptions = {
+    source: null,
     transaction: null
   }) {
+    options.type = {
+      text: 'revoke',
+      value: 6
+    }
     super(options)
 
     /**
-     * Transaction to withdraw the token fees
+     * Transaction to distribute the token
      * @type {string}
      * @private
      */
@@ -22,16 +33,21 @@ export default class WithdrawLogos extends TokenRequest {
       this._transaction = null
     }
 
-    this._type = {
-      text: 'withdraw_logos',
-      value: 14
+    /**
+     * Source to send to revoke the tokens from
+     * @type {LogosAddress}
+     * @private
+     */
+    if (options.source !== undefined) {
+      this._source = options.source
+    } else {
+      this._source = null
     }
   }
 
   set transaction (transaction) {
-    if (!transaction) throw new Error('transaction is was not sent.')
-    if (!transaction.destination) throw new Error('destination should be passed in transaction object')
-    if (!transaction.amount) throw new Error('amount should be passed in transaction object - pass this as the base unit logos')
+    if (typeof transaction.destination === 'undefined') throw new Error('destination should be passed in transaction object')
+    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your token (e.g. satoshi)')
     this._transaction = transaction
   }
 
@@ -43,22 +59,16 @@ export default class WithdrawLogos extends TokenRequest {
     return this._transaction
   }
 
-  /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
+  set source (revokee) {
+    this._source = revokee
   }
 
   /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
+   * Return where the token is being revoked from
+   * @type {LogosAddress}
    */
-  get typeValue () {
-    return this._type.value
+  get source () {
+    return this._source
   }
 
   /**
@@ -72,7 +82,10 @@ export default class WithdrawLogos extends TokenRequest {
     if (this.transaction === null) throw new Error('transaction is not set.')
     if (!this.transaction.destination) throw new Error('transaction destination is not set.')
     if (!this.transaction.amount) throw new Error('transaction amount is not set.')
-    const context = super.hash()
+    if (!this.source) throw new Error('Source account is not set.')
+    const context = super.requestHash()
+    const source = hexToUint8(keyFromAccount(this.source))
+    blake2bUpdate(context, source)
     const account = hexToUint8(keyFromAccount(this.transaction.destination))
     blake2bUpdate(context, account)
     const amount = hexToUint8(decToHex(this.transaction.amount, 16))
@@ -87,6 +100,7 @@ export default class WithdrawLogos extends TokenRequest {
    */
   toJSON (pretty = false) {
     const obj = JSON.parse(super.toJSON())
+    obj.source = this.source
     obj.transaction = this.transaction
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)

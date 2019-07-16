@@ -1,20 +1,27 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
 const Statuses = {
   frozen: 0,
   unfrozen: 1,
   whitelisted: 2,
   not_whitelisted: 3
 }
-/**
- * The Token AdjustUserStatus class
- */
+interface AdjustUserStatusOptions extends TokenRequestOptions {
+  account?: string
+  status?: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
+}
 export default class AdjustUserStatus extends TokenRequest {
-  constructor (options = {
+  private _account: string
+  private _status: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
+  constructor (options:AdjustUserStatusOptions = {
     account: null,
     status: null
   }) {
+    options.type = {
+      text: 'adjust_user_status',
+      value: 7
+    }
     super(options)
 
     /**
@@ -30,29 +37,23 @@ export default class AdjustUserStatus extends TokenRequest {
 
     /**
      * Status that we are applying to the user
-     * @type {string}
+     * @type {Status}
      * @private
      */
     if (options.status !== undefined) {
-      this._status = options.status.toLowerCase()
+      this._status = options.status
     } else {
       this._status = null
-    }
-
-    this._type = {
-      text: 'adjust_user_status',
-      value: 7
     }
   }
 
   set status (val) {
-    if (typeof Statuses[val.toLowerCase()] !== 'number') throw new Error('Invalid status option valid options are frozen, unfrozen, whitelisted, not_whitelisted')
-    this._status = val.toLowerCase()
+    this._status = val
   }
 
   /**
    * Returns the string of the status
-   * @type {string}
+   * @type {Status}
    */
   get status () {
     return this._status
@@ -71,24 +72,6 @@ export default class AdjustUserStatus extends TokenRequest {
   }
 
   /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
-  }
-
-  /**
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
@@ -98,7 +81,7 @@ export default class AdjustUserStatus extends TokenRequest {
   get hash () {
     if (!this.account) throw new Error('Account is not set.')
     if (!this.status) throw new Error('Status is not set.')
-    const context = super.hash()
+    const context = super.requestHash()
     const account = hexToUint8(keyFromAccount(this.account))
     blake2bUpdate(context, account)
     const status = hexToUint8(decToHex(Statuses[this.status], 1))

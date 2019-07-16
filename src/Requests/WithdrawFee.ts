@@ -1,19 +1,26 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
-import TokenRequest from './TokenRequest'
-
-/**
- * The Token Revoke class for Token Revoke Requests.
- */
-export default class Revoke extends TokenRequest {
-  constructor (options = {
-    source: null,
+import TokenRequest, { TokenRequestOptions } from './TokenRequest'
+interface Transaction {
+  destination: string
+  amount: string
+}
+interface WithdrawFeeOptions extends TokenRequestOptions {
+  transaction?: Transaction
+}
+export default class WithdrawFee extends TokenRequest {
+  private _transaction: Transaction
+  constructor (options:WithdrawFeeOptions = {
     transaction: null
   }) {
+    options.type = {
+      text: 'withdraw_fee',
+      value: 13
+    }
     super(options)
 
     /**
-     * Transaction to distribute the token
+     * Transaction to withdraw the token fees
      * @type {string}
      * @private
      */
@@ -21,22 +28,6 @@ export default class Revoke extends TokenRequest {
       this._transaction = options.transaction
     } else {
       this._transaction = null
-    }
-
-    /**
-     * Source to send to revoke the tokens from
-     * @type {LogosAddress}
-     * @private
-     */
-    if (options.source !== undefined) {
-      this._source = options.source
-    } else {
-      this._source = null
-    }
-
-    this._type = {
-      text: 'revoke',
-      value: 6
     }
   }
 
@@ -54,36 +45,6 @@ export default class Revoke extends TokenRequest {
     return this._transaction
   }
 
-  set source (revokee) {
-    this._source = revokee
-  }
-
-  /**
-   * Return where the token is being revoked from
-   * @type {LogosAddress}
-   */
-  get source () {
-    return this._source
-  }
-
-  /**
-   * Returns the type of this request
-   * @type {string}
-   * @readonly
-   */
-  get type () {
-    return this._type.text
-  }
-
-  /**
-   * Returns the type value of this request
-   * @type {number}
-   * @readonly
-   */
-  get typeValue () {
-    return this._type.value
-  }
-
   /**
    * Returns calculated hash or Builds the request and calculates the hash
    *
@@ -93,12 +54,7 @@ export default class Revoke extends TokenRequest {
    */
   get hash () {
     if (this.transaction === null) throw new Error('transaction is not set.')
-    if (!this.transaction.destination) throw new Error('transaction destination is not set.')
-    if (!this.transaction.amount) throw new Error('transaction amount is not set.')
-    if (!this.source) throw new Error('Source account is not set.')
-    const context = super.hash()
-    const source = hexToUint8(keyFromAccount(this.source))
-    blake2bUpdate(context, source)
+    const context = super.requestHash()
     const account = hexToUint8(keyFromAccount(this.transaction.destination))
     blake2bUpdate(context, account)
     const amount = hexToUint8(decToHex(this.transaction.amount, 16))
@@ -113,7 +69,6 @@ export default class Revoke extends TokenRequest {
    */
   toJSON (pretty = false) {
     const obj = JSON.parse(super.toJSON())
-    obj.source = this.source
     obj.transaction = this.transaction
     if (pretty) return JSON.stringify(obj, null, 2)
     return JSON.stringify(obj)

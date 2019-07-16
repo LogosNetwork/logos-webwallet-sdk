@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+      "outDir": "./tsbuild",
+      "allowJs": true,
+      "target": "es5",
+      "lib": [
+          "es2018",
+          "dom"
+      ]
+  },
+  "include": [
+      "./src/**/*"
+  ]
+}
