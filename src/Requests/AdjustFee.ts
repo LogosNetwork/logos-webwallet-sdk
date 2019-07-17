@@ -2,7 +2,7 @@ import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import * as bigInt from 'big-integer'
-interface AdjustFeeOptions extends TokenRequestOptions {
+export interface AdjustFeeOptions extends TokenRequestOptions {
   feeType?: 'flat' | 'percentage'
   feeRate?: string
   fee_type?: 'flat' | 'percentage'

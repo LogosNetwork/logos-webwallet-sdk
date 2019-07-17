@@ -5,7 +5,7 @@ import Logos from '@logosnetwork/logos-rpc-client'
 export interface RequestOptions {
   origin?: string
   previous?: string
-  sequence?: number
+  sequence?: number | string
   fee?: string
   signature?: string
   timestamp?: string

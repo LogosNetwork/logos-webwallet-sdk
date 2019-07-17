@@ -1,11 +1,8 @@
 import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
-interface Transaction {
-  destination: string
-  amount: string
-}
-interface DistributeOptions extends TokenRequestOptions {
+import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
+export interface DistributeOptions extends TokenRequestOptions {
   transaction?: Transaction
 }
 export interface DistributeJSON extends TokenRequestJSON {

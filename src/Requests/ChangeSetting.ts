@@ -8,7 +8,7 @@ const Settings = {
   adjust_fee: 6,
   whitelist: 8
 }
-interface ChangeSettingOptions extends TokenRequestOptions {
+export interface ChangeSettingOptions extends TokenRequestOptions {
   setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
   value?: boolean
 }

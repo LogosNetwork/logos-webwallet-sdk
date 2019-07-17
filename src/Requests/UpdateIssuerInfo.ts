@@ -2,7 +2,7 @@ import { hexToUint8, uint8ToHex, byteCount, stringToHex } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 
-interface UpdateIssuerInfoOptions extends TokenRequestOptions {
+export interface UpdateIssuerInfoOptions extends TokenRequestOptions {
   issuerInfo?: string,
   new_info?: string
 }

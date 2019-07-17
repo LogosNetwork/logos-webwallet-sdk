@@ -2,10 +2,7 @@ import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import * as bigInt from 'big-integer'
-interface Transaction {
-  destination: string
-  amount: string
-}
+import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
 interface TokenSendOptions extends TokenRequestOptions {
   transactions?: Array<Transaction>
   tokenFee?: string

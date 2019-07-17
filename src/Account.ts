@@ -19,6 +19,7 @@ import {
   RequestJSON
 } from './Requests'
 import Wallet from './Wallet';
+import TokenAccount from './TokenAccount';
 
 export interface AccountJSON {
   label?: string
@@ -296,7 +297,11 @@ export default abstract class Account {
   get label () {
     if (this._label !== null) {
       return this._label
-    } 
+    } else if (this instanceof TokenAccount) {
+      return `${this.name} (${this.symbol})`
+    } else {
+      return null
+    }
   }
 
   set label (label) {
@@ -570,10 +575,10 @@ export default abstract class Account {
   /**
    * Gets the requests up to a certain hash from the send chain
    *
-   * @param {Hexadecimal64Length} hash - Hash of the request you wish to stop retrieving requests at
+   * @param {string} hash - Hash of the request you wish to stop retrieving requests at
    * @returns {Request[]} all the requests up to and including the specified request
    */
-  getRequestsUpTo (hash) {
+  getRequestsUpTo (hash: string) {
     const requests = []
     for (let i = this._chain.length - 1; i > 0; i--) {
       requests.push(this._chain[i])
@@ -585,10 +590,10 @@ export default abstract class Account {
   /**
    * Gets the requests up to a certain hash from the pending chain
    *
-   * @param {Hexadecimal64Length} hash - Hash of the request you wish to stop retrieving requests at
+   * @param {string} hash - Hash of the request you wish to stop retrieving requests at
    * @returns {Request[]} all the requests up to and including the specified request
    */
-  getPendingRequestsUpTo (hash) {
+  getPendingRequestsUpTo (hash: string) {
     const requests = []
     for (let i = this._pendingChain.length - 1; i > 0; i--) {
       requests.push(this._pendingChain[i])
@@ -600,10 +605,10 @@ export default abstract class Account {
   /**
    * Gets the requests up to a certain hash from the receive chain
    *
-   * @param {Hexadecimal64Length} hash - Hash of the request you wish to stop retrieving requests at
+   * @param {string} hash - Hash of the request you wish to stop retrieving requests at
    * @returns {Request[]} all the requests up to and including the specified request
    */
-  getReceiveRequestsUpTo (hash) {
+  getReceiveRequestsUpTo (hash: string) {
     const requests = []
     for (let i = this._receiveChain.length - 1; i > 0; i--) {
       requests.push(this._receiveChain[i])
@@ -627,8 +632,7 @@ export default abstract class Account {
    * @param {Hexadecimal64Length} hash - The hash of the request we are confirming
    * @returns {boolean}
    */
-  removePendingRequest (hash) {
-    const found = false
+  removePendingRequest (hash: string) {
     for (const i in this._pendingChain) {
       const request = this._pendingChain[i]
       if (request.hash === hash) {
@@ -636,19 +640,17 @@ export default abstract class Account {
         return true
       }
     }
-    if (!found) {
-      console.warn('Not found')
-      return false
-    }
+    console.warn('Not found')
+    return false
   }
 
   /**
    * Finds the request object of the specified request hash
    *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} null if no request object of the specified hash was found
+   * @param {string} hash - The hash of the request we are looking for
+   * @returns {Request | false} null if no request object of the specified hash was found
    */
-  getRequest (hash) {
+  getRequest (hash: string) {
     for (let j = this._chain.length - 1; j >= 0; j--) {
       const blk = this._chain[j]
       if (blk.hash === hash) return blk
@@ -667,10 +669,10 @@ export default abstract class Account {
   /**
    * Finds the request object of the specified request hash in the confirmed chain
    *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} false if no request object of the specified hash was found
+   * @param {string} hash - The hash of the request we are looking for
+   * @returns {Request | false} false if no request object of the specified hash was found
    */
-  getChainRequest (hash) {
+  getChainRequest (hash: string) {
     for (let j = this._chain.length - 1; j >= 0; j--) {
       const blk = this._chain[j]
       if (blk.hash === hash) return blk
@@ -681,10 +683,10 @@ export default abstract class Account {
   /**
    * Finds the request object of the specified request hash in the pending chain
    *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
-   * @returns {Request} false if no request object of the specified hash was found
+   * @param {string} hash - The hash of the request we are looking for
+   * @returns {Request | false } false if no request object of the specified hash was found
    */
-  getPendingRequest (hash) {
+  getPendingRequest (hash: string) {
     for (let n = this._pendingChain.length - 1; n >= 0; n--) {
       const request = this._pendingChain[n]
       if (request.hash === hash) return request
@@ -695,10 +697,10 @@ export default abstract class Account {
   /**
    * Finds the request object of the specified request hash in the recieve chain
    *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for
+   * @param {string} hash - The hash of the request we are looking for
    * @returns {Request} false if no request object of the specified hash was found
    */
-  getRecieveRequest (hash) {
+  getRecieveRequest (hash: string) {
     for (let n = this._receiveChain.length - 1; n >= 0; n--) {
       const blk = this._receiveChain[n]
       if (blk.hash === hash) return blk
@@ -712,7 +714,7 @@ export default abstract class Account {
    * @param {Request} request - Request Object
    * @returns {void}
    */
-  _addToReceiveChain (request) {
+  _addToReceiveChain (request: Request) {
     let addBlock = true
     for (let j = this._receiveChain.length - 1; j >= 0; j--) {
       const blk = this._receiveChain[j]
@@ -730,7 +732,7 @@ export default abstract class Account {
    * @param {Request} request - Request Object
    * @returns {void}
    */
-  _addToSendChain (request) {
+  _addToSendChain (request: Request) {
     let addBlock = true
     for (let j = this._chain.length - 1; j >= 0; j--) {
       const blk = this._chain[j]
@@ -748,7 +750,7 @@ export default abstract class Account {
    * @param {Request} request - Request information from the RPC or MQTT
    * @returns {Boolean}
    */
-  abstract async validateRequest(request: Request)
+  abstract async validateRequest(request: Request): Promise<boolean>
 
   /**
    * Broadcasts the first pending request
@@ -770,9 +772,8 @@ export default abstract class Account {
       } else {
         console.info(`Request is already pending!`)
       }
-    } else {
-      return null
     }
+    return null
   }
 
   /**
@@ -782,7 +783,7 @@ export default abstract class Account {
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
    * @returns {Request}
    */
-  async addRequest (request) {
+  async addRequest (request: Request) {
     this._pendingChain.push(request)
     this.broadcastRequest()
     return request

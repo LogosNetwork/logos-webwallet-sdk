@@ -1,14 +1,22 @@
 {
-  "compilerOptions": {
-      "outDir": "./tsbuild",
-      "allowJs": true,
-      "target": "es5",
-      "lib": [
-          "es2018",
-          "dom"
-      ]
-  },
-  "include": [
-      "./src/**/*"
-  ]
+    "compilerOptions": {
+        "outDir": "./tsbuild/",
+        "lib": ["es2018"],
+        "alwaysStrict": true,
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "forceConsistentCasingInFileNames": true,
+        "target": "es5",
+        "experimentalDecorators": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "suppressExcessPropertyErrors": true,
+        "declaration": true
+    },
+    "include": ["./src/**/*"],
+    "exclude": ["node_modules"]
 }
+  

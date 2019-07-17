@@ -5,7 +5,7 @@ import * as bigInt from 'big-integer'
 import { Settings, Controller } from '../TokenAccount'
 import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
 
-interface IssuanceOptions extends RequestOptions {
+export interface IssuanceOptions extends RequestOptions {
   tokenID?: string
   token_id?: string
   symbol?: string
@@ -225,7 +225,7 @@ export default class Issuance extends Request {
    * Return the token id
    * @type {string}
    */
-  get tokenID () {
+  get tokenID (): string {
     if (this._tokenID) {
       return this._tokenID
     } else {
@@ -313,27 +313,45 @@ export default class Issuance extends Request {
 
   /**
    * The settings for the token
-   * @type {string}
+   * @type {Settings}
+   */
+  get settingsAsObject () {
+    return this._settings
+  }
+
+  /**
+   * The settings for the token
+   * @type {Settings}
    */
   get settings () {
     return this._settings
   }
 
-  set settings (val) {
+  set settings (val: Settings | RpcSettings[]) {
     val = deserializeSettings(val)
     this.validateSettings(val)
     this._settings = val
   }
 
+
   /**
    * The contollers of the token
+   * @type {Controller[]}
+   */
+  get controllersAsObject () {
+    return this._controllers
+  }
+
+  /**
+   * The contollers of the token
+   * Typescript is really dumb and won't let us use different types for getter setters
    * @type {Controller[]}
    */
   get controllers () {
     return this._controllers
   }
 
-  set controllers (val) {
+  set controllers (val: Controller[] | RpcController[]) {
     val = deserializeControllers(val)
     for (const controller of val) {
       this.validateController(controller)

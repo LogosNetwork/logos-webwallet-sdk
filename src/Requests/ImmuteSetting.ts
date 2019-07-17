@@ -11,7 +11,7 @@ const Settings = {
   adjust_fee: 6,
   whitelist: 8
 }
-interface ImmuteSettingOptions extends TokenRequestOptions {
+export interface ImmuteSettingOptions extends TokenRequestOptions {
   setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
 }
 export default class ImmuteSetting extends TokenRequest {

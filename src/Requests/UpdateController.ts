@@ -9,7 +9,7 @@ const Actions = {
   remove: 1
 }
 
-interface UpdateControllerOptions extends TokenRequestOptions {
+export interface UpdateControllerOptions extends TokenRequestOptions {
   action?: 'add' | 'remove'
   controller?: Controller | RpcController
 }

@@ -7,7 +7,7 @@ const Statuses = {
   whitelisted: 2,
   not_whitelisted: 3
 }
-interface AdjustUserStatusOptions extends TokenRequestOptions {
+export interface AdjustUserStatusOptions extends TokenRequestOptions {
   account?: string
   status?: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
 }
@@ -17,7 +17,7 @@ export interface  AdjustUserStatusJSON extends TokenRequestJSON {
 }
 export default class AdjustUserStatus extends TokenRequest {
   private _account: string
-  private _status: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
+  private _status: 'frozen' | 'unfrozen' | 'whitelisted' | 'not_whitelisted'
   constructor (options:AdjustUserStatusOptions = {
     account: null,
     status: null

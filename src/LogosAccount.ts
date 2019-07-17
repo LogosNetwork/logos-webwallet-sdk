@@ -6,6 +6,8 @@ import {
 } from './Utils'
 import * as bigInt from 'big-integer'
 import Account, { AccountOptions, AccountJSON } from './Account'
+import { Request as RpcRequest, Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
+
 import { 
   Send,
   Issuance,
@@ -21,8 +23,22 @@ import {
   Distribute,
   WithdrawFee,
   WithdrawLogos,
-  TokenSend 
+  TokenSend,
+  Request
 } from './Requests'
+import { IssuanceOptions } from './Requests/Issuance';
+import { IssueAdditionalJSON } from './Requests/IssueAdditional';
+import { ChangeSettingOptions } from './Requests/ChangeSetting';
+import { ImmuteSettingOptions } from './Requests/ImmuteSetting';
+import { RevokeOptions } from './Requests/Revoke';
+import { AdjustUserStatusOptions } from './Requests/AdjustUserStatus';
+import { AdjustFeeOptions } from './Requests/AdjustFee';
+import { UpdateIssuerInfoOptions } from './Requests/UpdateIssuerInfo';
+import { UpdateControllerOptions } from './Requests/UpdateController';
+import { BurnOptions } from './Requests/Burn';
+import { DistributeOptions } from './Requests/Distribute';
+import { WithdrawFeeOptions } from './Requests/WithdrawFee';
+import { WithdrawLogosOptions } from './Requests/WithdrawLogos';
 
 export interface LogosAccountOptions extends AccountOptions {
   index?: number
@@ -179,11 +195,11 @@ export default class LogosAccount extends Account {
 
   /**
    * The balance of the given token in the base units
-   * @param {Hexadecimal64Length} tokenID - Token ID of the token in question, you can also send the token account address
+   * @param {string} tokenID - Token ID of the token in question, you can also send the token account address
    * @returns {String} the token account info object
    * @readonly
    */
-  tokenBalance (token) {
+  tokenBalance (token: string) {
     return this.tokenBalances[keyFromAccount(token)]
   }
 
@@ -193,7 +209,7 @@ export default class LogosAccount extends Account {
    * @param {Hexadecimal64Length} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
    * @returns {LogosAddress[]} Array of all the associated tokens
    */
-  async addToken (tokenID) {
+  async addToken (tokenID: string) {
     const tokenAddress = accountFromHexKey(tokenID)
     if (!this.tokens.includes(tokenAddress)) {
       this.tokens.push(tokenAddress)
@@ -259,9 +275,9 @@ export default class LogosAccount extends Account {
 
   /**
    * Scans the account history using RPC and updates the local chain
-   * @returns {Promise<Account>}
+   * @returns {Promise<LogosAccount>}
    */
-  sync () {
+  sync (): Promise<LogosAccount> {
     return new Promise((resolve, reject) => {
       this.synced = false
       this.chain = []
@@ -304,7 +320,7 @@ export default class LogosAccount extends Account {
             RPC.requests.info(info.frontier).then(async val => {
               const request = await this.addConfirmedRequest(val)
               if (request !== null && !request.verify()) {
-                throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
+                throw new Error(`Invalid Request from RPC sync! \n ${JSON.stringify(request.toJSON(), null, 2)}`)
               }
               if (info.balance) {
                 this.balance = info.balance
@@ -353,7 +369,6 @@ export default class LogosAccount extends Account {
    * @returns {void}
    */
   updateBalancesFromChain () {
-    if (this.chain.length + this.pendingChain.length + this.receiveChain.length === 0) return bigInt(0)
     let sum = bigInt(0)
     const tokenSums = {}
     this.receiveChain.forEach(request => {
@@ -393,7 +408,7 @@ export default class LogosAccount extends Account {
       }
     })
     this.balance = sum.toString()
-    this._tokenBalances = { ...tokenSums }
+    this._tokenBalances = tokenSums
     this.pendingChain.forEach(pendingRequest => {
       if (pendingRequest instanceof Send) {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -415,7 +430,7 @@ export default class LogosAccount extends Account {
       }
     })
     this.pendingBalance = sum.toString()
-    this._pendingTokenBalances = { ...tokenSums }
+    this._pendingTokenBalances = tokenSums
   }
 
   /**
@@ -424,10 +439,10 @@ export default class LogosAccount extends Account {
    * @param {Request} request - request that is being calculated on
    * @returns {void}
    */
-  updateBalancesFromRequest (request) {
+  updateBalancesFromRequest (request: Request) {
     let sum = bigInt(this.balance)
     const tokenSums = this.tokenBalances
-    if (request.type === 'send') {
+    if (request instanceof Send) {
       if (request.originAccount === this.address) {
         sum = sum.minus(bigInt(request.totalAmount)).minus(bigInt(request.fee))
       }
@@ -436,7 +451,7 @@ export default class LogosAccount extends Account {
           sum = sum.plus(bigInt(transaction.amount))
         }
       }
-    } else if (request.type === 'token_send') {
+    } else if (request instanceof TokenSend) {
       sum = sum.minus(bigInt(request.fee))
       if (request.originAccount === this.address) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).toString()
@@ -446,17 +461,17 @@ export default class LogosAccount extends Account {
           tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(transaction.amount)).toString()
         }
       }
-    } else if (request.type === 'issuance') {
+    } else if (request instanceof Issuance) {
       sum = sum.minus(bigInt(request.fee))
-    } else if (request.type === 'withdraw_logos') {
+    } else if (request instanceof WithdrawLogos) {
       if (request.transaction.destination === this.address) {
         sum = sum.plus(bigInt(request.transaction.amount))
       }
-    } else if (request.type === 'distribute' || request.type === 'withdraw_fee' || request.type === 'revoke') {
+    } else if (request instanceof Distribute || request instanceof WithdrawFee || request instanceof Revoke) {
       if (request.transaction.destination === this.address) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).plus(bigInt(request.transaction.amount)).toString()
       }
-      if (request.type === 'revoke' && request.source === this.address) {
+      if (request instanceof Revoke && request.source === this.address) {
         tokenSums[request.tokenID] = bigInt(tokenSums[request.tokenID]).minus(bigInt(request.transaction.amount)).toString()
       }
     }
@@ -492,7 +507,7 @@ export default class LogosAccount extends Account {
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
    * @returns {Request}
    */
-  async addConfirmedRequest (requestInfo) {
+  async addConfirmedRequest (requestInfo: RpcRequest) {
     let request = null
     if (requestInfo.token_id) {
       await this.addToken(requestInfo.token_id)
@@ -557,18 +572,18 @@ export default class LogosAccount extends Account {
   /**
    * Validates that the account has enough funds at the current time to publish the request
    *
-   * @param {Request} request - Request information from the RPC or MQTT
+   * @param {Request} request - Request Class
    * @returns {Boolean}
    */
-  async validateRequest (request) {
+  async validateRequest (request: Request) {
     // Validate current values are appropriate for sends
-    if (request.type === 'send') {
+    if (request instanceof Send) {
       if (bigInt(this.balance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
         console.error(`Invalid Request: Not Enough Funds including fee to send that amount`)
         return false
       }
       return true
-    } else if (request.type === 'token_send') {
+    } else if (request instanceof TokenSend) {
       const tokenAccount = await this.getTokenAccount(request.tokenID)
       if (bigInt(this.balance).minus(request.fee).lesser(0)) {
         console.error(`Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends`)
@@ -602,6 +617,7 @@ export default class LogosAccount extends Account {
       }
       return true
     }
+    return false
   }
 
   /**
@@ -611,7 +627,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
    * @returns {Request}
    */
-  async addRequest (request) {
+  async addRequest (request: Request) {
     request.sign(this.privateKey)
     return super.addRequest(request)
   }
@@ -625,7 +641,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the request is rejected by the RPC
    * @returns {Promise<Request>} the request object
    */
-  async createSendRequest (transactions) {
+  async createSendRequest (transactions: Transaction[]) {
     if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     const request = new Send({
       signature: null,
@@ -654,7 +670,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the request is rejected by the RPC
    * @returns {Promise<Request>} the request object
    */
-  async createTokenIssuanceRequest (options) {
+  async createTokenIssuanceRequest (options: IssuanceOptions) {
     if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
     if (!options.symbol) throw new Error('You must pass symbol as a part of the TokenOptions')
     if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
@@ -703,13 +719,16 @@ export default class LogosAccount extends Account {
    * @throws An exception if no tokenID or tokenAccount
    * @returns {Promise<TokenAccount>} the token account info object
    */
-  async getTokenAccount (token) {
-    if (typeof token === 'object') {
-      if (token.token_id) token = token.token_id
-      if (token.tokenID) token = token.tokenID
-      if (token.tokenAccount) token = token.tokenAccount
-      if (token.token_account) token = token.token_account
-    }
+  async getTokenAccount (token: string | {
+    token_id?: string
+    tokenID?: string
+    tokenAccount?: string
+    token_account?: string
+  }) {
+    if (typeof token === 'object' && token.token_id) token = token.token_id
+    if (typeof token === 'object' && token.tokenID) token = token.tokenID
+    if (typeof token === 'object' && token.tokenAccount) token = token.tokenAccount
+    if (typeof token === 'object' && token.token_account) token = token.token_account
     if (!token || typeof token === 'object') throw new Error('You must pass a token id or token account address for token actions')
     const tokenAccount = await this.wallet.createTokenAccount(accountFromHexKey(token))
     return tokenAccount
@@ -725,7 +744,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the request is rejected by the RPC
    * @returns {Promise<Request>} the request object
    */
-  async createTokenSendRequest (token, transactions) {
+  async createTokenSendRequest (token: string, transactions: Transaction[]) {
     if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
     if (!transactions) throw new Error('You must pass transaction in the token send options')
     if (!token) throw new Error('You must pass token which is either tokenID or tokenAddress')
@@ -765,7 +784,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the token account balance is less than the required amount to do a issue additional token request
    * @returns {Promise<Request>} the request object
    */
-  async createIssueAdditionalRequest (options) {
+  async createIssueAdditionalRequest (options: IssueAdditionalJSON) {
     const tokenAccount = await this.getTokenAccount(options)
     if (options.amount === undefined) throw new Error('You must pass amount in options')
     const request = new IssueAdditional({
@@ -789,7 +808,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the token account balance is less than the required amount to do a change setting token request
    * @returns {Promise<Request>} the request object
    */
-  async createChangeSettingRequest (options) {
+  async createChangeSettingRequest (options: ChangeSettingOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     const request = new ChangeSetting({
       signature: null,
@@ -813,7 +832,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the token account balance is less than the required amount to do a immute setting token request
    * @returns {Promise<Request>} the request object
    */
-  async createImmuteSettingRequest (options) {
+  async createImmuteSettingRequest (options: ImmuteSettingOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     const request = new ImmuteSetting({
       signature: null,
@@ -836,7 +855,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the token account balance is less than the required amount to do a Revoke token request
    * @returns {Promise<Request>} the request object
    */
-  async createRevokeRequest (options) {
+  async createRevokeRequest (options: RevokeOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in the options')
     if (!options.source) throw new Error('You must source in the options')
@@ -862,7 +881,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
    * @returns {Promise<Request>} the request object
    */
-  async createAdjustUserStatusRequest (options) {
+  async createAdjustUserStatusRequest (options: AdjustUserStatusOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.account) throw new Error('You must pass account in options')
     const request = new AdjustUserStatus({
@@ -887,7 +906,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to do a token distibution
    * @returns {Promise<Request>} the request object
    */
-  async createAdjustFeeRequest (options) {
+  async createAdjustFeeRequest (options: AdjustFeeOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.feeRate) throw new Error('You must pass feeRate in options')
     if (!options.feeType) throw new Error('You must pass feeType in options')
@@ -913,7 +932,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to Update Issuer Info
    * @returns {Promise<Request>} the request object
    */
-  async createUpdateIssuerInfoRequest (options) {
+  async createUpdateIssuerInfoRequest (options: UpdateIssuerInfoOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.issuerInfo) throw new Error('You must pass issuerInfo in the options')
     const request = new UpdateIssuerInfo({
@@ -937,7 +956,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to Update Controller
    * @returns {Promise<Request>} the request object
    */
-  async createUpdateControllerRequest (options) {
+  async createUpdateControllerRequest (options: UpdateControllerOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.controller) throw new Error('You must pass controller in the options')
     if (!options.action) throw new Error('You must pass action in the options')
@@ -963,7 +982,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the token account balance is less than the required amount to do a burn token request
    * @returns {Promise<Request>} the request object
    */
-  async createBurnRequest (options) {
+  async createBurnRequest (options: BurnOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (options.amount === undefined) throw new Error('You must pass amount in options')
     const request = new Burn({
@@ -987,7 +1006,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to do a token distibution
    * @returns {Promise<Request>} the request object
    */
-  async createDistributeRequest (options) {
+  async createDistributeRequest (options : DistributeOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
     const request = new Distribute({
@@ -1011,7 +1030,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to do a withdraw fee request
    * @returns {Promise<Request>} the request object
    */
-  async createWithdrawFeeRequest (options) {
+  async createWithdrawFeeRequest (options: WithdrawFeeOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
     const request = new WithdrawFee({
@@ -1035,7 +1054,7 @@ export default class LogosAccount extends Account {
    * @throws An exception if the pending balance is less than the required amount to do a withdraw logos request
    * @returns {Promise<Request>} the request object
    */
-  async createWithdrawLogosRequest (options) {
+  async createWithdrawLogosRequest (options: WithdrawLogosOptions) {
     const tokenAccount = await this.getTokenAccount(options)
     if (!options.transaction) throw new Error('You must pass transaction in options')
     const request = new WithdrawLogos({
@@ -1058,11 +1077,11 @@ export default class LogosAccount extends Account {
    * @param {MQTTRequestOptions} requestInfo The request from MQTT
    * @returns {Promise<void>}
    */
-  async processRequest (requestInfo) {
+  async processRequest (requestInfo: RpcRequest) {
     // Confirm the requests / updates balances / broadcasts next block
     const request = await this.addConfirmedRequest(requestInfo)
     if (request !== null) {
-      if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
+      if (!request.verify()) throw new Error(`Invalid Request! \n ${JSON.stringify(request.toJSON(), null, 2)}`)
       if (request.originAccount === this.address &&
         (request.type === 'send' || request.type === 'token_send' || request.type === 'issuance')) {
         if (this.getPendingRequest(requestInfo.hash)) {
@@ -1126,16 +1145,12 @@ export default class LogosAccount extends Account {
   async combineRequests () {
     let sendCounter = 0
     let tokenCounter = 0
-    const logosTransactionsToCombine = [
+    const logosTransactionsToCombine: Transaction[][] = [
       []
     ]
     const issuances = []
-    type TokenAggregates = Array<Array<{
-      destination: string
-      amount: string
-    }>>
     type TokenTransactionsCombined = {
-      [tokenID: string]: TokenAggregates
+      [tokenID: string]: Transaction[][]
     }
     const tokenTransactionsToCombine:TokenTransactionsCombined = {}
     for (const request of this.pendingChain) {
@@ -1149,7 +1164,7 @@ export default class LogosAccount extends Account {
           }
         }
       } else if (request instanceof TokenSend) {
-        let tokenAggregates:TokenAggregates = [[]]
+        let tokenAggregates:Transaction[][] = [[]]
         if (tokenTransactionsToCombine[request.tokenID]) {
           tokenAggregates = tokenTransactionsToCombine[request.tokenID]
         }

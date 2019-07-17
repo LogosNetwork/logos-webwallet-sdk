@@ -1,5 +1,6 @@
 import * as bigInt from 'big-integer'
 import Account, { AccountJSON } from './Account'
+import { Settings as RpcSettings, Privileges as RpcPrivileges, Request as RpcRequest } from '@logosnetwork/logos-rpc-client/dist/api'
 import {
   accountFromHexKey,
   keyFromAccount,
@@ -24,7 +25,8 @@ import {
   Distribute,
   WithdrawFee,
   WithdrawLogos,
-  TokenSend 
+  TokenSend, 
+  Request
 } from './Requests'
 
 export interface TokenAccountJSON extends AccountJSON {
@@ -550,7 +552,7 @@ export default class TokenAccount extends Account {
             RPC.requests.info(info.frontier).then(val => {
               const request = this.addConfirmedRequest(val)
               if (request !== null && !request.verify()) {
-                throw new Error(`Invalid Request from RPC sync! \n ${request.toJSON(true)}`)
+                throw new Error(`Invalid Request from RPC sync! \n ${JSON.stringify(request.toJSON(), null, 2)}`)
               }
               this.synced = true
               console.info(`${info.name} has been lazy synced`)
@@ -572,27 +574,27 @@ export default class TokenAccount extends Account {
    * @param {Request} request - request that is being calculated on
    * @returns {void}
    */
-  updateTokenInfoFromRequest (request) {
-    if (request.type === 'issue_additional') {
+  updateTokenInfoFromRequest (request: Request) {
+    if (request instanceof IssueAdditional) {
       this.totalSupply = bigInt(this.totalSupply).plus(bigInt(request.amount)).toString()
       this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.amount)).toString()
-    } else if (request.type === 'change_setting') {
+    } else if (request instanceof ChangeSetting) {
       this.settings[request.setting] = request.value
-    } else if (request.type === 'immute_setting') {
+    } else if (request instanceof ImmuteSetting) {
       this.settings[`modify_${request.setting}`] = false
-    } else if (request.type === 'revoke') {
+    } else if (request instanceof Revoke) {
       if (request.transaction.destination === this.address) {
         this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.transaction.amount)).toString()
       }
       // Handle if TK account is SRC?
-    } else if (request.type === 'adjust_user_status') {
+    } else if (request instanceof AdjustUserStatus) {
       this.updateAccountStatusFromRequest(request)
-    } else if (request.type === 'adjust_fee') {
+    } else if (request instanceof AdjustFee) {
       this.feeRate = request.feeRate
       this.feeType = request.feeType
-    } else if (request.type === 'update_issuer_info') {
+    } else if (request instanceof UpdateIssuerInfo) {
       this.issuerInfo = request.issuerInfo
-    } else if (request.type === 'update_controller') {
+    } else if (request instanceof UpdateController) {
       const updatedPrivs = serializeController(request.controller).privileges
       if (request.action === 'remove' && updatedPrivs.length === 0) {
         this.controllers = this.controllers.filter(controller => controller.account !== request.controller.account)
@@ -617,27 +619,27 @@ export default class TokenAccount extends Account {
           this.controllers.push(request.controller)
         }
       }
-    } else if (request.type === 'burn') {
+    } else if (request instanceof Burn) {
       this.totalSupply = bigInt(this.totalSupply).minus(bigInt(request.amount)).toString()
       this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.amount)).toString()
-    } else if (request.type === 'distribute') {
+    } else if (request instanceof Distribute) {
       this.tokenBalance = bigInt(this.tokenBalance).minus(bigInt(request.transaction.amount)).toString()
-    } else if (request.type === 'withdraw_fee') {
+    } else if (request instanceof WithdrawFee) {
       this.tokenFeeBalance = bigInt(this.tokenFeeBalance).minus(bigInt(request.transaction.amount)).toString()
-    } else if (request.type === 'withdraw_logos') {
+    } else if (request instanceof WithdrawLogos) {
       if (request.tokenID === this.tokenID) {
         this.balance = bigInt(this.balance).minus(bigInt(request.transaction.amount)).minus(bigInt(request.fee)).toString()
       }
       if (request.transaction.destination === this.address) {
         this.balance = bigInt(this.balance).plus(bigInt(request.transaction.amount)).toString()
       }
-    } else if (request.type === 'send') {
+    } else if (request instanceof Send) {
       for (const transaction of request.transactions) {
         if (transaction.destination === this.address) {
           this.balance = bigInt(this.balance).plus(bigInt(transaction.amount)).toString()
         }
       }
-    } else if (request.type === 'issuance') {
+    } else if (request instanceof Issuance) {
       this.tokenBalance = request.totalSupply
       // this._pendingTokenBalance = request.totalSupply
       this.totalSupply = request.totalSupply
@@ -648,8 +650,8 @@ export default class TokenAccount extends Account {
       this.issuerInfo = request.issuerInfo
       this.feeRate = request.feeRate
       this.feeType = request.feeType
-      this.controllers = request.controllers
-      this.settings = request.settings
+      this.controllers = request.controllersAsObject
+      this.settings = request.settingsAsObject
       this.balance = '0'
       this.pendingBalance = '0'
     } else if (request.type === 'token_send') {
@@ -669,7 +671,7 @@ export default class TokenAccount extends Account {
    * @param {LogosAddress} address - Address of the logos account you are checking if they are a controller
    * @returns {Boolean}
    */
-  isController (address) {
+  isController (address: string) {
     for (const controller of this.controllers) {
       if (controller.account === address) {
         return true
@@ -684,7 +686,7 @@ export default class TokenAccount extends Account {
    * @param {Setting} setting - Token setting you are checking
    * @returns {Boolean}
    */
-  hasSetting (setting) {
+  hasSetting (setting: RpcSettings) {
     return Boolean(this.settings[setting])
   }
 
@@ -695,7 +697,7 @@ export default class TokenAccount extends Account {
    * @param {privilege} privilege - Privilege you are checking for
    * @returns {Boolean}
    */
-  controllerPrivilege (address, privilege) {
+  controllerPrivilege (address: string, privilege: RpcPrivileges) {
     for (const controller of this.controllers) {
       if (controller.account === address) {
         return controller.privileges[privilege]
@@ -711,7 +713,7 @@ export default class TokenAccount extends Account {
    * @param {string} amount - Amount you are checking for
    * @returns {Promise<Boolean>}
    */
-  async accountHasFunds (address, amount) {
+  async accountHasFunds (address: string, amount: string) {
     if (!this.wallet.rpc) {
       console.warn('Cannot client-side validate if an account has funds without RPC enabled')
       return true
@@ -728,7 +730,7 @@ export default class TokenAccount extends Account {
    * @param {LogosAddress} address - Address of the controller you are checking
    * @returns {Promise<Boolean>}
    */
-  async validTokenDestination (address) {
+  async validTokenDestination (address: string) {
     // TODO 104 - This token account is a valid destiantion
     if (!this.wallet.rpc) {
       console.warn('Cannot client-side validate destination without RPC enabled')
@@ -761,12 +763,12 @@ export default class TokenAccount extends Account {
    * @param {Request} request - Request information from the RPC or MQTT
    * @returns {Boolean}
    */
-  async validateRequest (request) {
+  async validateRequest (request: Request) {
     if (bigInt(this.balance).minus(request.fee).lesser(0)) {
       console.error('Invalid Request: Token Account does not have enough Logos to afford the fee perform token opperation')
       return false
     } else {
-      if (request.type === 'issue_additional') {
+      if (request instanceof IssueAdditional) {
         if (bigInt(this.totalSupply).plus(bigInt(request.amount)).greater(bigInt(MAXUINT128))) {
           console.error('Invalid Issue Additional Request: Total Supply would exceed MAXUINT128')
           return false
@@ -779,7 +781,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'change_setting') {
+      } else if (request instanceof ChangeSetting) {
         if (!this.hasSetting(`modify_${request.setting}`)) {
           console.error(`Invalid Change Setting Request: ${this.name} does not allow changing ${request.setting}`)
           return false
@@ -789,7 +791,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'immute_setting') {
+      } else if (request instanceof  ImmuteSetting) {
         if (!this.hasSetting(`modify_${request.setting}`)) {
           console.error(`Invalid Immute Setting Request: ${request.setting} is already immuatable`)
           return false
@@ -799,7 +801,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'revoke') {
+      } else if (request instanceof Revoke) {
         if (!this.hasSetting(`revoke`)) {
           console.error(`Invalid Revoke Request: ${this.name} does not support revoking accounts`)
           return false
@@ -815,7 +817,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'adjust_user_status') {
+      } else if (request instanceof AdjustUserStatus) {
         if (request.status === 'frozen' || request.status === 'unfrozen') {
           if (!this.hasSetting(`freeze`)) {
             console.error(`Invalid Adjust User Status: ${this.name} does not support freezing accounts`)
@@ -840,7 +842,7 @@ export default class TokenAccount extends Account {
           console.error(`Invalid Adjust User Status: ${request.status} is not a valid status`)
           return false
         }
-      } else if (request.type === 'adjust_fee') {
+      } else if (request instanceof AdjustFee) {
         if (!this.hasSetting(`adjust_fee`)) {
           console.error(`Invalid Adjust Fee Request: ${this.name} does not allow changing the fee type or fee rate`)
           return false
@@ -850,14 +852,14 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'update_issuer_info') {
+      } else if (request instanceof UpdateIssuerInfo) {
         if (!this.controllerPrivilege(request.originAccount, `update_issuer_info`)) {
           console.error(`Invalid Update Issuer Info Request: Controller does not have permission to update the issuer info`)
           return false
         } else {
           return true
         }
-      } else if (request.type === 'update_controller') {
+      } else if (request instanceof UpdateController) {
         if (!this.controllerPrivilege(request.originAccount, `update_controller`)) {
           console.error(`Invalid Update Controller Request: Controller does not have permission to update controllers`)
           return false
@@ -867,7 +869,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'burn') {
+      } else if (request instanceof Burn) {
         if (!this.controllerPrivilege(request.originAccount, `burn`)) {
           console.error(`Invalid Burn Request: Controller does not have permission to burn tokens`)
           return false
@@ -877,7 +879,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'distribute') {
+      } else if (request instanceof Distribute) {
         if (!this.controllerPrivilege(request.originAccount, `distribute`)) {
           console.error(`Invalid Distribute Request: Controller does not have permission to distribute tokens`)
           return false
@@ -890,7 +892,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'withdraw_fee') {
+      } else if (request instanceof WithdrawFee) {
         if (!this.controllerPrivilege(request.originAccount, `withdraw_fee`)) {
           console.error(`Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee`)
           return false
@@ -903,7 +905,7 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
-      } else if (request.type === 'withdraw_logos') {
+      } else if (request instanceof WithdrawLogos) {
         if (!this.controllerPrivilege(request.originAccount, `withdraw_logos`)) {
           console.error(`Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos`)
           return false
@@ -913,6 +915,8 @@ export default class TokenAccount extends Account {
         } else {
           return true
         }
+      } else {
+        return false
       }
     }
   }
@@ -923,7 +927,7 @@ export default class TokenAccount extends Account {
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
    * @returns {Request}
    */
-  addConfirmedRequest (requestInfo) {
+  addConfirmedRequest (requestInfo: RpcRequest) {
     let request = null
     if (requestInfo.type === 'send') {
       const request = new Send(requestInfo)
@@ -1008,7 +1012,7 @@ export default class TokenAccount extends Account {
    * @param {LogosAddress} address - The address of the account
    * @returns {Object} status of the account { whitelisted and frozen }
    */
-  getAccountStatus (address) {
+  getAccountStatus (address: string) {
     if (Object.prototype.hasOwnProperty.call(this.accountStatuses, address)) {
       return this.accountStatuses[address]
     } else {
@@ -1025,7 +1029,7 @@ export default class TokenAccount extends Account {
    * @param {AdjustUserStatus} request - The adjust_user_status request
    * @returns {Object} status of the account { whitelisted and frozen }
    */
-  updateAccountStatusFromRequest (request) {
+  updateAccountStatusFromRequest (request: AdjustUserStatus) {
     if (!this.accountStatuses[request.account]) {
       this.accountStatuses[request.account] = {
         frozen: false,
@@ -1053,11 +1057,11 @@ export default class TokenAccount extends Account {
    * @throws An exception if the request amount is greater than your balance minus the transaction fee
    * @returns {Promise<void>}
    */
-  async processRequest (requestInfo) {
+  async processRequest (requestInfo: RpcRequest) {
     // Confirm the requests / updates balances / broadcasts next block
     const request = this.addConfirmedRequest(requestInfo)
     if (request !== null) {
-      if (!request.verify()) throw new Error(`Invalid Request! \n ${request.toJSON(true)}`)
+      if (!request.verify()) throw new Error(`Invalid Request! \n ${JSON.stringify(request.toJSON(), null, 2)}`)
       // Todo 104 - revoke, token_send, distribute, withdraw_Fee, withdraw_logos
       // could be recieved by TokenAccount???
       if (request.tokenID === this.tokenID &&
