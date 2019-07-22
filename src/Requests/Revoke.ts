@@ -1,4 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils/Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
@@ -36,7 +36,7 @@ export default class Revoke extends TokenRequest {
 
     /**
      * Source to send to revoke the tokens from
-     * @type {LogosAddress}
+     * @type {string}
      * @private
      */
     if (options.source !== undefined) {
@@ -66,7 +66,7 @@ export default class Revoke extends TokenRequest {
 
   /**
    * Return where the token is being revoked from
-   * @type {LogosAddress}
+   * @type {string}
    */
   get source () {
     return this._source
@@ -76,7 +76,7 @@ export default class Revoke extends TokenRequest {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {

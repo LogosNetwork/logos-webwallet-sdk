@@ -53,13 +53,14 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.5.4",
-    "@logosnetwork/logos-rpc-client": "^1.1.32",
-    "assert": "^2.0.0",
+    "@logosnetwork/logos-rpc-client": "^1.1.33",
+    "@types/pbkdf2": "^3.0.0",
     "awesome-typescript-loader": "^5.2.1",
     "big-integer": "^1.6.44",
-    "blakejs": "^1.1.0",
+    "blake2b-wasm": "^1.1.7",
     "core-js": "^3.1.4",
     "mqtt": "^3.0.0",
+    "nanoassert": "^2.0.0",
     "pbkdf2": "^3.0.17",
     "source-map-loader": "^0.2.4",
     "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef"

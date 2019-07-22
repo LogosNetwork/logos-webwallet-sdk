@@ -1,13 +1,12 @@
-'use strict'
 const SEPARATOR = '/'
 const SINGLE = '+'
 const ALL = '#'
 
-export default (pattern, topic) => {
+export default (pattern:string, topic:string) => {
   return matches(pattern, topic) ? extract(pattern, topic) : null
 }
 
-const matches = (pattern, topic) => {
+const matches = (pattern:string, topic:string) => {
   const patternSegments = pattern.split(SEPARATOR)
   const topicSegments = topic.split(SEPARATOR)
 
@@ -32,7 +31,7 @@ const matches = (pattern, topic) => {
   return patternLength === topicLength
 }
 
-const extract = (pattern, topic) => {
+const extract = (pattern:string, topic:string) => {
   const params = {}
   const patternSegments = pattern.split(SEPARATOR)
   const topicSegments = topic.split(SEPARATOR)

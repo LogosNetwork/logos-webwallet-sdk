@@ -1,5 +1,4 @@
-import { hexToUint8, keyFromAccount, accountFromHexKey } from '../Utils'
-import { blake2bUpdate } from 'blakejs'
+import { hexToUint8, keyFromAccount, accountFromHexKey } from '../Utils/Utils'
 import Request, { RequestOptions, RequestJSON } from './Request'
 
 /**
@@ -24,7 +23,7 @@ export default abstract class TokenRequest extends Request {
 
     /**
      * TokenID of the token
-     * @type {Hexadecimal64Length}
+     * @type {string}
      * @private
      */
     if (options.tokenID !== undefined) {
@@ -60,11 +59,10 @@ export default abstract class TokenRequest extends Request {
    * Creates a Blake2b Context for the request
    * @returns {context} - Blake2b Context
    */
-  requestHash () {
+  async requestHash () {
     if (!this.tokenID) throw new Error('TokenID is not set.')
-    const context = super.requestHash()
-    const tokenID = hexToUint8(this.tokenID)
-    blake2bUpdate(context, tokenID)
+    const context = await super.requestHash()
+    context.update(hexToUint8(this.tokenID))
     return context
   }
 

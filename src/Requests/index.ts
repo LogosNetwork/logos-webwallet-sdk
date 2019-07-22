@@ -13,6 +13,7 @@ import UpdateController, { UpdateControllerJSON } from './UpdateController'
 import UpdateIssuerInfo, { UpdateIssuerInfoJSON } from './UpdateIssuerInfo'
 import WithdrawFee, { WithdrawFeeJSON } from './WithdrawFee'
 import WithdrawLogos, { WithdrawLogosJSON } from './WithdrawLogos'
+import TokenRequest from './TokenRequest'
 export {
   AdjustFee,
   AdjustUserStatus,
@@ -28,7 +29,8 @@ export {
   UpdateController,
   UpdateIssuerInfo,
   WithdrawFee,
-  WithdrawLogos
+  WithdrawLogos,
+  TokenRequest
 }
 export type Request = Send|Issuance|TokenSend|IssueAdditional|ChangeSetting|ImmuteSetting|Revoke|AdjustUserStatus|AdjustFee|UpdateIssuerInfo|UpdateController|Burn|Distribute|WithdrawFee|WithdrawLogos
 export type RequestJSON = SendJSON|IssuanceJSON|TokenSendJSON|IssueAdditionalJSON|ChangeSettingJSON|ImmuteSettingJSON|RevokeJSON|AdjustUserStatusJSON|AdjustFeeJSON|UpdateIssuerInfoJSON|UpdateControllerJSON|BurnJSON|DistributeJSON|WithdrawFeeJSON|WithdrawLogosJSON

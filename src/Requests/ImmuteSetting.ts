@@ -1,8 +1,9 @@
-import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex } from '../Utils/Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
+export type Setting = 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
 export interface ImmuteSettingJSON extends TokenRequestJSON {
-  setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  setting?: Setting
 }
 const Settings = {
   issuance: 0,
@@ -12,10 +13,10 @@ const Settings = {
   whitelist: 8
 }
 export interface ImmuteSettingOptions extends TokenRequestOptions {
-  setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  setting?: Setting
 }
 export default class ImmuteSetting extends TokenRequest {
-  private _setting: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  private _setting: Setting
   constructor (options:ImmuteSettingOptions = {
     setting: null
   }) {
@@ -54,7 +55,7 @@ export default class ImmuteSetting extends TokenRequest {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {

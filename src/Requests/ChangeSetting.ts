@@ -1,4 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex } from '../Utils/Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 const Settings = {
@@ -8,16 +8,17 @@ const Settings = {
   adjust_fee: 6,
   whitelist: 8
 }
+export type Setting = 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
 export interface ChangeSettingOptions extends TokenRequestOptions {
-  setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
-  value?: boolean
+  setting?: Setting
+  value?: boolean | string
 }
 export interface ChangeSettingJSON extends TokenRequestJSON {
-  setting?: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  setting?: Setting
   value?: boolean
 }
 export default class ChangeSetting extends TokenRequest {
-  private _setting: 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
+  private _setting: Setting
   private _value: boolean
   constructor (options:ChangeSettingOptions = {
     setting: null,
@@ -46,7 +47,7 @@ export default class ChangeSetting extends TokenRequest {
      * @private
      */
     if (options.value !== undefined) {
-      this._value = options.value
+      this._value = options.value.toString() === 'true'
     } else {
       this._value = null
     }
@@ -80,7 +81,7 @@ export default class ChangeSetting extends TokenRequest {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {

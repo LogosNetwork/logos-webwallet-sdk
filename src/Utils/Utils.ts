@@ -1,9 +1,7 @@
-
-import * as assert from 'assert'
-import { blake2b } from 'blakejs'
+import blake2b from '../Utils/blake2b'
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto'
 import { Controller as RpcController, Settings as RpcSettings } from '@logosnetwork/logos-rpc-client/dist/api'
-import { Controller, Settings } from './TokenAccount'
+import { Controller, Settings, Privileges } from '../TokenAccount'
 export const minimumFee = '10000000000000000000000'
 export const EMPTY_WORK = '0000000000000000'
 export const GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000'
@@ -14,13 +12,13 @@ export const defaultRPC = {
 }
 export const defaultMQTT = 'wss://pla.bs:8443'
 export const Iso10126 = {
-  pad: (dataBytes, nBytesPerBlock) => {
+  pad: (dataBytes: Buffer, nBytesPerBlock: number) => {
     const nPaddingBytes = nBytesPerBlock - dataBytes.length % nBytesPerBlock
     const paddingBytes = randomBytes(nPaddingBytes - 1)
     const endByte = Buffer.from([nPaddingBytes])
     return Buffer.concat([dataBytes, paddingBytes, endByte])
   },
-  unpad: (dataBytes) => {
+  unpad: (dataBytes: Buffer) => {
     const nPaddingBytes = dataBytes[dataBytes.length - 1]
     return dataBytes.slice(0, -nPaddingBytes)
   }
@@ -90,7 +88,7 @@ export const deserializeController = (controller: RpcController | Controller): C
 export const deserializeControllers = (controllers:RpcController[] | Controller[]): Controller[] => {
   const newControllers = []
   for (const controller of controllers) {
-    newControllers.push(this.deserializeController(controller))
+    newControllers.push(deserializeController(controller))
   }
   return newControllers
 }
@@ -98,14 +96,14 @@ export const deserializeControllers = (controllers:RpcController[] | Controller[
 export const serializeController = (controllerObject:Controller): RpcController => {
   const newController:any = {}
   newController.account = controllerObject.account
-  newController.privileges = this.convertObjectToArray(controllerObject.privileges)
+  newController.privileges = convertObjectToArray(controllerObject.privileges)
   return newController
 }
 
 export const serializeControllers = (controllersObject:Controller[]): RpcController[] => {
   const controllers = []
   for (const controller of controllersObject) {
-    controllers.push(this.serializeController(controller))
+    controllers.push(serializeController(controller))
   }
   return controllers
 }
@@ -144,7 +142,7 @@ export const deserializeSettings = (settings:RpcSettings[] | Settings): Settings
   return defaulSettings
 }
 
-export const convertObjectToArray = (myObjects) => {
+export const convertObjectToArray = (myObjects: Settings | Privileges) => {
   const myArray = []
   for (const key in myObjects) {
     if (myObjects[key] === true) {
@@ -154,15 +152,27 @@ export const convertObjectToArray = (myObjects) => {
   return myArray
 }
 
-export const AES = {
+interface Options {
+  mode?: 'aes-256-cbc' | 'aes-256-ofb' | 'aes-256-ecb',
+  padding?: {
+    pad: (dataBytes: Buffer, nBytesPerBlock: number) => Buffer;
+    unpad: (dataBytes: Buffer) => Buffer;
+  }
+}
+interface AES {
+  CBC: 'aes-256-cbc';
+  OFB: 'aes-256-ofb';
+  ECB: 'aes-256-ecb';
+  encrypt: (dataBytes: Buffer, key: Buffer, salt: Buffer, options: Options) => Buffer;
+  decrypt: (dataBytes: Buffer, key: Buffer, salt: Buffer, options: Options) => Buffer;
+}
+export const AES:AES = {
   CBC: 'aes-256-cbc',
   OFB: 'aes-256-ofb',
   ECB: 'aes-256-ecb',
-  encrypt: (dataBytes, key, salt, options) => {
+
+  encrypt: (dataBytes: Buffer, key: Buffer, salt: Buffer, options:Options) => {
     options = options || {}
-    assert(Buffer.isBuffer(dataBytes), 'expected `dataBytes` to be a Buffer')
-    assert(Buffer.isBuffer(key), 'expected `key` to be a Buffer')
-    assert(Buffer.isBuffer(salt) || salt === null, 'expected `salt` to be a Buffer or null')
 
     const cipher = createCipheriv(options.mode || AES.CBC, key, salt || '')
     cipher.setAutoPadding(!options.padding)
@@ -174,11 +184,8 @@ export const AES = {
     return encryptedBytes
   },
 
-  decrypt: (dataBytes, key, salt, options) => {
+  decrypt: (dataBytes: Buffer, key: Buffer, salt: Buffer = null, options:Options) => {
     options = options || {}
-    assert(Buffer.isBuffer(dataBytes), 'expected `dataBytes` to be a Buffer')
-    assert(Buffer.isBuffer(key), 'expected `key` to be a Buffer')
-    assert(Buffer.isBuffer(salt) || salt === null, 'expected `salt` to be a Buffer or null')
 
     const decipher = createDecipheriv(options.mode || AES.CBC, key, salt || '')
     decipher.setAutoPadding(!options.padding)
@@ -195,10 +202,7 @@ export const AES = {
  * @param {Uint8Array} view Input buffer formatted as a Uint8Array
  * @returns {string}
  */
-const encode = (view) => {
-  if (view.constructor !== Uint8Array) {
-    throw new Error('View must be a Uint8Array!')
-  }
+const encode = (view: Uint8Array) => {
   const length = view.length
   const leftover = (length * 8) % 5
   const offset = leftover === 0 ? 0 : 5 - leftover
@@ -225,7 +229,7 @@ const encode = (view) => {
   return output
 }
 
-const readChar = (char) => {
+const readChar = (char:string) => {
   const alphabet = '13456789abcdefghijkmnopqrstuwxyz'
   const idx = alphabet.indexOf(char)
 
@@ -241,7 +245,7 @@ const readChar = (char) => {
  * @param {string} input A Base32 encoded string
  * @returns {Uint8Array}
  */
-const decode = (input) => {
+const decode = (input: string) => {
   if (typeof input !== 'string') {
     throw new Error('Input must be a string!')
   }
@@ -274,7 +278,7 @@ const decode = (input) => {
   return output
 }
 
-export const stringFromHex = (hex) => {
+export const stringFromHex = (hex: string) => {
   const stringHex = hex.toString() // force conversion
   let str = ''
   for (let i = 0; i < stringHex.length; i += 2) {
@@ -283,7 +287,7 @@ export const stringFromHex = (hex) => {
   return str
 }
 
-export const stringToHex = (str) => {
+export const stringToHex = (str: string) => {
   let hex = ''
   for (let i = 0; i < str.length; i++) {
     hex += '' + str.charCodeAt(i).toString(16)
@@ -291,24 +295,24 @@ export const stringToHex = (str) => {
   return hex
 }
 
-export const changeEndianness = (string) => {
+export const changeEndianness = (data: string) => {
   const result = []
-  let len = string.length - 2
+  let len = data.length - 2
   while (len >= 0) {
-    result.push(string.substr(len, 2))
+    result.push(data.substr(len, 2))
     len -= 2
   }
   return result.join('')
 }
 
-export const decToHex = (str, bytes = null) => {
+export const decToHex = (str: string | number, bytes:number = null) => {
   const dec = str.toString().split('')
   const sum = []
   let hex = []
   let i
   let s
   while (dec.length) {
-    s = 1 * dec.shift()
+    s = 1 * parseInt(dec.shift())
     for (i = 0; s || i < sum.length; i++) {
       s += (sum[i] || 0) * 10
       sum[i] = s % 16
@@ -324,17 +328,17 @@ export const decToHex = (str, bytes = null) => {
     const diff = bytes - hex.length / 2
     for (let i = 0; i < diff; i++) hexConcat = '00' + hex
   }
-  return hex
+  return hexConcat
 }
 
-export const hexToDec = (s) => {
-  function add (x, y) {
+export const hexToDec = (s: string) => {
+  function add (x:string, y:string) {
     let c = 0
     const r = []
-    x = x.split('').map(Number)
-    y = y.split('').map(Number)
+    let newX = x.split('').map(Number)
+    let newY = y.split('').map(Number)
     while (x.length || y.length) {
-      const s = (x.pop() || 0) + (y.pop() || 0) + c
+      const s = (newX.pop() || 0) + (newY.pop() || 0) + c
       r.unshift(s < 10 ? s : s - 10)
       c = s < 10 ? 0 : 1
     }
@@ -353,14 +357,14 @@ export const hexToDec = (s) => {
   return dec
 }
 
-export const hexToUint8 = (hex) => {
+export const hexToUint8 = (hex: string) => {
   const length = (hex.length / 2) | 0
   const uint8 = new Uint8Array(length)
   for (let i = 0; i < length; i++) uint8[i] = parseInt(hex.substr(i * 2, 2), 16)
   return uint8
 }
 
-export const uint8ToHex = (uint8) => {
+export const uint8ToHex = (uint8: Uint8Array) => {
   let hex = ''
   let aux
   for (let i = 0; i < uint8.length; i++) {
@@ -372,35 +376,29 @@ export const uint8ToHex = (uint8) => {
   return hex
 }
 
-export const uint4ToHex = (uint4) => {
-  let hex = ''
-  for (let i = 0; i < uint4.length; i++) hex += uint4[i].toString(16).toUpperCase()
-  return (hex)
-}
-
-const equalArrays = (array1, array2) => {
+const equalArrays = (array1: Uint8Array, array2: Uint8Array) => {
   for (let i = 0; i < array1.length; i++) {
     if (array1[i] !== array2[i]) return false
   }
   return true
 }
 
-export const byteCount = (s) => {
+export const byteCount = (s: string) => {
   return encodeURI(s).split(/%(?:u[0-9A-F]{2})?[0-9A-F]{2}|./).length - 1
 }
 
-export const isAlphanumeric = (s) => {
+export const isAlphanumeric = (s: string) => {
   return /^[a-z0-9]+$/i.test(s)
 }
 
-export const isAlphanumericExtended = (s) => {
+export const isAlphanumericExtended = (s: string) => {
   return /^[a-z0-9-_ ]+$/i.test(s)
 }
 
-export const accountFromHexKey = (hex) => {
+export const accountFromHexKey = (hex: string) => {
   if (isHexKey(hex)) {
     const keyBytes = hexToUint8(hex)
-    const checksumBytes = blake2b(keyBytes, null, 5).reverse()
+    const checksumBytes = (<Uint8Array>new blake2b(5, keyBytes).digest()).reverse()
     const checksum = encode(checksumBytes)
     const account = encode(keyBytes)
     return 'lgs_' + account + checksum
@@ -411,12 +409,12 @@ export const accountFromHexKey = (hex) => {
   }
 }
 
-export const keyFromAccount = (account) => {
+export const keyFromAccount = (account: string) => {
   if (/^lgs_[?:13]{1}[13-9-a-km-uw-z]{59}$/.test(account)) {
     const accountCrop = account.replace('lgs_', '')
     const keyBytes = decode(accountCrop.substring(0, 52))
     const hashBytes = decode(accountCrop.substring(52, 60))
-    const blakeHash = blake2b(keyBytes, null, 5).reverse()
+    const blakeHash = (<Uint8Array>new blake2b(5, keyBytes).digest()).reverse()
     if (equalArrays(hashBytes, blakeHash)) {
       return uint8ToHex(keyBytes).toUpperCase()
     } else {
@@ -429,16 +427,16 @@ export const keyFromAccount = (account) => {
   }
 }
 
-export const isHexKey = (hex) => {
+export const isHexKey = (hex: string) => {
   return /^[0-9A-Fa-f]{64}$/.test(hex)
 }
 
-export const isLogosAccount = (account) => {
+export const isLogosAccount = (account: string) => {
   if (/^lgs_[?:13]{1}[13-9-a-km-uw-z]{59}$/.test(account)) {
     const accountCrop = account.replace('lgs_', '')
     const keyBytes = decode(accountCrop.substring(0, 52))
     const hashBytes = decode(accountCrop.substring(52, 60))
-    const blakeHash = blake2b(keyBytes, null, 5).reverse()
+    const blakeHash = (<Uint8Array>new blake2b(5, keyBytes).digest()).reverse()
     return equalArrays(hashBytes, blakeHash)
   }
   return false
@@ -459,7 +457,6 @@ export default {
   hexToDec,
   hexToUint8,
   uint8ToHex,
-  uint4ToHex,
   changeEndianness,
   isAlphanumeric,
   isAlphanumericExtended,

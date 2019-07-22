@@ -1,5 +1,5 @@
-import { hexToUint8, uint8ToHex, decToHex } from '../Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, uint8ToHex, decToHex } from '../Utils/Utils'
+import blake2b, { initalizeBlake2b } from './Utils/blake2b'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import * as bigInt from 'big-integer'
 export interface AdjustFeeOptions extends TokenRequestOptions {
@@ -80,7 +80,7 @@ export default class AdjustFee extends TokenRequest {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {

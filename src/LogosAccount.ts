@@ -3,7 +3,7 @@ import {
   keyFromAccount,
   GENESIS_HASH,
   minimumFee
-} from './Utils'
+} from './Utils/Utils'
 import * as bigInt from 'big-integer'
 import Account, { AccountOptions, AccountJSON } from './Account'
 import { Request as RpcRequest, Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
@@ -60,6 +60,13 @@ interface TokenBalances {
   [tokenID: string]: string
 }
 
+export interface syncedResponse {
+  account?: string,
+  synced?: boolean,
+  type?: string,
+  remove?: boolean
+}
+
 /**
  * The Accounts contain the keys, chains, and balances.
  */
@@ -92,7 +99,7 @@ export default class LogosAccount extends Account {
 
     /**
      * Private Key of this account
-     * @type {Hexadecimal64Length}
+     * @type {string}
      * @private
      */
     if (options.privateKey !== undefined) {
@@ -103,7 +110,7 @@ export default class LogosAccount extends Account {
 
     /**
      * Tokens that are associated with your account
-     * @type {LogosAddress[]}
+     * @type {string[]}
      * @private
      */
     if (options.tokens !== undefined) {
@@ -139,7 +146,7 @@ export default class LogosAccount extends Account {
 
   /**
    * The type of the account (LogosAccount or TokenAccount)
-   * @type {String}
+   * @type {string}
    */
   get type () {
     return 'LogosAccount'
@@ -156,7 +163,7 @@ export default class LogosAccount extends Account {
 
   /**
    * The private key of the account
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get privateKey () {
@@ -165,7 +172,7 @@ export default class LogosAccount extends Account {
 
   /**
    * Array of associated token ids to this account (full list available only with fullsync)
-   * @type {LogosAddress[]}
+   * @type {string[]}
    * @readonly
    */
   get tokens () {
@@ -196,7 +203,7 @@ export default class LogosAccount extends Account {
   /**
    * The balance of the given token in the base units
    * @param {string} tokenID - Token ID of the token in question, you can also send the token account address
-   * @returns {String} the token account info object
+   * @returns {string} the token account info object
    * @readonly
    */
   tokenBalance (token: string) {
@@ -206,8 +213,8 @@ export default class LogosAccount extends Account {
   /**
    * Adds a token to the accounts associated tokens if it doesn't already exist
    *
-   * @param {Hexadecimal64Length} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
-   * @returns {LogosAddress[]} Array of all the associated tokens
+   * @param {string} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
+   * @returns {string[]} Array of all the associated tokens
    */
   async addToken (tokenID: string) {
     const tokenAddress = accountFromHexKey(tokenID)
@@ -222,9 +229,9 @@ export default class LogosAccount extends Account {
 
   /**
    * Checks if the account is synced
-   * @returns {Promise<Boolean>}
+   * @returns {Promise<syncedResponse>}
    */
-  isSynced () {
+  isSynced (): Promise<syncedResponse> {
     return new Promise((resolve, reject) => {
       const RPC = this.wallet.rpcClient()
       RPC.accounts.info(this.address).then(async info => {
@@ -573,7 +580,7 @@ export default class LogosAccount extends Account {
    * Validates that the account has enough funds at the current time to publish the request
    *
    * @param {Request} request - Request Class
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   async validateRequest (request: Request) {
     // Validate current values are appropriate for sends
@@ -819,7 +826,7 @@ export default class LogosAccount extends Account {
       tokenID: tokenAccount.tokenID
     })
     request.setting = options.setting
-    request.value = options.value
+    request.value = options.value.toString() === 'true'
     request.sign(this.privateKey)
     const result = await tokenAccount.addRequest(request)
     return result
@@ -1113,8 +1120,8 @@ export default class LogosAccount extends Account {
    * Returns true if the pending chain has x sends and
    * the count of total transactions is <= (x-minimumSaved) * 8
    *
-   * @param {Number} minimumSaved The minimum amount of requests saved in order to combine defaults to 1
-   * @returns {Boolean}
+   * @param {number} minimumSaved The minimum amount of requests saved in order to combine defaults to 1
+   * @returns {boolean}
    */
   _shouldCombine (minimumSaved = 1) {
     if (this.wallet.batchSends) {

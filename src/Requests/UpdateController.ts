@@ -1,7 +1,7 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController, accountFromHexKey } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController, accountFromHexKey } from '../Utils/Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
-import { Controller } from '../TokenAccount'
+import { Controller, Privileges, Settings } from '../TokenAccount'
 import { Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
 
 const Actions = {
@@ -103,7 +103,7 @@ export default class UpdateController extends TokenRequest {
     this._controller = val
   }
 
-  getObjectBits (obj) {
+  getObjectBits (obj: Privileges | Settings) {
     let bits = ''
     for (const val in obj) {
       if (typeof obj[val] === 'boolean') bits = (+obj[val]) + bits
@@ -114,7 +114,7 @@ export default class UpdateController extends TokenRequest {
   /**
    * Validates the controller
    * @throws a shit load of errors if it is wrong
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   validateController () {
     if (!this.controller) throw new Error('Controller is null')
@@ -148,7 +148,7 @@ export default class UpdateController extends TokenRequest {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {

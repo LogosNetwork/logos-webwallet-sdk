@@ -1,4 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils/Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
@@ -57,7 +57,7 @@ export default class Send extends Request {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {
@@ -75,7 +75,7 @@ export default class Send extends Request {
    * @param {Transaction} transaction - transaction you want to add to this send request
    * @returns {Transaction[]} list of all transactions
    */
-  addTransaction (transaction) {
+  addTransaction (transaction: Transaction) {
     if (this.transactions.length === 8) throw new Error('Can only fit 8 transactions per send request!')
     if (!transaction.destination || !transaction.amount) throw new Error('Send destination and amount')
     this.transactions.push(transaction)

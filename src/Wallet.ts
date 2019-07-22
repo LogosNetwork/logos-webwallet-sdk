@@ -1,13 +1,14 @@
 import mqttPattern from './mqttPattern'
 import Logos from '@logosnetwork/logos-rpc-client'
-import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils'
+import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
 import { pbkdf2Sync } from 'pbkdf2'
 import * as nacl from 'tweetnacl/nacl'
 import { blake2bInit, blake2bFinal, blake2bUpdate } from 'blakejs'
 import * as bigInt from 'big-integer'
 import { connect, MqttClient } from 'mqtt'
-import LogosAccount, { LogosAccountJSON } from './LogosAccount'
-import TokenAccount, { TokenAccountJSON } from './TokenAccount'
+import LogosAccount, { LogosAccountJSON, LogosAccountOptions } from './LogosAccount'
+import TokenAccount, { TokenAccountJSON, syncedResponse } from './TokenAccount'
+import { Request, Issuance } from './Requests';
 
 interface WalletJSON {
   password: string
@@ -31,6 +32,31 @@ interface WalletJSON {
     proxy: string
     delegates: Array<string>
   }
+}
+
+interface WalletOptions {
+  password?: string
+  seed?: string
+  deterministicKeyIndex?: number
+  currentAccountAddress?: string
+  accounts?: {
+    [address: string]: LogosAccount
+  }
+  tokenAccounts?: {
+    [address: string]: TokenAccount
+  },
+  walletID?: string
+  batchSends?: boolean
+  fullSync?: boolean
+  lazyErrors?: boolean
+  tokenSync?: boolean
+  validateSync?: boolean
+  mqtt?: string,
+  rpc?: {
+    proxy: string;
+    delegates: string[];
+  },
+  version?: number
 }
 
 export default class Wallet {
@@ -58,14 +84,14 @@ export default class Wallet {
   private _mqttConnected: boolean
   private _mqtt: string
   private _mqttClient: MqttClient
-  constructor (options = {
+  constructor (options:WalletOptions = {
     password: null,
     seed: null,
     deterministicKeyIndex: 0,
     currentAccountAddress: null,
     accounts: {},
     tokenAccounts: {},
-    walletID: false,
+    walletID: null,
     batchSends: true,
     fullSync: true,
     lazyErrors: false,
@@ -78,7 +104,7 @@ export default class Wallet {
     this.loadOptions(options)
   }
 
-  loadOptions (options) {
+  loadOptions (options: WalletOptions) {
     /**
      * Password used to encrypt and decrypt the wallet data
      * @type {string}
@@ -103,7 +129,7 @@ export default class Wallet {
 
     /**
      * Current Account address is the public key of the current account
-     * @type {LogosAddress}
+     * @type {string}
      * @private
      */
     if (options.currentAccountAddress !== undefined) {
@@ -205,7 +231,7 @@ export default class Wallet {
 
     /**
      * Seed used to generate accounts
-     * @type {Hexadecimal64Length} The 32 byte seed hex encoded
+     * @type {string} The 32 byte seed hex encoded
      * @private
      */
     if (options.seed !== undefined) {
@@ -216,7 +242,7 @@ export default class Wallet {
 
     /**
      * Array of accounts in this wallet
-     * @type {Map<LogosAddress, Account>}
+     * @type {Map<string, Account>}
      * @private
      */
     if (options.accounts !== undefined) {
@@ -235,7 +261,7 @@ export default class Wallet {
 
     /**
      * Array of accounts in this wallet
-     * @type {Map<LogosAddress, TokenAccount>}
+     * @type {Map<string, TokenAccount>}
      * @private
      */
     if (options.tokenAccounts !== undefined) {
@@ -341,7 +367,7 @@ export default class Wallet {
 
   /**
    * Array of all the accounts in the wallet
-   * @type {Map<LogosAddress, Account>}
+   * @type {Map<string, Account>}
    * @readonly
    */
   get accounts () {
@@ -350,7 +376,7 @@ export default class Wallet {
 
   /**
    * Map of all the TokenAccounts in the wallet
-   * @type {Map<LogosAddress, TokenAccount>}
+   * @type {Map<string, TokenAccount>}
    * @readonly
    */
   get tokenAccounts () {
@@ -368,7 +394,7 @@ export default class Wallet {
 
   /**
    * The current account address
-   * @type {LogosAddress}
+   * @type {string}
    */
   get currentAccountAddress () {
     return this._currentAccountAddress
@@ -424,7 +450,7 @@ export default class Wallet {
    * @param {string} password - The password you want to use to encrypt the wallet
    * @returns {void}
    */
-  setPassword (password) {
+  setPassword (password: string) {
     this._password = password
   }
 
@@ -435,7 +461,7 @@ export default class Wallet {
 
   /**
    * Return the seed of the wallet
-   * @type {Hexadecimal64Length}
+   * @type {string}
    */
   get seed () {
     return this._seed
@@ -443,7 +469,7 @@ export default class Wallet {
 
   /**
    * Return boolean if all the accounts in the wallet are synced
-   * @type {Boolean}
+   * @type {boolean}
    */
   get synced () {
     for (const address in this._tokenAccounts) {
@@ -465,7 +491,7 @@ export default class Wallet {
    * @readonly
    */
   get pendingRequests () {
-    const pendingRequests = []
+    const pendingRequests:Request[] = []
     Object.values(this._accounts).forEach(account => {
       pendingRequests.concat(account.pendingChain)
     })
@@ -477,7 +503,7 @@ export default class Wallet {
    *
    * @param {boolean} overwrite - Set to true to overwrite an existing seed
    * @throws An exception on existing seed
-   * @returns {Hexadecimal64Length}
+   * @returns {string}
    */
   createSeed (overwrite = false) {
     if (this._seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
@@ -488,25 +514,25 @@ export default class Wallet {
   /**
    * Adds a account to the wallet
    *
-   * @param {Account} account - the account you wish to add
-   * @returns {Account}
+   * @param {LogosAccount} account - the account you wish to add
+   * @returns {LogosAccount}
    */
-  addAccount (account) {
+  addAccount (account: LogosAccount) {
     this._accounts[account.address] = account
-    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${account.address}`)
+    if (this._mqtt && this._mqttConnected) this.subscribe(`account/${account.address}`)
     return this._accounts[account.address]
   }
 
   /**
    * Removes an account to the wallet
    *
-   * @param {LogosAddress} address - the account you wish to remove
-   * @returns {Boolean}
+   * @param {string} address - the account you wish to remove
+   * @returns {boolean}
    */
-  removeAccount (address) {
+  removeAccount (address: string) {
     if (this._accounts[address]) {
       delete this._accounts[address]
-      if (this._mqtt && this._mqttConnected) this._unsubscribe(`account/${address}`)
+      if (this._mqtt && this._mqttConnected) this.unsubscribe(`account/${address}`)
       if (address === this._currentAccountAddress) {
         this._currentAccountAddress = Object.keys(this._accounts)[0]
       }
@@ -521,9 +547,9 @@ export default class Wallet {
    * @param {TokenAccount} tokenAccount - the tokenAccount you wish to add
    * @returns {TokenAccount}
    */
-  addTokenAccount (tokenAccount) {
+  addTokenAccount (tokenAccount: TokenAccount) {
     this._tokenAccounts[tokenAccount.address] = tokenAccount
-    if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
+    if (this._mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
     return this._tokenAccounts[tokenAccount.address]
   }
 
@@ -532,10 +558,10 @@ export default class Wallet {
    *
    * You are allowed to add a tokenAccount using the address
    *
-   * @param {LogosAddress} address - address of the token account.
+   * @param {string} address - address of the token account.
    * @returns {Promise<Account>}
    */
-  async createTokenAccount (address: string, issuance = null) {
+  async createTokenAccount (address: string, issuance:Issuance = null) {
     if (this._tokenAccounts[address]) {
       return this._tokenAccounts[address]
     } else {
@@ -544,7 +570,7 @@ export default class Wallet {
         wallet: this,
         issuance: issuance
       })
-      if (this._mqtt && this._mqttConnected) this._subscribe(`account/${tokenAccount.address}`)
+      if (this._mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
       this._tokenAccounts[tokenAccount.address] = tokenAccount
       if (this._rpc && !issuance) {
         await this._tokenAccounts[tokenAccount.address].sync()
@@ -562,29 +588,32 @@ export default class Wallet {
    * You are allowed to create an account using your seed, precalculated account options, or a privateKey
    *
    * @param {AccountOptions} options - the options to populate the account. If you send just private key it will generate the account from that privateKey. If you just send index it will genereate the account from that determinstic seed index.
-   * @param {Boolean} setCurrent - sets the current account to newly created accounts this is default true
+   * @param {boolean} setCurrent - sets the current account to newly created accounts this is default true
    * @returns {Promise<Account>}
    */
-  async createAccount (options = null, setCurrent = true) {
-    let accountOptions = null
+  async createAccount (options:LogosAccountOptions = null, setCurrent = true) {
+    let accountInfo = null
     if (options === null) { // No options generate from seed
       if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
-      accountOptions = this._generateAccountOptionsFromSeed(this._deterministicKeyIndex)
+      accountInfo = this.generateAccountOptionsFromSeed(this._deterministicKeyIndex)
       this._deterministicKeyIndex++
     } else {
       if (options.privateKey !== undefined) {
-        accountOptions = this._generateAccountOptionsFromPrivateKey(options.privateKey)
+        accountInfo = this.generateAccountOptionsFromPrivateKey(options.privateKey)
       } else if (options.index !== undefined) {
         if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
-        accountOptions = this._generateAccountOptionsFromSeed(options.index)
+        accountInfo = this.generateAccountOptionsFromSeed(options.index)
       } else {
         if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
-        accountOptions = this._generateAccountOptionsFromSeed(this._deterministicKeyIndex)
+        accountInfo = this.generateAccountOptionsFromSeed(this._deterministicKeyIndex)
         this._deterministicKeyIndex++
       }
     }
-    accountOptions.wallet = this
-    accountOptions.label = `Account ${Object.values(this._accounts).length}`
+    const accountOptions = {
+      ...accountInfo,
+      wallet: this,
+      label: `Account ${Object.values(this._accounts).length}`
+    }
     const account = new LogosAccount(accountOptions)
     this.addAccount(account)
     if (this._rpc) {
@@ -609,15 +638,16 @@ export default class Wallet {
   /**
    * Finds the request object of the specified hash of one of our accounts
    *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are looking for the object of
-   * @returns {Request | boolean} false if no request object of the specified hash was found
+   * @param {string} hash - The hash of the request we are looking for the object of
+   * @returns {Request | false } false if no request object of the specified hash was found
    */
-  getRequest (hash) {
+  getRequest (hash: string): Request | false {
     Object.values(this._accounts).forEach(account => {
       const request = account.getRequest(hash)
       if (request !== false) {
         return request
       }
+      return false
     })
     return false
   }
@@ -627,7 +657,7 @@ export default class Wallet {
    *
    * @returns {string}
    */
-  encrypt () {
+  encrypt ():string {
     let encryptedWallet = this.toJSON()
     encryptedWallet = stringToHex(encryptedWallet)
     const WalletBuffer = Buffer.from(encryptedWallet, 'hex')
@@ -654,7 +684,7 @@ export default class Wallet {
     const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
 
     // decrypt to check if wallet was corrupted during ecryption somehow
-    if (this._decrypt(payload) === false) {
+    if (this.decrypt(payload) === false) {
       return this.encrypt() // try again, shouldnt happen often
     }
     return payload.toString('hex')
@@ -668,7 +698,8 @@ export default class Wallet {
    */
   async sync (force = false) {
     return new Promise((resolve, reject) => {
-      const isSyncedPromises = []
+      type syncedPromises = Promise<syncedResponse>[]
+      const isSyncedPromises:syncedPromises = []
       for (const account in this._accounts) {
         if (!this._accounts[account].synced || force) {
           isSyncedPromises.push(this._accounts[account].isSynced())
@@ -732,9 +763,9 @@ export default class Wallet {
    * @param {string} - encrypted wallet
    * @returns {Promise<WalletData>} wallet data
    */
-  async load (encryptedWallet) {
+  async load (encryptedWallet: string) {
     this._accounts = {}
-    const decryptedBytes = this._decrypt(encryptedWallet)
+    const decryptedBytes = this.decrypt(encryptedWallet)
     if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
     const walletData = JSON.parse(decryptedBytes.toString('utf8'))
     this.loadOptions(walletData)
@@ -744,12 +775,17 @@ export default class Wallet {
   /**
    * Decrypts the wallet data
    *
-   * @param {string} - encrypted wallet
-   * @returns {WalletData | boolean} The request data or returns false if it is unable to decrypt the data
+   * @param {Buffer | string} - encrypted wallet
+   * @returns {Buffer | false} The request data or returns false if it is unable to decrypt the data
    * @private
    */
-  _decrypt (encryptedWallet) {
-    const bytes = Buffer.from(encryptedWallet, 'hex')
+  private decrypt (encryptedWallet: Buffer | string): Buffer | false {
+    let bytes = null
+    if (encryptedWallet instanceof Buffer) {
+      bytes = encryptedWallet
+    } else {
+      bytes = Buffer.from(encryptedWallet, 'hex')
+    }
     const checksum = bytes.slice(0, 32)
     const salt = bytes.slice(32, 48)
     const payload = bytes.slice(48)
@@ -781,7 +817,7 @@ export default class Wallet {
    * @returns {MinimialAccount} The account options
    * @private
    */
-  _generateAccountOptionsFromSeed (index) {
+  private generateAccountOptionsFromSeed (index: number) {
     if (this._seed.length !== 64) throw new Error('Invalid Seed.')
     const indexBytes = hexToUint8(decToHex(index, 4))
 
@@ -804,11 +840,11 @@ export default class Wallet {
   /**
    * Generates an account based on the given private key
    *
-   * @param {Hexadecimal64Length} - The determinstic seed index
+   * @param {string} - The private key
    * @returns {MinimialAccount} The account options
    * @private
    */
-  _generateAccountOptionsFromPrivateKey (privateKey) {
+  private generateAccountOptionsFromPrivateKey (privateKey: string) {
     if (privateKey.length !== 64) throw new Error('Invalid Private Key length. Should be 32 bytes.')
     if (!/[0-9A-F]{64}/i.test(privateKey)) throw new Error('Invalid Hex Private Key.')
     const publicKey = nacl.sign.keyPair.fromSecretKey(hexToUint8(privateKey)).publicKey
@@ -827,7 +863,7 @@ export default class Wallet {
    * @returns {void}
    * @private
    */
-  _subscribe (topic) {
+  private subscribe (topic: string) {
     if (this._mqttConnected && this._mqttClient) {
       this._mqttClient.subscribe(topic, (err) => {
         if (!err) {
@@ -846,9 +882,9 @@ export default class Wallet {
    * @returns {void}
    * @private
    */
-  _unsubscribe (topic) {
+  private unsubscribe (topic: string) {
     if (this._mqttConnected && this._mqttClient) {
-      this._mqttClient.unsubscribe(topic, (err) => {
+      this._mqttClient.unsubscribe(topic, (err: Error) => {
         if (!err) {
           console.info(`unsubscribed from ${topic}`)
         } else {
@@ -878,12 +914,12 @@ export default class Wallet {
       this._mqttClient.on('connect', () => {
         console.info('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
-        this._subscribe(`delegateChange`)
+        this.subscribe(`delegateChange`)
         Object.keys(this._accounts).forEach(address => {
-          this._subscribe(`account/${address}`)
+          this.subscribe(`account/${address}`)
         })
         Object.keys(this._tokenAccounts).forEach(tkAddress => {
-          this._subscribe(`account/${tkAddress}`)
+          this.subscribe(`account/${tkAddress}`)
         })
       })
       this._mqttClient.on('close', () => {

@@ -1,8 +1,8 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, deserializeController, deserializeControllers, accountFromHexKey, byteCount, stringToHex, isAlphanumeric, isAlphanumericExtended, changeEndianness, serializeControllers, convertObjectToArray } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, deserializeController, deserializeControllers, accountFromHexKey, byteCount, stringToHex, isAlphanumeric, isAlphanumericExtended, changeEndianness, serializeControllers, convertObjectToArray } from '../Utils/Utils'
 import { blake2bUpdate, blake2bFinal, blake2bInit } from 'blakejs'
 import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
-import { Settings, Controller } from '../TokenAccount'
+import { Settings, Controller, Privileges } from '../TokenAccount'
 import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
 
 export interface IssuanceOptions extends RequestOptions {
@@ -73,7 +73,7 @@ export default class Issuance extends Request {
 
     /**
      * TokenID of the token
-     * @type {Hexadecimal64Length}
+     * @type {string}
      * @private
      */
     if (options.tokenID !== undefined) {
@@ -313,6 +313,8 @@ export default class Issuance extends Request {
 
   /**
    * The settings for the token
+   * Same as get settings but typescript
+   * doesn't allow different types for getter setter
    * @type {Settings}
    */
   get settingsAsObject () {
@@ -336,6 +338,8 @@ export default class Issuance extends Request {
 
   /**
    * The contollers of the token
+   * Same as get controllers but typescript
+   * doesn't allow different types for getter setter
    * @type {Controller[]}
    */
   get controllersAsObject () {
@@ -375,9 +379,9 @@ export default class Issuance extends Request {
   /**
    * Validates the settings
    * @throws a shit load of errors if it is wrong
-   * @returns {Boolean}
+   * @returns {boolean}
    */
-  validateSettings (settings = this.settings) {
+  validateSettings (settings = this.settingsAsObject) {
     if (typeof settings.issuance === 'undefined') throw new Error('issuance should be passed in token settings')
     if (typeof settings.modify_issuance === 'undefined') throw new Error('modify_issuance should be passed in token settings')
     if (typeof settings.revoke === 'undefined') throw new Error('revoke should be passed in token settings')
@@ -395,9 +399,9 @@ export default class Issuance extends Request {
    * Validates the controller
    * @param {Controller} controller - controller you want to validate
    * @throws a shit load of errors if it is wrong
-   * @returns {Boolean}
+   * @returns {boolean}
    */
-  validateController (controller) {
+  validateController (controller: Controller) {
     if (!controller) throw new Error('Controller is null')
     if (!controller.account) throw new Error('Controller must have account')
     if (!controller.privileges) throw new Error('Controller must have privileges')
@@ -430,16 +434,16 @@ export default class Issuance extends Request {
    * @param {Controller} controller - controller you want to add to this request
    * @returns {Controller[]} list of all controllers
    */
-  addController (controller) {
+  addController (controller: Controller | RpcController) {
     if (this.controllers.length === 10) throw new Error('Can only fit 10 controllers per token issuance request!')
-    controller = deserializeController(controller)
-    if (this.validateController(controller)) {
-      this._controllers.push(controller)
+    const newCtrl = deserializeController(controller)
+    if (this.validateController(newCtrl)) {
+      this._controllers.push(newCtrl)
     }
     return this._controllers
   }
 
-  getObjectBits (obj) {
+  getObjectBits (obj: Privileges | Settings) {
     let bits = ''
     for (const val in obj) {
       if (typeof obj[val] === 'boolean') bits = (+obj[val]) + bits
@@ -451,7 +455,7 @@ export default class Issuance extends Request {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {
@@ -508,11 +512,11 @@ export default class Issuance extends Request {
     const feeRate = hexToUint8(decToHex(this.feeRate, 16))
     blake2bUpdate(context, feeRate)
 
-    const settings = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(this.settings), 2), 8)))
+    const settings = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(this.settingsAsObject), 2), 8)))
     blake2bUpdate(context, settings)
 
-    const accounts = []
-    for (const controller of this.controllers) {
+    const accounts:Uint8Array[] = []
+    for (const controller of this.controllersAsObject) {
       this.validateController(controller)
       const account = hexToUint8(keyFromAccount(controller.account))
       if (accounts.includes(account)) throw new Error('Duplicate Controllers are not allowed')
@@ -542,8 +546,8 @@ export default class Issuance extends Request {
     obj.total_supply = this.totalSupply
     obj.fee_type = this.feeType
     obj.fee_rate = this.feeRate
-    obj.settings = convertObjectToArray(this.settings)
-    obj.controllers = serializeControllers(this.controllers)
+    obj.settings = <RpcSettings[]>convertObjectToArray(this.settingsAsObject)
+    obj.controllers = serializeControllers(this.controllersAsObject)
     obj.issuer_info = this.issuerInfo
     return obj
   }

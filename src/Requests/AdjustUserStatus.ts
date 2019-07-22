@@ -1,4 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils'
+import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils/Utils'
 import { blake2bUpdate, blake2bFinal } from 'blakejs'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 const Statuses = {
@@ -7,17 +7,18 @@ const Statuses = {
   whitelisted: 2,
   not_whitelisted: 3
 }
+export type Status = 'frozen' | 'unfrozen' | 'whitelisted' | 'not_whitelisted'
 export interface AdjustUserStatusOptions extends TokenRequestOptions {
   account?: string
-  status?: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
+  status?: Status
 }
 export interface  AdjustUserStatusJSON extends TokenRequestJSON {
   account?: string
-  status?: 'frozen' | 'unfrozen' | 'whitelist' | 'not_whitelisted'
+  status?: Status
 }
 export default class AdjustUserStatus extends TokenRequest {
   private _account: string
-  private _status: 'frozen' | 'unfrozen' | 'whitelisted' | 'not_whitelisted'
+  private _status: Status
   constructor (options:AdjustUserStatusOptions = {
     account: null,
     status: null
@@ -30,7 +31,7 @@ export default class AdjustUserStatus extends TokenRequest {
 
     /**
      * Account to change the status of
-     * @type {LogosAddress}
+     * @type {string}
      * @private
      */
     if (options.account !== undefined) {
@@ -69,7 +70,7 @@ export default class AdjustUserStatus extends TokenRequest {
 
   /**
    * Return the account which the status is being changed
-   * @type {LogosAddress}
+   * @type {string}
    */
   get account () {
     return this._account
@@ -79,7 +80,7 @@ export default class AdjustUserStatus extends TokenRequest {
    * Returns calculated hash or Builds the request and calculates the hash
    *
    * @throws An exception if missing parameters or invalid parameters
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get hash () {

@@ -1,4 +1,4 @@
-import { GENESIS_HASH } from './Utils'
+import { GENESIS_HASH } from './Utils/Utils'
 import { 
   Send,
   Issuance,
@@ -91,7 +91,7 @@ export default abstract class Account {
 
     /**
      * Address of this account
-     * @type {LogosAddress}
+     * @type {string}
      * @private
      */
     if (options.address !== undefined) {
@@ -102,7 +102,7 @@ export default abstract class Account {
 
     /**
      * Public Key of this account
-     * @type {Hexadecimal64Length}
+     * @type {string}
      * @private
      */
     if (options.publicKey !== undefined) {
@@ -253,7 +253,7 @@ export default abstract class Account {
 
     /**
      * Previous hexadecimal hash of the last confirmed or pending request
-     * @type {Hexadecimal64Length}
+     * @type {string}
      * @private
      */
     this._previous = null
@@ -310,7 +310,7 @@ export default abstract class Account {
 
   /**
    * The address of the account
-   * @type {LogosAddress}
+   * @type {string}
    * @readonly
    */
   get address () {
@@ -319,7 +319,7 @@ export default abstract class Account {
 
   /**
    * The public key of the account
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get publicKey () {
@@ -361,6 +361,10 @@ export default abstract class Account {
    */
   get wallet () {
     return this._wallet
+  }
+
+  set wallet (wallet) {
+    this._wallet = wallet
   }
 
   /**
@@ -434,8 +438,8 @@ export default abstract class Account {
 
   /**
    * Return the previous request as hash
-   * @type {Hexadecimal64Length}
-   * @returns {Hexadecimal64Length} hash of the previous transaction
+   * @type {string}
+   * @returns {string} hash of the previous transaction
    * @readonly
    */
   get previous () {
@@ -629,7 +633,7 @@ export default abstract class Account {
   /**
    * Called when a request is confirmed to remove it from the pending request pool
    *
-   * @param {Hexadecimal64Length} hash - The hash of the request we are confirming
+   * @param {string} hash - The hash of the request we are confirming
    * @returns {boolean}
    */
   removePendingRequest (hash: string) {
@@ -748,7 +752,7 @@ export default abstract class Account {
    * Validates that the account has enough funds at the current time to publish the request
    *
    * @param {Request} request - Request information from the RPC or MQTT
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   abstract async validateRequest(request: Request): Promise<boolean>
 

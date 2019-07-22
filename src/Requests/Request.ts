@@ -1,6 +1,6 @@
-import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK } from '../Utils'
+import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK, defaultRPC } from '../Utils/Utils'
+import blake2b, { initalizeBlake2b } from '../Utils/blake2b'
 import * as nacl from 'tweetnacl/nacl'
-import { blake2bInit, blake2bUpdate } from 'blakejs'
 import Logos from '@logosnetwork/logos-rpc-client'
 export interface RequestOptions {
   origin?: string
@@ -15,6 +15,10 @@ export interface RequestOptions {
 interface RequestType {
   text: string
   value: number
+}
+interface PublishOptions {
+  proxy: string
+  delegates: string[]
 }
 export interface RequestJSON {
   previous?: string
@@ -53,7 +57,7 @@ export default abstract class Request {
   }) {
     /**
      * Signature of the request
-     * @type {Hexadecimal64Length}
+     * @type {string}
      * @private
      */
     if (options.signature !== undefined) {
@@ -75,7 +79,7 @@ export default abstract class Request {
 
     /**
      * Previous request hash
-     * @type {Hexadecimal64Length}
+     * @type {string}
      * @private
      */
     if (options.previous !== undefined) {
@@ -97,7 +101,7 @@ export default abstract class Request {
 
     /**
      * Logos account address of the request origin account
-     * @type {LogosAddress}
+     * @type {string}
      * @private
      */
     if (options.origin !== undefined) {
@@ -108,11 +112,11 @@ export default abstract class Request {
 
     /**
      * Sequence of the request in the chain
-     * @type {string}
+     * @type {number}
      * @private
      */
     if (options.sequence !== undefined) {
-      this._sequence = options.sequence
+      this._sequence = parseInt(options.sequence.toString())
     } else {
       this._sequence = null
     }
@@ -151,7 +155,7 @@ export default abstract class Request {
 
   /**
    * Return the signature of the request
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get signature () {
@@ -178,7 +182,7 @@ export default abstract class Request {
 
   /**
    * Return the previous request as hash
-   * @type {Hexadecimal64Length}
+   * @type {string}
    */
   get previous () {
     return this._previous
@@ -226,7 +230,7 @@ export default abstract class Request {
 
   /**
    * The origin account public key
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get origin () {
@@ -235,7 +239,7 @@ export default abstract class Request {
 
   /**
    * The origin account address
-   * @type {LogosAddress}
+   * @type {string}
    * @readonly
    */
   get originAccount () {
@@ -277,14 +281,14 @@ export default abstract class Request {
 
   /**
    * Creates a signature for the request
-   * @param {Hexadecimal64Length} privateKey - private key in hex
+   * @param {string} privateKey - private key in hex
    * @returns {boolean} if the signature is valid
    */
-  sign (privateKey) {
-    privateKey = hexToUint8(privateKey)
-    if (privateKey.length !== 32) throw new Error('Invalid Private Key length. Should be 32 bytes.')
+  sign (privateKey: string) {
+    let uint8Key:Uint8Array = hexToUint8(privateKey)
+    if (uint8Key.length !== 32) throw new Error('Invalid Private Key length. Should be 32 bytes.')
     const hash = hexToUint8(this.hash)
-    this.signature = uint8ToHex(nacl.sign.detached(hash, privateKey))
+    this.signature = uint8ToHex(nacl.sign.detached(hash, uint8Key))
     return this.verify()
   }
 
@@ -292,19 +296,19 @@ export default abstract class Request {
    * Creates a Blake2b Context for the request
    * @returns {context} - Blake2b Context
    */
-  requestHash () {
+  async requestHash () {
     if (!this.previous) throw new Error('Previous is not set.')
     if (this.sequence === null) throw new Error('Sequence is not set.')
     if (this.fee === null) throw new Error('Transaction fee is not set.')
     if (!this.origin) throw new Error('Origin account is not set.')
     if (!this.type) throw new Error('Request type is not defined.')
-    const context = blake2bInit(32, null)
-    blake2bUpdate(context, hexToUint8(decToHex(this.typeValue, 1)))
-    blake2bUpdate(context, hexToUint8(this.origin))
-    blake2bUpdate(context, hexToUint8(this.previous))
-    blake2bUpdate(context, hexToUint8(decToHex(this.fee, 16)))
-    blake2bUpdate(context, hexToUint8(changeEndianness(decToHex(this.sequence, 4))))
-    return context
+    await initalizeBlake2b()
+    return new blake2b()
+      .update(hexToUint8(decToHex(this.typeValue, 1)))
+      .update(hexToUint8(this.origin))
+      .update(hexToUint8(this.previous))
+      .update(hexToUint8(decToHex(this.fee, 16)))
+      .update(hexToUint8(changeEndianness(decToHex(this.sequence, 4))))
   }
 
   /**
@@ -321,9 +325,9 @@ export default abstract class Request {
   /**
    * Publishes the request
    * @param {RPCOptions} options - rpc options
-   * @returns {Promise<Object>} response of transcation publish
+   * @returns {Promise<{hash:string}>} response of transcation publish
    */
-  async publish (options) {
+  async publish (options:PublishOptions = defaultRPC) {
     let delegateId = null
     if (this.previous !== GENESIS_HASH) {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32

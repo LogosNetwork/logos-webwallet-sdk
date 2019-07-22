@@ -1,5 +1,5 @@
 import * as bigInt from 'big-integer'
-import Account, { AccountJSON } from './Account'
+import Account, { AccountJSON, AccountOptions } from './Account'
 import { Settings as RpcSettings, Privileges as RpcPrivileges, Request as RpcRequest } from '@logosnetwork/logos-rpc-client/dist/api'
 import {
   accountFromHexKey,
@@ -9,7 +9,7 @@ import {
   deserializeSettings,
   serializeController,
   MAXUINT128
-} from './Utils'
+} from './Utils/Utils'
 import { 
   Send,
   Issuance,
@@ -25,10 +25,11 @@ import {
   Distribute,
   WithdrawFee,
   WithdrawLogos,
-  TokenSend, 
+  TokenSend,
+  TokenRequest,
   Request
 } from './Requests'
-
+import { Setting } from './Requests/ChangeSetting'
 export interface TokenAccountJSON extends AccountJSON {
   tokenID?: string
   tokenBalance?: string
@@ -52,7 +53,14 @@ interface AccountStatus {
   }
 }
 
-interface Privileges {
+export interface syncedResponse {
+  account?: string,
+  synced?: boolean,
+  type?: string,
+  remove?: boolean
+}
+
+export interface Privileges {
   change_issuance: boolean
   change_modify_issuance: boolean
   change_revoke: boolean
@@ -94,6 +102,22 @@ export interface Settings {
   modify_whitelist: boolean
 }
 
+export interface TokenAccountOptions extends AccountOptions {
+  tokenID?: string
+  issuance?: Issuance
+  tokenBalance?: string
+  totalSupply?: string
+  tokenFeeBalance?: string
+  symbol?: string
+  name?: string
+  issuerInfo?: string
+  feeRate?: string
+  feeType?: 'flat' | 'percentage'
+  controllers?: Controller[]
+  settings?: Settings
+  accountStatuses?: AccountStatus
+}
+
 /**
  * TokenAccount contain the keys, chains, and balances.
  */
@@ -111,7 +135,7 @@ export default class TokenAccount extends Account {
   private _accountStatuses: AccountStatus
   // private _pendingTokenBalance: string
   // private _pendingTotalSupply: string
-  constructor (options) {
+  constructor (options:TokenAccountOptions) {
     if (!options) throw new Error('You must pass settings to initalize the token account')
     if (!options.address && !options.tokenID) throw new Error('You must initalize a token account with an address or tokenID')
     if (!options.wallet) throw new Error('You must initalize a token account with a wallet')
@@ -132,14 +156,14 @@ export default class TokenAccount extends Account {
       this._issuerInfo = options.issuance.issuerInfo
       this._feeRate = options.issuance.feeRate
       this._feeType = options.issuance.feeType
-      this._controllers = options.issuance.controllers
-      this._settings = options.issuance.settings
+      this._controllers = options.issuance.controllersAsObject
+      this._settings = options.issuance.settingsAsObject
     }
 
     /**
      * Token Balance of the token account
      *
-     * @type {String}
+     * @type {string}
      * @private
      */
     if (options.tokenBalance !== undefined) {
@@ -151,7 +175,7 @@ export default class TokenAccount extends Account {
     /**
      * Total Supply of tokens
      *
-     * @type {String}
+     * @type {string}
      * @private
      */
     if (options.totalSupply !== undefined) {
@@ -163,7 +187,7 @@ export default class TokenAccount extends Account {
     /**
      * Token Fee Balance
      *
-     * @type {String}
+     * @type {string}
      * @private
      */
     if (options.tokenFeeBalance !== undefined) {
@@ -175,7 +199,7 @@ export default class TokenAccount extends Account {
     /**
      * Symbol of the token
      *
-     * @type {String}
+     * @type {string}
      * @private
      */
     if (options.symbol !== undefined) {
@@ -187,7 +211,7 @@ export default class TokenAccount extends Account {
     /**
      * Name of the token
      *
-     * @type {String}
+     * @type {string}
      * @private
      */
     if (options.name !== undefined) {
@@ -245,7 +269,7 @@ export default class TokenAccount extends Account {
 
     /**
      * Settings of the token
-     * @type {Object}
+     * @type {Settings}
      * @private
      */
     if (options.settings !== undefined) {
@@ -268,7 +292,7 @@ export default class TokenAccount extends Account {
     /**
      * Account Statuses
      *
-     * @type {Object}
+     * @type {AccountStatus}
      */
     if (options.accountStatuses !== undefined) {
       this._accountStatuses = options.accountStatuses
@@ -279,7 +303,7 @@ export default class TokenAccount extends Account {
 
   /**
    * The type of the account (LogosAccount or TokenAccount)
-   * @type {String}
+   * @type {string}
    */
   get type () {
     return 'TokenAccount'
@@ -287,7 +311,7 @@ export default class TokenAccount extends Account {
 
   /**
    * The public key of the token account
-   * @type {Hexadecimal64Length}
+   * @type {string}
    * @readonly
    */
   get tokenID () {
@@ -409,7 +433,7 @@ export default class TokenAccount extends Account {
 
   /**
    * The settings of the token
-   * @type {Object}
+   * @type {Settings}
    */
   get settings () {
     return this._settings
@@ -421,7 +445,7 @@ export default class TokenAccount extends Account {
 
   /**
    * The controllers of the token
-   * @type {Object[]}
+   * @type {Controller[]}
    */
   get controllers () {
     return this._controllers
@@ -433,9 +457,9 @@ export default class TokenAccount extends Account {
 
   /**
    * Checks if the account is synced
-   * @returns {Promise<Boolean>}
+   * @returns {Promise<syncedResponse>}
    */
-  isSynced () {
+  isSynced (): Promise<syncedResponse> {
     return new Promise((resolve, reject) => {
       const RPC = this.wallet.rpcClient()
       RPC.accounts.info(this.address).then(async info => {
@@ -526,7 +550,7 @@ export default class TokenAccount extends Account {
               // Add Genesis to latest
               for (const requestInfo of history.reverse()) {
                 const request = this.addConfirmedRequest(requestInfo)
-                if (request.type === 'adjust_user_status') {
+                if (request instanceof AdjustUserStatus) {
                   this.updateAccountStatusFromRequest(request)
                 }
               }
@@ -668,8 +692,8 @@ export default class TokenAccount extends Account {
   /**
    * Validates if the token account contains the controller
    *
-   * @param {LogosAddress} address - Address of the logos account you are checking if they are a controller
-   * @returns {Boolean}
+   * @param {string} address - Address of the logos account you are checking if they are a controller
+   * @returns {boolean}
    */
   isController (address: string) {
     for (const controller of this.controllers) {
@@ -684,7 +708,7 @@ export default class TokenAccount extends Account {
    * Validates if the token has the setting
    *
    * @param {Setting} setting - Token setting you are checking
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   hasSetting (setting: RpcSettings) {
     return Boolean(this.settings[setting])
@@ -693,9 +717,9 @@ export default class TokenAccount extends Account {
   /**
    * Validates if the token account contains the controller and the controller has the specified privilege
    *
-   * @param {LogosAddress} address - Address of the controller you are checking
+   * @param {string} address - Address of the controller you are checking
    * @param {privilege} privilege - Privilege you are checking for
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   controllerPrivilege (address: string, privilege: RpcPrivileges) {
     for (const controller of this.controllers) {
@@ -709,9 +733,9 @@ export default class TokenAccount extends Account {
   /**
    * Validates if the account has enough token funds to complete the transaction
    *
-   * @param {LogosAddress} address - Address of the controller you are checking
+   * @param {string} address - Address of the controller you are checking
    * @param {string} amount - Amount you are checking for
-   * @returns {Promise<Boolean>}
+   * @returns {Promise<boolean>}
    */
   async accountHasFunds (address: string, amount: string) {
     if (!this.wallet.rpc) {
@@ -727,8 +751,8 @@ export default class TokenAccount extends Account {
   /**
    * Validates if the account is a valid destination to send token funds to
    *
-   * @param {LogosAddress} address - Address of the controller you are checking
-   * @returns {Promise<Boolean>}
+   * @param {string} address - Address of the controller you are checking
+   * @returns {Promise<boolean>}
    */
   async validTokenDestination (address: string) {
     // TODO 104 - This token account is a valid destiantion
@@ -761,7 +785,7 @@ export default class TokenAccount extends Account {
    * Validates that the account has enough funds at the current time to publish the request
    *
    * @param {Request} request - Request information from the RPC or MQTT
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   async validateRequest (request: Request) {
     if (bigInt(this.balance).minus(request.fee).lesser(0)) {
@@ -782,20 +806,20 @@ export default class TokenAccount extends Account {
           return true
         }
       } else if (request instanceof ChangeSetting) {
-        if (!this.hasSetting(`modify_${request.setting}`)) {
+        if (!this.hasSetting(this.settingToModify(request.setting))) {
           console.error(`Invalid Change Setting Request: ${this.name} does not allow changing ${request.setting}`)
           return false
-        } else if (!this.controllerPrivilege(request.originAccount, `change_${request.setting}`)) {
+        } else if (!this.controllerPrivilege(request.originAccount, this.settingToChange(request.setting))) {
           console.error(`Invalid Change Setting Request: Controller does not have permission to change ${request.setting}`)
           return false
         } else {
           return true
         }
-      } else if (request instanceof  ImmuteSetting) {
-        if (!this.hasSetting(`modify_${request.setting}`)) {
+      } else if (request instanceof ImmuteSetting) {
+        if (!this.hasSetting(this.settingToModify(request.setting))) {
           console.error(`Invalid Immute Setting Request: ${request.setting} is already immuatable`)
           return false
-        } else if (!this.controllerPrivilege(request.originAccount, `change_modify_${request.setting}`)) {
+        } else if (!this.controllerPrivilege(request.originAccount, this.settingToChangeModify(request.setting))) {
           console.error(`Invalid Immute Setting Request: Controller does not have permission to immute ${request.setting}`)
           return false
         } else {
@@ -921,6 +945,51 @@ export default class TokenAccount extends Account {
     }
   }
 
+  private settingToModify (setting: Setting): RpcSettings {
+    if (setting === 'issuance') {
+      return 'modify_issuance'
+    } else if (setting === 'revoke') {
+      return 'modify_revoke'
+    } else if (setting === 'adjust_fee') {
+      return 'modify_adjust_fee'
+    } else if (setting === 'freeze') {
+      return 'modify_freeze'
+    } else if (setting === 'whitelist'){
+      return 'modify_whitelist'
+    }
+    return null
+  }
+
+  private settingToChange (setting: Setting): RpcPrivileges {
+    if (setting === 'issuance') {
+      return 'change_issuance'
+    } else if (setting === 'revoke') {
+      return 'change_revoke'
+    } else if (setting === 'adjust_fee') {
+      return 'change_adjust_fee'
+    } else if (setting === 'freeze') {
+      return 'change_freeze'
+    } else if (setting === 'whitelist'){
+      return 'change_whitelist'
+    }
+    return null
+  }
+
+  private settingToChangeModify (setting: Setting): RpcPrivileges {
+    if (setting === 'issuance') {
+      return 'change_modify_issuance'
+    } else if (setting === 'revoke') {
+      return 'change_modify_revoke'
+    } else if (setting === 'adjust_fee') {
+      return 'change_modify_adjust_fee'
+    } else if (setting === 'freeze') {
+      return 'change_modify_freeze'
+    } else if (setting === 'whitelist'){
+      return 'change_modify_whitelist'
+    }
+    return null
+  }
+
   /**
    * Adds a request to the appropriate chain
    *
@@ -1009,8 +1078,8 @@ export default class TokenAccount extends Account {
   /**
    * Returns the status of the given address for this token
    *
-   * @param {LogosAddress} address - The address of the account
-   * @returns {Object} status of the account { whitelisted and frozen }
+   * @param {string} address - The address of the account
+   * @returns {{whitelisted: boolean, frozen: boolean}} status of the account { whitelisted and frozen }
    */
   getAccountStatus (address: string) {
     if (Object.prototype.hasOwnProperty.call(this.accountStatuses, address)) {
@@ -1027,7 +1096,7 @@ export default class TokenAccount extends Account {
    * Returns the status of the given address for this token
    *
    * @param {AdjustUserStatus} request - The adjust_user_status request
-   * @returns {Object} status of the account { whitelisted and frozen }
+   * @returns {{whitelisted: boolean, frozen: boolean}} status of the account { whitelisted and frozen }
    */
   updateAccountStatusFromRequest (request: AdjustUserStatus) {
     if (!this.accountStatuses[request.account]) {
@@ -1064,9 +1133,9 @@ export default class TokenAccount extends Account {
       if (!request.verify()) throw new Error(`Invalid Request! \n ${JSON.stringify(request.toJSON(), null, 2)}`)
       // Todo 104 - revoke, token_send, distribute, withdraw_Fee, withdraw_logos
       // could be recieved by TokenAccount???
-      if (request.tokenID === this.tokenID &&
-        request.type !== 'token_send' &&
-        request.type !== 'issuance') {
+      if (request instanceof TokenRequest &&
+        request.tokenID === this.tokenID &&
+        request instanceof TokenSend === false) {
         if (this.getPendingRequest(requestInfo.hash)) {
           this.removePendingRequest(requestInfo.hash)
         } else {
