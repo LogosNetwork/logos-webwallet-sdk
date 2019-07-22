@@ -207,6 +207,7 @@ export default class Blake2b {
   private outlen: number
   private finalized: boolean
   private pointer: number
+  private mode: 'wasm' | 'js'
   constructor (outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null) {
     if (outlen < BYTES_MIN) throw new Error(`outlen must be at least ${BYTES_MIN}, was given ${outlen}`)
     if (outlen > BYTES_MAX) throw new Error(`outlen must be at most ${BYTES_MAX}, was given ${outlen}`)
@@ -223,8 +224,8 @@ export default class Blake2b {
     this.finalized = false
     this.outlen = outlen
 
-    if (wasm) {
-      if (!(wasm && wasm.exports)) throw new Error('WASM not loaded. Wait for Blake2b.ready(cb)')
+    if (wasm && wasm.exports && (this.mode === null || this.mode === 'wasm')) {
+      this.mode = 'wasm'
       if (!freeList.length) {
         freeList.push(head)
         head += 216
@@ -245,6 +246,8 @@ export default class Blake2b {
         wasm.memory[this.pointer + 200] = 128
       }
     } else {
+      if (wasm && !wasm.exports && this.mode === null) console.log('Using JS Fallback since WASM is still loading')
+      this.mode = 'js'
       // zero out parameter_block before usage
       this.parameter_block = parameter_block
       this.parameter_block.fill(0)
