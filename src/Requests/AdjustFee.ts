@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex } from '../Utils/Utils'
-import blake2b, { initalizeBlake2b } from './Utils/blake2b'
+import { hexToUint8, decToHex } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import * as bigInt from 'big-integer'
 export interface AdjustFeeOptions extends TokenRequestOptions {
@@ -87,12 +86,10 @@ export default class AdjustFee extends TokenRequest {
     if (!this.feeType) throw new Error('Fee Type is not set.')
     if (!this.feeRate) throw new Error('Fee Rate is not set.')
     if (this.feeType === 'percentage' && bigInt(this.feeRate).greater(bigInt('100'))) throw new Error('Fee Type is percentage and exceeds the maximum of 100')
-    const context = super.requestHash()
-    const feeType = hexToUint8(decToHex(+(this.feeType === 'flat'), 1))
-    blake2bUpdate(context, feeType)
-    const feeRate = hexToUint8(decToHex(this.feeRate, 16))
-    blake2bUpdate(context, feeRate)
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(decToHex(+(this.feeType === 'flat'), 1)))
+      .update(hexToUint8(decToHex(this.feeRate, 16)))
+      .digest('hex')
   }
 
   /**

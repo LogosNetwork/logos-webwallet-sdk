@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import * as bigInt from 'big-integer'
 import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
@@ -99,11 +98,11 @@ export default class TokenSend extends TokenRequest {
     if (this.tokenFee === null) throw new Error('token fee is not set.')
     const context = super.requestHash()
     for (const transaction of this.transactions) {
-      blake2bUpdate(context, hexToUint8(keyFromAccount(transaction.destination)))
-      blake2bUpdate(context, hexToUint8(decToHex(transaction.amount, 16)))
+      context.update(hexToUint8(keyFromAccount(transaction.destination)))
+      context.update(hexToUint8(decToHex(transaction.amount, 16)))
     }
-    blake2bUpdate(context, hexToUint8(decToHex(this.tokenFee, 16)))
-    return uint8ToHex(blake2bFinal(context))
+    context.update(hexToUint8(decToHex(this.tokenFee, 16)))
+    return <string>context.digest('hex')
   }
 
   /**

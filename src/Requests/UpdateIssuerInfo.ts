@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, byteCount, stringToHex } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, byteCount, stringToHex } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 
 export interface UpdateIssuerInfoOptions extends TokenRequestOptions {
@@ -58,10 +57,9 @@ export default class UpdateIssuerInfo extends TokenRequest {
   get hash () {
     if (this.issuerInfo === null) throw new Error('IssuerInfo is not set.')
     if (byteCount(this.issuerInfo) > 512) throw new Error('Issuer Info - Invalid Size. Max Size 512 Bytes')
-    const context = super.requestHash()
-    const issuerInfo = hexToUint8(stringToHex(this.issuerInfo))
-    blake2bUpdate(context, issuerInfo)
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(stringToHex(this.issuerInfo)))
+      .digest('hex')
   }
 
   /**

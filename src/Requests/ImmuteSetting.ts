@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, decToHex } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 export type Setting = 'issuance' | 'revoke' | 'freeze' | 'adjust_fee' | 'whitelist'
 export interface ImmuteSettingJSON extends TokenRequestJSON {
@@ -61,10 +60,9 @@ export default class ImmuteSetting extends TokenRequest {
   get hash () {
     if (!this.setting) throw new Error('setting is not set.')
     if (typeof Settings[this.setting] !== 'number') throw new Error('Invalid setting option')
-    const context = super.requestHash()
-    const setting = hexToUint8(decToHex(Settings[this.setting], 1))
-    blake2bUpdate(context, setting)
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(decToHex(Settings[this.setting], 1)))
+      .digest('hex')
   }
 
   /**

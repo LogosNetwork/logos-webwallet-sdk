@@ -1,5 +1,5 @@
 import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK, defaultRPC } from '../Utils/Utils'
-import blake2b, { initalizeBlake2b } from '../Utils/blake2b'
+import blake2b from '../Utils/blake2b'
 import * as nacl from 'tweetnacl/nacl'
 import Logos from '@logosnetwork/logos-rpc-client'
 export interface RequestOptions {
@@ -296,13 +296,12 @@ export default abstract class Request {
    * Creates a Blake2b Context for the request
    * @returns {context} - Blake2b Context
    */
-  async requestHash () {
+  requestHash () {
     if (!this.previous) throw new Error('Previous is not set.')
     if (this.sequence === null) throw new Error('Sequence is not set.')
     if (this.fee === null) throw new Error('Transaction fee is not set.')
     if (!this.origin) throw new Error('Origin account is not set.')
     if (!this.type) throw new Error('Request type is not defined.')
-    await initalizeBlake2b()
     return new blake2b()
       .update(hexToUint8(decToHex(this.typeValue, 1)))
       .update(hexToUint8(this.origin))

@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 const Statuses = {
   frozen: 0,
@@ -86,12 +85,10 @@ export default class AdjustUserStatus extends TokenRequest {
   get hash () {
     if (!this.account) throw new Error('Account is not set.')
     if (!this.status) throw new Error('Status is not set.')
-    const context = super.requestHash()
-    const account = hexToUint8(keyFromAccount(this.account))
-    blake2bUpdate(context, account)
-    const status = hexToUint8(decToHex(Statuses[this.status], 1))
-    blake2bUpdate(context, status)
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(keyFromAccount(this.account)))
+      .update(hexToUint8(decToHex(Statuses[this.status], 1)))
+      .digest('hex')
   }
 
   /**

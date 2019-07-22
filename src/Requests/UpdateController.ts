@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController, accountFromHexKey } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController, accountFromHexKey } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import { Controller, Privileges, Settings } from '../TokenAccount'
 import { Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
@@ -155,15 +154,11 @@ export default class UpdateController extends TokenRequest {
     this.validateController()
     if (!this.action) throw new Error('action is not set.')
     if (typeof Actions[this.action] !== 'number') throw new Error('Invalid action option, pass action as add or remove')
-    const context = super.requestHash()
-    const action = hexToUint8(decToHex(Actions[this.action], 1))
-    blake2bUpdate(context, action)
-    const account = hexToUint8(keyFromAccount(this.controller.account))
-    blake2bUpdate(context, account)
-    const privileges = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(this.controller.privileges), 2), 8)))
-    blake2bUpdate(context, privileges)
-
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(decToHex(Actions[this.action], 1)))
+      .update(hexToUint8(keyFromAccount(this.controller.account)))
+      .update(hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(this.controller.privileges), 2), 8))))
+      .digest('hex')
   }
 
   /**

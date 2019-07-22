@@ -3,7 +3,7 @@ import Logos from '@logosnetwork/logos-rpc-client'
 import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
 import { pbkdf2Sync } from 'pbkdf2'
 import * as nacl from 'tweetnacl/nacl'
-import { blake2bInit, blake2bFinal, blake2bUpdate } from 'blakejs'
+import blake2b from './Utils/blake2b'
 import * as bigInt from 'big-integer'
 import { connect, MqttClient } from 'mqtt'
 import LogosAccount, { LogosAccountJSON, LogosAccountOptions } from './LogosAccount'
@@ -662,9 +662,7 @@ export default class Wallet {
     encryptedWallet = stringToHex(encryptedWallet)
     const WalletBuffer = Buffer.from(encryptedWallet, 'hex')
 
-    const context = blake2bInit(32)
-    blake2bUpdate(context, WalletBuffer)
-    const checksum = blake2bFinal(context)
+    const checksum = <Uint8Array>new blake2b().update(WalletBuffer).digest()
 
     const salt = Buffer.from(nacl.randomBytes(16))
     let localPassword = ''
@@ -802,10 +800,7 @@ export default class Wallet {
     }
     const decryptedBytes = AES.decrypt(payload, key, salt, options)
 
-    const context = blake2bInit(32)
-    blake2bUpdate(context, decryptedBytes)
-    const hash = uint8ToHex(blake2bFinal(context))
-
+    const hash = <string>new blake2b().update(decryptedBytes).digest('hex')
     if (hash !== checksum.toString('hex').toUpperCase()) return false
     return decryptedBytes
   }
@@ -821,11 +816,10 @@ export default class Wallet {
     if (this._seed.length !== 64) throw new Error('Invalid Seed.')
     const indexBytes = hexToUint8(decToHex(index, 4))
 
-    const context = blake2bInit(32)
-    blake2bUpdate(context, hexToUint8(this._seed))
-    blake2bUpdate(context, indexBytes)
-
-    const privateKey = blake2bFinal(context)
+    const privateKey = <Uint8Array>new blake2b()
+      .update(hexToUint8(this._seed))
+      .update(indexBytes)
+      .digest()
     const publicKey = nacl.sign.keyPair.fromSecretKey(privateKey).publicKey
     const address = accountFromHexKey(uint8ToHex(publicKey))
 

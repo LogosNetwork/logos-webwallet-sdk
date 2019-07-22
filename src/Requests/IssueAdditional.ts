@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, decToHex } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 
 export interface IssueAdditionalOptions extends TokenRequestOptions {
@@ -53,10 +52,9 @@ export default class IssueAdditional extends TokenRequest {
    */
   get hash () {
     if (this.amount === null) throw new Error('Amount is not set.')
-    const context = super.requestHash()
-    const amount = hexToUint8(decToHex(this.amount, 16))
-    blake2bUpdate(context, amount)
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(decToHex(this.amount, 16)))
+      .digest('hex')
   }
 
   /**

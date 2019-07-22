@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, decToHex } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 const Settings = {
   issuance: 0,
@@ -87,13 +86,10 @@ export default class ChangeSetting extends TokenRequest {
   get hash () {
     if (!this.setting) throw new Error('Settings is not set.')
     if (this.value === null) throw new Error('Value is not set.')
-    const context = super.requestHash()
-    const setting = hexToUint8(decToHex(Settings[this.setting], 1))
-    blake2bUpdate(context, setting)
-    const value = hexToUint8(decToHex((+this.value), 1))
-    blake2bUpdate(context, value)
-
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(decToHex(Settings[this.setting], 1)))
+      .update(hexToUint8(decToHex((+this.value), 1)))
+      .digest('hex')
   }
 
   /**

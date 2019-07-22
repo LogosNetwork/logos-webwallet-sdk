@@ -59,11 +59,9 @@ export default abstract class TokenRequest extends Request {
    * Creates a Blake2b Context for the request
    * @returns {context} - Blake2b Context
    */
-  async requestHash () {
+  requestHash () {
     if (!this.tokenID) throw new Error('TokenID is not set.')
-    const context = await super.requestHash()
-    context.update(hexToUint8(this.tokenID))
-    return context
+    return super.requestHash().update(hexToUint8(this.tokenID))
   }
 
   /**

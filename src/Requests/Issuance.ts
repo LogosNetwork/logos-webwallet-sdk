@@ -1,9 +1,9 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, deserializeController, deserializeControllers, accountFromHexKey, byteCount, stringToHex, isAlphanumeric, isAlphanumericExtended, changeEndianness, serializeControllers, convertObjectToArray } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal, blake2bInit } from 'blakejs'
+import { hexToUint8, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, deserializeController, deserializeControllers, accountFromHexKey, byteCount, stringToHex, isAlphanumeric, isAlphanumericExtended, changeEndianness, serializeControllers, convertObjectToArray } from '../Utils/Utils'
 import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
 import { Settings, Controller, Privileges } from '../TokenAccount'
 import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
+import Blake2b from '../Utils/blake2b';
 
 export interface IssuanceOptions extends RequestOptions {
   tokenID?: string
@@ -233,11 +233,11 @@ export default class Issuance extends Request {
       if (!this.previous) throw new Error('Previous is not set.')
       if (!this.symbol) throw new Error('Symbol is not set.')
       if (!this.name) throw new Error('Name is not set.')
-      const context = blake2bInit(32, null)
-      blake2bUpdate(context, hexToUint8(this.origin))
-      blake2bUpdate(context, hexToUint8(this.previous))
-      blake2bUpdate(context, hexToUint8(stringToHex(this.symbol + this.name)))
-      const tokenID = uint8ToHex(blake2bFinal(context))
+      const tokenID = <string>new Blake2b()
+        .update(hexToUint8(this.origin))
+        .update(hexToUint8(this.previous))
+        .update(hexToUint8(stringToHex(this.symbol + this.name)))
+        .digest('hex')
       this.tokenID = tokenID
       return this.tokenID
     }
@@ -495,25 +495,25 @@ export default class Issuance extends Request {
     const context = super.requestHash()
 
     const tokenID = hexToUint8(this.tokenID)
-    blake2bUpdate(context, tokenID)
+    context.update(tokenID)
 
     const symbol = hexToUint8(stringToHex(this.symbol))
-    blake2bUpdate(context, symbol)
+    context.update(symbol)
 
     const name = hexToUint8(stringToHex(this.name))
-    blake2bUpdate(context, name)
+    context.update(name)
 
     const totalSupply = hexToUint8(decToHex(this.totalSupply, 16))
-    blake2bUpdate(context, totalSupply)
+    context.update(totalSupply)
 
     const feeType = hexToUint8(decToHex(+(this.feeType === 'flat'), 1))
-    blake2bUpdate(context, feeType)
+    context.update(feeType)
 
     const feeRate = hexToUint8(decToHex(this.feeRate, 16))
-    blake2bUpdate(context, feeRate)
+    context.update(feeRate)
 
     const settings = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(this.settingsAsObject), 2), 8)))
-    blake2bUpdate(context, settings)
+    context.update(settings)
 
     const accounts:Uint8Array[] = []
     for (const controller of this.controllersAsObject) {
@@ -521,16 +521,16 @@ export default class Issuance extends Request {
       const account = hexToUint8(keyFromAccount(controller.account))
       if (accounts.includes(account)) throw new Error('Duplicate Controllers are not allowed')
       accounts.push(account)
-      blake2bUpdate(context, account)
+      context.update(account)
 
       const privileges = hexToUint8(changeEndianness(decToHex(parseInt(this.getObjectBits(controller.privileges), 2), 8)))
-      blake2bUpdate(context, privileges)
+      context.update(privileges)
     }
 
     const issuerInfo = hexToUint8(stringToHex(this.issuerInfo))
-    blake2bUpdate(context, issuerInfo)
+    context.update(issuerInfo)
 
-    return uint8ToHex(blake2bFinal(context))
+    return <string>context.digest('hex')
   }
 
   /**

@@ -1,5 +1,4 @@
-import { hexToUint8, uint8ToHex, decToHex, keyFromAccount } from '../Utils/Utils'
-import { blake2bUpdate, blake2bFinal } from 'blakejs'
+import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
 export interface DistributeOptions extends TokenRequestOptions {
@@ -56,12 +55,10 @@ export default class Distribute extends TokenRequest {
     if (this.transaction === null) throw new Error('transaction is not set.')
     if (!this.transaction.destination) throw new Error('transaction destination is not set.')
     if (!this.transaction.amount) throw new Error('transaction amount is not set.')
-    const context = super.requestHash()
-    const account = hexToUint8(keyFromAccount(this.transaction.destination))
-    blake2bUpdate(context, account)
-    const amount = hexToUint8(decToHex(this.transaction.amount, 16))
-    blake2bUpdate(context, amount)
-    return uint8ToHex(blake2bFinal(context))
+    return <string>super.requestHash()
+      .update(hexToUint8(keyFromAccount(this.transaction.destination)))
+      .update(hexToUint8(decToHex(this.transaction.amount, 16)))
+      .digest('hex')
   }
 
   /**
