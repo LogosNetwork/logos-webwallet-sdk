@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "outDir": "./tsbuild/",
+        "outDir": "./dist/",
         "lib": ["es2018"],
         "alwaysStrict": true,
         "sourceMap": true,

@@ -1,6 +1,6 @@
 {
   "name": "@logosnetwork/logos-webwallet-sdk",
-  "version": "0.2.19",
+  "version": "0.3.0",
   "description": "Create Logos wallets without a full Logos node",
   "keywords": [
     "Logos",
@@ -15,14 +15,13 @@
     "type": "git",
     "url": "git+https://github.com/LogosNetwork/logos-webwallet-sdk.git"
   },
-  "main": "./src/index",
+  "main": "./dist/index",
   "scripts": {
     "test": "npm run lint && npm run unit:test",
     "unit:test": "./node_modules/.bin/mocha --reporter spec",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
-    "build": "webpack",
-    "stats:webpack": "webpack --profile --json > dist/stats.json",
+    "lint": "eslint src --ext .js,.ts",
+    "lint:fix": "eslint src --ext .js,.ts --fix",
+    "build": "tsc --build",
     "prepublishOnly": "npm run test && NODE_ENV=production npm run build"
   },
   "author": "Tyler Storm <tyler@prometheanlabs.io>",
@@ -42,12 +41,15 @@
     "@babel/preset-env": "^7.5.4",
     "@babel/register": "^7.4.4",
     "@types/node": "^12.6.3",
+    "@typescript-eslint/eslint-plugin": "^1.13.0",
+    "@typescript-eslint/parser": "^1.13.0",
     "babel-eslint": "^10.0.2",
     "babel-loader": "^8.0.6",
     "chai": "^4.2.0",
     "eslint": "^6.0.1",
-    "eslint-plugin-standard": "^4.0.0",
     "mocha": "^6.1.4",
+    "ts-loader": "^6.0.4",
+    "typescript": "^3.5.3",
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.6"
   },
