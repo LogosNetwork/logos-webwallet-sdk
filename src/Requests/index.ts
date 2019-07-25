@@ -15,22 +15,22 @@ import WithdrawFee, { WithdrawFeeJSON } from './WithdrawFee'
 import WithdrawLogos, { WithdrawLogosJSON } from './WithdrawLogos'
 import TokenRequest from './TokenRequest'
 export {
-    AdjustFee,
-    AdjustUserStatus,
-    Burn,
-    ChangeSetting,
-    Distribute,
-    ImmuteSetting,
-    Issuance,
-    IssueAdditional,
-    Revoke,
-    Send,
-    TokenSend,
-    UpdateController,
-    UpdateIssuerInfo,
-    WithdrawFee,
-    WithdrawLogos,
-    TokenRequest
+  AdjustFee,
+  AdjustUserStatus,
+  Burn,
+  ChangeSetting,
+  Distribute,
+  ImmuteSetting,
+  Issuance,
+  IssueAdditional,
+  Revoke,
+  Send,
+  TokenSend,
+  UpdateController,
+  UpdateIssuerInfo,
+  WithdrawFee,
+  WithdrawLogos,
+  TokenRequest
 }
 export type Request = Send|Issuance|TokenSend|IssueAdditional|ChangeSetting|ImmuteSetting|Revoke|AdjustUserStatus|AdjustFee|UpdateIssuerInfo|UpdateController|Burn|Distribute|WithdrawFee|WithdrawLogos
 export type RequestJSON = SendJSON|IssuanceJSON|TokenSendJSON|IssueAdditionalJSON|ChangeSettingJSON|ImmuteSettingJSON|RevokeJSON|AdjustUserStatusJSON|AdjustFeeJSON|UpdateIssuerInfoJSON|UpdateControllerJSON|BurnJSON|DistributeJSON|WithdrawFeeJSON|WithdrawLogosJSON
