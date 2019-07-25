@@ -11,6 +11,7 @@ export interface UpdateIssuerInfoJSON extends TokenRequestJSON {
 }
 export default class UpdateIssuerInfo extends TokenRequest {
     private _issuerInfo: string
+
     public constructor (options: UpdateIssuerInfoOptions = {
         issuerInfo: '',
         new_info: ''

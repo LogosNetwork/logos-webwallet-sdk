@@ -1,7 +1,7 @@
 /* eslint @typescript-eslint/camelcase: 0 */
 import { hexToUint8, keyFromAccount, accountFromHexKey } from '../Utils/Utils'
 import Request, { RequestOptions, RequestJSON } from './Request'
-import Blake2b from '../Utils/blake2b';
+import Blake2b from '../Utils/blake2b'
 
 /**
  * The TokenRequest class.
@@ -18,6 +18,7 @@ export interface TokenRequestJSON extends RequestJSON {
 }
 export default abstract class TokenRequest extends Request {
     private _tokenID: string
+
     public constructor (options: TokenRequestOptions = {
         tokenID: null
     }) {

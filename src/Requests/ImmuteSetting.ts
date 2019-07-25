@@ -17,6 +17,7 @@ export interface ImmuteSettingOptions extends TokenRequestOptions {
 }
 export default class ImmuteSetting extends TokenRequest {
     private _setting: Setting
+
     public constructor (options: ImmuteSettingOptions = {
         setting: null
     }) {

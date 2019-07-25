@@ -9,6 +9,7 @@ export interface IssueAdditionalJSON extends TokenRequestJSON {
 }
 export default class IssueAdditional extends TokenRequest {
     private _amount: string
+
     public constructor (options: IssueAdditionalOptions = {
         amount: '0'
     }) {

@@ -1,7 +1,7 @@
 import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
-import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
+import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
 
 interface SendOptions extends RequestOptions {
     transactions?: Transaction[];
@@ -11,6 +11,7 @@ export interface SendJSON extends RequestJSON {
 }
 export default class Send extends Request {
     private _transactions: Transaction[]
+
     public constructor (options: SendOptions = {
         transactions: []
     }) {

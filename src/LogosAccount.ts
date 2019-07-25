@@ -26,20 +26,20 @@ import {
     TokenSend,
     Request
 } from './Requests'
-import { IssuanceOptions } from './Requests/Issuance';
-import { IssueAdditionalJSON } from './Requests/IssueAdditional';
-import { ChangeSettingOptions } from './Requests/ChangeSetting';
-import { ImmuteSettingOptions } from './Requests/ImmuteSetting';
-import { RevokeOptions } from './Requests/Revoke';
-import { AdjustUserStatusOptions } from './Requests/AdjustUserStatus';
-import { AdjustFeeOptions } from './Requests/AdjustFee';
-import { UpdateIssuerInfoOptions } from './Requests/UpdateIssuerInfo';
-import { UpdateControllerOptions } from './Requests/UpdateController';
-import { BurnOptions } from './Requests/Burn';
-import { DistributeOptions } from './Requests/Distribute';
-import { WithdrawFeeOptions } from './Requests/WithdrawFee';
-import { WithdrawLogosOptions } from './Requests/WithdrawLogos';
-import TokenAccount from './TokenAccount';
+import { IssuanceOptions } from './Requests/Issuance'
+import { IssueAdditionalJSON } from './Requests/IssueAdditional'
+import { ChangeSettingOptions } from './Requests/ChangeSetting'
+import { ImmuteSettingOptions } from './Requests/ImmuteSetting'
+import { RevokeOptions } from './Requests/Revoke'
+import { AdjustUserStatusOptions } from './Requests/AdjustUserStatus'
+import { AdjustFeeOptions } from './Requests/AdjustFee'
+import { UpdateIssuerInfoOptions } from './Requests/UpdateIssuerInfo'
+import { UpdateControllerOptions } from './Requests/UpdateController'
+import { BurnOptions } from './Requests/Burn'
+import { DistributeOptions } from './Requests/Distribute'
+import { WithdrawFeeOptions } from './Requests/WithdrawFee'
+import { WithdrawLogosOptions } from './Requests/WithdrawLogos'
+import TokenAccount from './TokenAccount'
 
 export interface LogosAccountOptions extends AccountOptions {
     index?: number;
@@ -73,10 +73,15 @@ export interface SyncedResponse {
  */
 export default class LogosAccount extends Account {
     private _index: number
+
     private _privateKey: string
+
     private _tokens: string[]
+
     private _tokenBalances: TokenBalances
+
     private _pendingTokenBalances: TokenBalances
+
     public constructor (options: LogosAccountOptions = {
         privateKey: null,
         tokenBalances: {},
@@ -283,9 +288,9 @@ export default class LogosAccount extends Account {
 
     /**
    * Scans the account history using RPC and updates the local chain
-   * @returns {Promise<LogosAccount>}
+   * @returns {Promise<Account>}
    */
-    public sync (): Promise<LogosAccount> {
+    public sync (): Promise<Account> {
         return new Promise((resolve): void => {
             this.synced = false
             this.chain = []

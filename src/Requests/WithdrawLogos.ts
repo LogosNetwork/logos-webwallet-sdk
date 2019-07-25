@@ -1,6 +1,6 @@
 import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
-import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
+import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
 export interface WithdrawLogosOptions extends TokenRequestOptions {
     transaction?: Transaction;
 }
@@ -9,6 +9,7 @@ export interface WithdrawLogosJSON extends TokenRequestJSON {
 }
 export default class WithdrawLogos extends TokenRequest {
     private _transaction: Transaction
+
     public constructor (options: WithdrawLogosOptions = {
         transaction: null
     }) {

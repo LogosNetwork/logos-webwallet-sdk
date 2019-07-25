@@ -15,10 +15,12 @@ export interface AdjustFeeJSON extends TokenRequestJSON {
 }
 export default class AdjustFee extends TokenRequest {
     private _feeType: feeType
+
     private _feeRate: string
+
     public constructor (options: AdjustFeeOptions = {
         feeType: 'flat',
-        feeRate: '0',
+        feeRate: '0'
     }) {
         options.type = {
             text: 'adjust_fee',

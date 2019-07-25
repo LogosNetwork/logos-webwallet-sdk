@@ -19,7 +19,9 @@ export interface ChangeSettingJSON extends TokenRequestJSON {
 }
 export default class ChangeSetting extends TokenRequest {
     private _setting: Setting
+
     private _value: boolean
+
     public constructor (options: ChangeSettingOptions = {
         setting: null,
         value: null

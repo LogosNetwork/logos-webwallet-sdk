@@ -3,13 +3,13 @@ import Logos from '@logosnetwork/logos-rpc-client'
 import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
 import { pbkdf2Sync } from 'pbkdf2'
 import * as nacl from 'tweetnacl/nacl'
-import blake2b from './Utils/blake2b'
+import Blake2b from './Utils/blake2b'
 import * as bigInt from 'big-integer'
 import { connect, MqttClient } from 'mqtt'
 import LogosAccount, { LogosAccountJSON, LogosAccountOptions } from './LogosAccount'
-import TokenAccount, { TokenAccountJSON, syncedResponse } from './TokenAccount'
-import { Request, Issuance } from './Requests';
-import { AccountOptions } from './Account';
+import TokenAccount, { TokenAccountJSON, SyncedResponse } from './TokenAccount'
+import { Request, Issuance } from './Requests'
+import { AccountOptions } from './Account'
 
 interface RPCOptions {
     proxy?: string;
@@ -64,26 +64,43 @@ interface WalletOptions {
 
 export default class Wallet {
     private _password: string
+
     private _deterministicKeyIndex: number
+
     private _currentAccountAddress: string
+
     private _walletID: string
+
     private _batchSends: boolean
+
     private _fullSync: boolean
+
     private _tokenSync: boolean
+
     private _validateSync: boolean
+
     private _lazyErrors: boolean
+
     private _rpc: RPCOptions|false
+
     private _iterations: number
+
     private _seed: string
+
     private _accounts: {
         [address: string]: LogosAccount;
     }
+
     private _tokenAccounts: {
         [address: string]: TokenAccount;
     }
+
     private _mqttConnected: boolean
+
     private _mqtt: string
+
     private _mqttClient: MqttClient
+
     public constructor (options: WalletOptions = {
         password: null,
         seed: null,
@@ -370,7 +387,7 @@ export default class Wallet {
    * @type {AccountMap}
    * @readonly
    */
-    public get accounts (): AccountMap  {
+    public get accounts (): AccountMap {
         return this._accounts
     }
 
@@ -656,7 +673,7 @@ export default class Wallet {
         encryptedWallet = stringToHex(encryptedWallet)
         const WalletBuffer = Buffer.from(encryptedWallet, 'hex')
 
-        const checksum = new blake2b().update(WalletBuffer).digest() as Uint8Array
+        const checksum = new Blake2b().update(WalletBuffer).digest() as Uint8Array
 
         const salt = Buffer.from(nacl.randomBytes(16))
         let localPassword = ''
@@ -690,8 +707,8 @@ export default class Wallet {
    */
     public async sync (force = false): Promise<boolean> {
         return new Promise<boolean>((resolve): void => {
-            type syncedPromises = Promise<syncedResponse>[]
-            const isSyncedPromises: syncedPromises = []
+            type SyncedPromises = Promise<SyncedResponse>[]
+            const isSyncedPromises: SyncedPromises = []
             for (const account in this._accounts) {
                 if (!this._accounts[account].synced || force) {
                     isSyncedPromises.push(this._accounts[account].isSynced())
@@ -794,7 +811,7 @@ export default class Wallet {
         }
         const decryptedBytes = AES.decrypt(payload, key, salt, options)
 
-        const hash = new blake2b().update(decryptedBytes).digest('hex') as string
+        const hash = new Blake2b().update(decryptedBytes).digest('hex') as string
         if (hash !== checksum.toString('hex').toUpperCase()) return false
         return decryptedBytes
     }
@@ -810,7 +827,7 @@ export default class Wallet {
         if (this._seed.length !== 64) throw new Error('Invalid Seed.')
         const indexBytes = hexToUint8(decToHex(index, 4))
 
-        const privateKey = new blake2b()
+        const privateKey = new Blake2b()
             .update(hexToUint8(this._seed))
             .update(indexBytes)
             .digest() as Uint8Array

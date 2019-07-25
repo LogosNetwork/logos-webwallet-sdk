@@ -130,16 +130,27 @@ export interface TokenAccountOptions extends AccountOptions {
  */
 export default class TokenAccount extends Account {
     private _tokenBalance: string
+
     private _totalSupply: string
+
     private _tokenFeeBalance: string
+
     private _symbol: string
+
     private _name: string
+
     private _issuerInfo: string
+
     private _feeRate: string
+
     private _feeType: feeType
+
     private _controllers: Controller[]
+
     private _settings: Settings
+
     private _accountStatuses: AccountStatuses
+
     // private _pendingTokenBalance: string
     // private _pendingTotalSupply: string
     public constructor (options: TokenAccountOptions) {
@@ -524,9 +535,9 @@ export default class TokenAccount extends Account {
 
     /**
    * Scans the account history using RPC and updates the local chains
-   * @returns {Promise<TokenAccount>}
+   * @returns {Promise<Account>}
    */
-    public sync (): Promise<TokenAccount> {
+    public sync (): Promise<Account> {
         return new Promise((resolve): void => {
             this.synced = false
             this.chain = []
@@ -614,7 +625,7 @@ export default class TokenAccount extends Account {
             if (request.transaction.destination === this.address) {
                 this.tokenBalance = bigInt(this.tokenBalance).plus(bigInt(request.transaction.amount)).toString()
             }
-            // Handle if TK account is SRC?
+        // Handle if TK account is SRC?
         } else if (request instanceof AdjustUserStatus) {
             this.updateAccountStatusFromRequest(request)
         } else if (request instanceof AdjustFee) {
@@ -958,7 +969,7 @@ export default class TokenAccount extends Account {
             return 'modify_adjust_fee'
         } else if (setting === 'freeze') {
             return 'modify_freeze'
-        } else if (setting === 'whitelist'){
+        } else if (setting === 'whitelist') {
             return 'modify_whitelist'
         }
         return null
@@ -973,7 +984,7 @@ export default class TokenAccount extends Account {
             return 'change_adjust_fee'
         } else if (setting === 'freeze') {
             return 'change_freeze'
-        } else if (setting === 'whitelist'){
+        } else if (setting === 'whitelist') {
             return 'change_whitelist'
         }
         return null
@@ -988,7 +999,7 @@ export default class TokenAccount extends Account {
             return 'change_modify_adjust_fee'
         } else if (setting === 'freeze') {
             return 'change_modify_freeze'
-        } else if (setting === 'whitelist'){
+        } else if (setting === 'whitelist') {
             return 'change_modify_whitelist'
         }
         return null

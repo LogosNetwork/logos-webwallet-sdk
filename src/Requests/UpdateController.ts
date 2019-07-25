@@ -20,7 +20,9 @@ export interface UpdateControllerJSON extends TokenRequestJSON {
 }
 export default class UpdateController extends TokenRequest {
     private _action: action
+
     private _controller: Controller
+
     public constructor (options: UpdateControllerOptions = {
         action: null,
         controller: null

@@ -167,26 +167,26 @@ const blake2bCompress = (ctx: Context, last: boolean): void => {
 
 // default parameterBlock
 const parameterBlock = new Uint8Array([
-    0, 0, 0, 0,      //  0: outlen, keylen, fanout, depth
-    0, 0, 0, 0,      //  4: leaf length, sequential mode
-    0, 0, 0, 0,      //  8: node offset
-    0, 0, 0, 0,      // 12: node offset
-    0, 0, 0, 0,      // 16: node depth, inner length, rfu
-    0, 0, 0, 0,      // 20: rfu
-    0, 0, 0, 0,      // 24: rfu
-    0, 0, 0, 0,      // 28: rfu
-    0, 0, 0, 0,      // 32: salt
-    0, 0, 0, 0,      // 36: salt
-    0, 0, 0, 0,      // 40: salt
-    0, 0, 0, 0,      // 44: salt
-    0, 0, 0, 0,      // 48: personal
-    0, 0, 0, 0,      // 52: personal
-    0, 0, 0, 0,      // 56: personal
-    0, 0, 0, 0       // 60: personal
+    0, 0, 0, 0, //  0: outlen, keylen, fanout, depth
+    0, 0, 0, 0, //  4: leaf length, sequential mode
+    0, 0, 0, 0, //  8: node offset
+    0, 0, 0, 0, // 12: node offset
+    0, 0, 0, 0, // 16: node depth, inner length, rfu
+    0, 0, 0, 0, // 20: rfu
+    0, 0, 0, 0, // 24: rfu
+    0, 0, 0, 0, // 28: rfu
+    0, 0, 0, 0, // 32: salt
+    0, 0, 0, 0, // 36: salt
+    0, 0, 0, 0, // 40: salt
+    0, 0, 0, 0, // 44: salt
+    0, 0, 0, 0, // 48: personal
+    0, 0, 0, 0, // 52: personal
+    0, 0, 0, 0, // 56: personal
+    0, 0, 0, 0 // 60: personal
 ])
 
 export const initalizeBlake2b = (): Promise<boolean|Error> => {
-    return new Promise<boolean|Error>((reject, resolve): void => {
+    return new Promise<boolean|Error>((resolve, reject): void => {
         if (!wasm) resolve(false)
         wasm.onload((err): void => {
             if (err) {
@@ -251,8 +251,6 @@ const wasmHexSlice = (buf: Buffer|Uint8Array, start: number, len: number): strin
     return str
 }
 
-
-
 const WASM_LOADED = (): boolean => Boolean(wasm && wasm.exports)
 const BYTES_MIN = 16
 const BYTES_MAX = 64
@@ -269,11 +267,17 @@ const SUPPORTED = typeof WebAssembly !== 'undefined'
 // Takes an optional Uint8Array key
 export default class Blake2b {
     private context: Context
+
     private parameterBlock: Uint8Array
+
     private outlen: number
+
     private finalized: boolean
+
     private pointer: number
+
     private mode: 'wasm' | 'js'
+
     public constructor (outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null) {
         if (outlen < BYTES_MIN) throw new Error(`outlen must be at least ${BYTES_MIN}, was given ${outlen}`)
         if (outlen > BYTES_MAX) throw new Error(`outlen must be at most ${BYTES_MAX}, was given ${outlen}`)
@@ -341,6 +345,7 @@ export default class Blake2b {
             }
         }
     }
+
     public update = (input: Uint8Array | Buffer): Blake2b => {
         if (this.finalized) throw new Error(`Hash instance finalized`)
         if (wasm) {
@@ -352,6 +357,7 @@ export default class Blake2b {
         }
         return this
     }
+
     public digest = (out?: 'binary'|'hex'|Uint8Array|Buffer): Uint8Array|string => {
         if (this.finalized) throw new Error(`Hash instance finalized`)
         if (wasm) {
@@ -372,7 +378,9 @@ export default class Blake2b {
             return blake2bDigest(this.context, out)
         }
     }
+
     public final = this.digest
+
     public WASM = wasm && wasm.buffer
 }
 

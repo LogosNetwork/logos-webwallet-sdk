@@ -18,8 +18,8 @@ import {
     Request,
     RequestJSON
 } from './Requests'
-import Wallet from './Wallet';
-import TokenAccount from './TokenAccount';
+import Wallet from './Wallet'
+import TokenAccount from './TokenAccount'
 
 export interface AccountJSON {
     label?: string;
@@ -47,18 +47,31 @@ export interface AccountOptions {
 
 export default abstract class Account {
     private _label: string
+
     private _address: string
+
     private _publicKey: string
+
     private _balance: string
+
     private _pendingBalance: string
+
     private _chain: Request[]
+
     private _receiveChain: Request[]
+
     private _pendingChain: Request[]
+
     private _previous: string
+
     private _sequence: number
+
     private _version: number
+
     private _wallet: Wallet
+
     private _synced: boolean
+
     public constructor (options: AccountOptions = {
         label: null,
         address: null,
@@ -786,9 +799,9 @@ export default abstract class Account {
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
    * @returns {Promise<Request>}
    */
-    public async addRequest (request: Request): Promise<Request> {
+    public addRequest (request: Request): Promise<Request> {
         this._pendingChain.push(request)
-        return await this.broadcastRequest()
+        return this.broadcastRequest()
     }
 
     /**

@@ -1,6 +1,6 @@
 import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
-import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
+import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
 export interface DistributeOptions extends TokenRequestOptions {
     transaction?: Transaction;
 }
@@ -9,6 +9,7 @@ export interface DistributeJSON extends TokenRequestJSON {
 }
 export default class Distribute extends TokenRequest {
     private _transaction: Transaction
+
     public constructor (options: DistributeOptions = {
         transaction: null
     }) {

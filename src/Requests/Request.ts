@@ -1,5 +1,5 @@
 import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK, defaultRPC } from '../Utils/Utils'
-import blake2b, { Blake2b } from '../Utils/blake2b'
+import Blake2b from '../Utils/blake2b'
 import * as nacl from 'tweetnacl/nacl'
 import Logos from '@logosnetwork/logos-rpc-client'
 export interface RequestOptions {
@@ -36,15 +36,25 @@ export interface RequestJSON {
  */
 export default abstract class Request {
     private _signature: string
+
     private _work: string
+
     private _previous: string
+
     private _fee: string
+
     private _origin: string
+
     private _sequence: number
+
     private _timestamp: string
+
     private _version: number
+
     private _published: boolean
+
     private _type: RequestType
+
     public constructor (options: RequestOptions = {
         origin: null,
         previous: null,
@@ -302,7 +312,7 @@ export default abstract class Request {
         if (this.fee === null) throw new Error('Transaction fee is not set.')
         if (!this.origin) throw new Error('Origin account is not set.')
         if (!this.type) throw new Error('Request type is not defined.')
-        return new blake2b()
+        return new Blake2b()
             .update(hexToUint8(decToHex(this.typeValue, 1)))
             .update(hexToUint8(this.origin))
             .update(hexToUint8(this.previous))
@@ -331,7 +341,7 @@ export default abstract class Request {
         if (this.previous !== GENESIS_HASH) {
             delegateId = parseInt(this.previous.slice(-2), 16) % 32
         } else {
-            // TODO 104 if token id and not token_send or issuance then use that else use origin
+        // TODO 104 if token id and not token_send or issuance then use that else use origin
             delegateId = parseInt(this.origin.slice(-2), 16) % 32
         }
         const RPC = new Logos({

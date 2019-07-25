@@ -9,6 +9,7 @@ export interface BurnJSON extends TokenRequestJSON {
 }
 export default class Burn extends TokenRequest {
     private _amount: string
+
     public constructor (options: BurnOptions = {
         amount: '0'
     }) {

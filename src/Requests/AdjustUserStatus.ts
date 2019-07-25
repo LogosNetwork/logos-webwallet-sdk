@@ -12,13 +12,15 @@ export interface AdjustUserStatusOptions extends TokenRequestOptions {
     account?: string;
     status?: Status;
 }
-export interface  AdjustUserStatusJSON extends TokenRequestJSON {
+export interface AdjustUserStatusJSON extends TokenRequestJSON {
     account?: string;
     status?: Status;
 }
 export default class AdjustUserStatus extends TokenRequest {
     private _account: string
+
     private _status: Status
+
     public constructor (options: AdjustUserStatusOptions = {
         account: null,
         status: null

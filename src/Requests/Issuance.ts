@@ -4,7 +4,7 @@ import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
 import { Settings, Controller, Privileges } from '../TokenAccount'
 import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
-import Blake2b from '../Utils/blake2b';
+import Blake2b from '../Utils/blake2b'
 type feeType = 'flat' | 'percentage'
 export interface IssuanceOptions extends RequestOptions {
     tokenID?: string;
@@ -36,14 +36,23 @@ export interface IssuanceJSON extends RequestJSON {
 }
 export default class Issuance extends Request {
     private _tokenID: string
+
     private _symbol: string
+
     private _name: string
+
     private _totalSupply: string
+
     private _feeType: feeType
+
     private _feeRate: string
+
     private _settings: Settings
+
     private _controllers: Controller[]
+
     private _issuerInfo: string
+
     public constructor (options: IssuanceOptions = {
         tokenID: null,
         symbol: null,
@@ -334,7 +343,6 @@ export default class Issuance extends Request {
         this.validateSettings(val)
         this._settings = val
     }
-
 
     /**
    * The contollers of the token

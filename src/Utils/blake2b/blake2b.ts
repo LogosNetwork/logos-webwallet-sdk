@@ -37,7 +37,7 @@ export default (): WasmModule => {
             return
         }
         try {
-            setup({instance:new WebAssembly.Instance(new WebAssembly.Module(wasm))})
+            setup({ instance: new WebAssembly.Instance(new WebAssembly.Module(wasm)) })
         } catch (err) {
             ready = WebAssembly.instantiate(wasm).then(setup)
         }

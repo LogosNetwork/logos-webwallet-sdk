@@ -1,6 +1,6 @@
 import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
-import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api';
+import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
 export interface RevokeOptions extends TokenRequestOptions {
     source?: string;
     transaction?: Transaction;
@@ -11,7 +11,9 @@ export interface RevokeJSON extends TokenRequestJSON {
 }
 export default class Revoke extends TokenRequest {
     private _source: string
+
     private _transaction: Transaction
+
     public constructor (options: RevokeOptions = {
         source: null,
         transaction: null
