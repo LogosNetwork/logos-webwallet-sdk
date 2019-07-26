@@ -321,10 +321,10 @@ export const decToHex = (str: string | number, bytes: number = null): string => 
     hex.push(sum.pop().toString(16))
   }
   let hexConcat = hex.join('')
-  if (hex.length % 2 !== 0) hexConcat = '0' + hex
-  if (bytes > hex.length / 2) {
-    const diff = bytes - hex.length / 2
-    for (let i = 0; i < diff; i++) hexConcat = '00' + hex
+  if (hexConcat.length % 2 !== 0) hexConcat = '0' + hexConcat
+  if (bytes > hexConcat.length / 2) {
+    const diff = bytes - hexConcat.length / 2
+    for (let i = 0; i < diff; i++) hexConcat = '00' + hexConcat
   }
   return hexConcat
 }

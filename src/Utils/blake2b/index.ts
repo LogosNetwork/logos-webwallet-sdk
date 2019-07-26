@@ -37,19 +37,6 @@ const SIGMA8 = [
 // because this is Javascript and we don't have uint64s
 const SIGMA82 = new Uint8Array(SIGMA8.map((x): number => x * 2))
 
-export const initalizeBlake2b = (): Promise<boolean|Error> => {
-  return new Promise<boolean|Error>((resolve, reject): void => {
-    if (!wasm) resolve(false)
-    wasm.onload((err): void => {
-      if (err) {
-        resolve(true)
-      } else {
-        reject(err)
-      }
-    })
-  })
-}
-
 const toHex = (n: number): string => {
   if (n < 16) return '0' + n.toString(16)
   return n.toString(16)

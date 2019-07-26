@@ -391,6 +391,10 @@ export default class Wallet {
     return this._accounts
   }
 
+  public set accounts (accounts: AccountMap) {
+    this._accounts = accounts
+  }
+
   /**
    * Map of all the TokenAccounts in the wallet
    * @type {TokenAccountMap}
@@ -406,7 +410,7 @@ export default class Wallet {
    * @readonly
    */
   public get account (): LogosAccount {
-    return this._accounts[this._currentAccountAddress]
+    return this.accounts[this.currentAccountAddress]
   }
 
   /**
@@ -418,7 +422,7 @@ export default class Wallet {
   }
 
   public set currentAccountAddress (address: string) {
-    if (!Object.prototype.hasOwnProperty.call(this._accounts, address)) throw new Error(`Account ${address} does not exist in this wallet.`)
+    if (!Object.prototype.hasOwnProperty.call(this.accounts, address)) throw new Error(`Account ${address} does not exist in this wallet.`)
     this._currentAccountAddress = address
   }
 
@@ -429,8 +433,8 @@ export default class Wallet {
    */
   public get balance (): string {
     const totalBalance = bigInt(0)
-    for (const account in this._accounts) {
-      totalBalance.add(bigInt(this._accounts[account].balance))
+    for (const account in this.accounts) {
+      totalBalance.add(bigInt(this.accounts[account].balance))
     }
     return totalBalance.toString()
   }
@@ -483,13 +487,13 @@ export default class Wallet {
    * @type {boolean}
    */
   public get synced (): boolean {
-    for (const address in this._tokenAccounts) {
-      if (!this._tokenAccounts[address].synced) {
+    for (const address in this.tokenAccounts) {
+      if (!this.tokenAccounts[address].synced) {
         return false
       }
     }
-    for (const address in this._accounts) {
-      if (!this._accounts[address].synced) {
+    for (const address in this.accounts) {
+      if (!this.accounts[address].synced) {
         return false
       }
     }
@@ -503,7 +507,7 @@ export default class Wallet {
    */
   public get pendingRequests (): Request[] {
     const pendingRequests: Request[] = []
-    for (const account of Object.values(this._accounts)) {
+    for (const account of Object.values(this.accounts)) {
       pendingRequests.concat(account.pendingChain)
     }
     return pendingRequests
@@ -517,9 +521,9 @@ export default class Wallet {
    * @returns {string}
    */
   public createSeed (overwrite: boolean = false): string {
-    if (this._seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
-    this._seed = uint8ToHex(nacl.randomBytes(32))
-    return this._seed
+    if (this.seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
+    this.seed = uint8ToHex(nacl.randomBytes(32))
+    return this.seed
   }
 
   /**
@@ -529,9 +533,9 @@ export default class Wallet {
    * @returns {LogosAccount}
    */
   public addAccount (account: LogosAccount): LogosAccount {
-    this._accounts[account.address] = account
-    if (this._mqtt && this._mqttConnected) this.subscribe(`account/${account.address}`)
-    return this._accounts[account.address]
+    this.accounts[account.address] = account
+    if (this.mqtt && this._mqttConnected) this.subscribe(`account/${account.address}`)
+    return this.accounts[account.address]
   }
 
   /**
@@ -541,11 +545,11 @@ export default class Wallet {
    * @returns {boolean}
    */
   public removeAccount (address: string): boolean {
-    if (this._accounts[address]) {
-      delete this._accounts[address]
-      if (this._mqtt && this._mqttConnected) this.unsubscribe(`account/${address}`)
-      if (address === this._currentAccountAddress) {
-        this._currentAccountAddress = Object.keys(this._accounts)[0]
+    if (this.accounts[address]) {
+      delete this.accounts[address]
+      if (this.mqtt && this._mqttConnected) this.unsubscribe(`account/${address}`)
+      if (address === this.currentAccountAddress) {
+        this.currentAccountAddress = Object.keys(this.accounts)[0]
       }
       return true
     }
@@ -559,9 +563,9 @@ export default class Wallet {
    * @returns {TokenAccount}
    */
   public addTokenAccount (tokenAccount: TokenAccount): TokenAccount {
-    this._tokenAccounts[tokenAccount.address] = tokenAccount
-    if (this._mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
-    return this._tokenAccounts[tokenAccount.address]
+    this.tokenAccounts[tokenAccount.address] = tokenAccount
+    if (this.mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
+    return this.tokenAccounts[tokenAccount.address]
   }
 
   /**
@@ -573,23 +577,23 @@ export default class Wallet {
    * @returns {Promise<Account>}
    */
   public async createTokenAccount (address: string, issuance: Issuance = null): Promise<TokenAccount> {
-    if (this._tokenAccounts[address]) {
-      return this._tokenAccounts[address]
+    if (this.tokenAccounts[address]) {
+      return this.tokenAccounts[address]
     } else {
       const tokenAccount = new TokenAccount({
         address: address,
         wallet: this,
         issuance: issuance
       })
-      if (this._mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
-      this._tokenAccounts[tokenAccount.address] = tokenAccount
-      if (this._rpc && !issuance) {
-        await this._tokenAccounts[tokenAccount.address].sync()
+      if (this.mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
+      this.tokenAccounts[tokenAccount.address] = tokenAccount
+      if (this.rpc && !issuance) {
+        await this.tokenAccounts[tokenAccount.address].sync()
       } else {
-        if (!this._rpc) console.warn('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
-        this._tokenAccounts[tokenAccount.address].synced = true
+        if (!this.rpc) console.warn('RPC not ENABLED TOKEN ACTIONS - TokenAccount cannot sync')
+        this.tokenAccounts[tokenAccount.address].synced = true
       }
-      return this._tokenAccounts[tokenAccount.address]
+      return this.tokenAccounts[tokenAccount.address]
     }
   }
 
@@ -605,17 +609,17 @@ export default class Wallet {
   public async createAccount (options: LogosAccountOptions = null, setCurrent = true): Promise<LogosAccount> {
     let accountInfo = null
     if (options === null) { // No options generate from seed
-      if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
+      if (!this.seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
       accountInfo = this.generateAccountOptionsFromSeed(this._deterministicKeyIndex)
       this._deterministicKeyIndex++
     } else {
       if (options.privateKey !== undefined) {
         accountInfo = this.generateAccountOptionsFromPrivateKey(options.privateKey)
       } else if (options.index !== undefined) {
-        if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
+        if (!this.seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
         accountInfo = this.generateAccountOptionsFromSeed(options.index)
       } else {
-        if (!this._seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
+        if (!this.seed) throw new Error('Cannot generate an account without a seed! Make sure to first set your seed or pass a private key or explicitly pass the options for the account.')
         accountInfo = this.generateAccountOptionsFromSeed(this._deterministicKeyIndex)
         this._deterministicKeyIndex++
       }
@@ -623,17 +627,17 @@ export default class Wallet {
     const accountOptions = {
       ...accountInfo,
       wallet: this,
-      label: `Account ${Object.values(this._accounts).length}`
+      label: `Account ${Object.values(this.accounts).length}`
     }
     const account = new LogosAccount(accountOptions)
     this.addAccount(account)
-    if (this._rpc) {
-      await this._accounts[account.address].sync()
+    if (this.rpc) {
+      await this.accounts[account.address].sync()
     } else {
-      this._accounts[account.address].synced = true
+      this.accounts[account.address].synced = true
     }
-    if (setCurrent || this._currentAccountAddress === null) this._currentAccountAddress = account.address
-    return this._accounts[account.address]
+    if (setCurrent || this.currentAccountAddress === null) this.currentAccountAddress = account.address
+    return this.accounts[account.address]
   }
 
   /**
@@ -641,7 +645,7 @@ export default class Wallet {
    * @returns {void}
    */
   public recalculateWalletBalancesFromChain (): void {
-    for (const account of Object.values(this._accounts)) {
+    for (const account of Object.values(this.accounts)) {
       account.updateBalancesFromChain()
     }
   }
@@ -653,7 +657,7 @@ export default class Wallet {
    * @returns {Request | false } false if no request object of the specified hash was found
    */
   public getRequest (hash: string): Request | false {
-    for (const account of Object.values(this._accounts)) {
+    for (const account of Object.values(this.accounts)) {
       const request = account.getRequest(hash)
       if (request) {
         return request
@@ -692,6 +696,7 @@ export default class Wallet {
 
     const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
 
+    console.log(payload.toString('hex'))
     // decrypt to check if wallet was corrupted during ecryption somehow
     if (this.decrypt(payload) === false) {
       return this.encrypt() // try again, shouldnt happen often
@@ -709,14 +714,14 @@ export default class Wallet {
     return new Promise<boolean>((resolve): void => {
             type SyncedPromises = Promise<SyncedResponse>[]
             const isSyncedPromises: SyncedPromises = []
-            for (const account in this._accounts) {
-              if (!this._accounts[account].synced || force) {
-                isSyncedPromises.push(this._accounts[account].isSynced())
+            for (const account in this.accounts) {
+              if (!this.accounts[account].synced || force) {
+                isSyncedPromises.push(this.accounts[account].isSynced())
               }
             }
-            for (const tokenAccount in this._tokenAccounts) {
-              if (!this._tokenAccounts[tokenAccount].synced || force) {
-                isSyncedPromises.push(this._tokenAccounts[tokenAccount].isSynced())
+            for (const tokenAccount in this.tokenAccounts) {
+              if (!this.tokenAccounts[tokenAccount].synced || force) {
+                isSyncedPromises.push(this.tokenAccounts[tokenAccount].isSynced())
               }
             }
             if (isSyncedPromises.length > 0) {
@@ -725,12 +730,12 @@ export default class Wallet {
                 for (const isSynced of values) {
                   if (!isSynced.synced) {
                     if (isSynced.type === 'LogosAccount') {
-                      syncPromises.push(this._accounts[isSynced.account].sync())
+                      syncPromises.push(this.accounts[isSynced.account].sync())
                     } else if (isSynced.type === 'TokenAccount') {
                       if (isSynced.remove) {
-                        delete this._tokenAccounts[isSynced.account]
+                        delete this.tokenAccounts[isSynced.account]
                       } else {
-                        syncPromises.push(this._tokenAccounts[isSynced.account].sync())
+                        syncPromises.push(this.tokenAccounts[isSynced.account].sync())
                       }
                     }
                   }
@@ -773,7 +778,7 @@ export default class Wallet {
    * @returns {Promise<Wallet>} wallet data
    */
   public load (encryptedWallet: string): Wallet {
-    this._accounts = {}
+    this.accounts = {}
     const decryptedBytes = this.decrypt(encryptedWallet)
     if (decryptedBytes === false) throw new Error('Wallet is corrupted or has been tampered.')
     const walletData = JSON.parse(decryptedBytes.toString('utf8'))
@@ -824,11 +829,11 @@ export default class Wallet {
    * @private
    */
   private generateAccountOptionsFromSeed (index: number): AccountOptions {
-    if (this._seed.length !== 64) throw new Error('Invalid Seed.')
+    if (this.seed.length !== 64) throw new Error('Invalid Seed.')
     const indexBytes = hexToUint8(decToHex(index, 4))
 
     const privateKey = new Blake2b()
-      .update(hexToUint8(this._seed))
+      .update(hexToUint8(this.seed))
       .update(indexBytes)
       .digest() as Uint8Array
     const publicKey = nacl.sign.keyPair.fromSecretKey(privateKey).publicKey
@@ -914,16 +919,16 @@ export default class Wallet {
    * @returns {void}
    */
   public mqttConnect (): void {
-    if (this._mqtt) {
-      this._mqttClient = connect(this._mqtt)
+    if (this.mqtt) {
+      this._mqttClient = connect(this.mqtt)
       this._mqttClient.on('connect', (): void => {
         console.info('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
         this.subscribe(`delegateChange`)
-        for (const address of Object.keys(this._accounts)) {
+        for (const address of Object.keys(this.accounts)) {
           this.subscribe(`account/${address}`)
         }
-        for (const tkAddress of Object.keys(this._tokenAccounts)) {
+        for (const tkAddress of Object.keys(this.tokenAccounts)) {
           this.subscribe(`account/${tkAddress}`)
         }
       })
@@ -933,18 +938,18 @@ export default class Wallet {
       })
       this._mqttClient.on('message', (topic, request): void => {
         const requestObject = JSON.parse(request.toString())
-        if (topic === 'delegateChange' && this._rpc) {
+        if (topic === 'delegateChange' && this.rpc) {
           console.info(`MQTT Delegate Change`)
-          this._rpc.delegates = Object.values(requestObject)
+          this.rpc.delegates = Object.values(requestObject)
         } else {
           const params = mqttPattern('account/+address', topic)
           if (params) {
-            if (this._accounts[params.address as string]) {
+            if (this.accounts[params.address as string]) {
               console.info(`MQTT Confirmation - Account - ${requestObject.type} - ${requestObject.sequence}`)
-              this._accounts[params.address as string].processRequest(requestObject)
-            } else if (this._tokenAccounts[params.address as string]) {
+              this.accounts[params.address as string].processRequest(requestObject)
+            } else if (this.tokenAccounts[params.address as string]) {
               console.info(`MQTT Confirmation - TK Account - ${requestObject.type} - ${requestObject.sequence}`)
-              this._tokenAccounts[params.address as string].processRequest(requestObject)
+              this.tokenAccounts[params.address as string].processRequest(requestObject)
             }
           }
         }
@@ -958,7 +963,7 @@ export default class Wallet {
    */
   public toJSON (): WalletJSON {
     const obj: WalletJSON = {
-      password: this._password,
+      password: this.password,
       seed: this.seed,
       deterministicKeyIndex: this._deterministicKeyIndex,
       currentAccountAddress: this.currentAccountAddress,
@@ -972,13 +977,13 @@ export default class Wallet {
       rpc: this.rpc
     }
     const tempAccounts = {}
-    for (const account in this._accounts) {
-      tempAccounts[account] = this._accounts[account].toJSON()
+    for (const account in this.accounts) {
+      tempAccounts[account] = this.accounts[account].toJSON()
     }
     obj.accounts = tempAccounts
     const tempTokenAccounts = {}
-    for (const account in this._tokenAccounts) {
-      tempTokenAccounts[account] = this._tokenAccounts[account].toJSON()
+    for (const account in this.tokenAccounts) {
+      tempTokenAccounts[account] = this.tokenAccounts[account].toJSON()
     }
     obj.tokenAccounts = tempTokenAccounts
     return obj

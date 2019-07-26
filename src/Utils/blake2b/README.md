@@ -1,9 +1,9 @@
-# blake2b with WASM where avialable
+# blake2b with WASM where available
 
 Blake2b implemented in WASM
 
 ```
-npm install FuturePackage
+npm install FuturePackageLocation
 ```
 
 Works in browsers that support WASM and Node.js 8+.
@@ -12,24 +12,19 @@ Also works in all browsers that don't support WASM by falling back to a JS imple
 ## Usage
 
 ``` js
-import blake2b, { initalizeBlake2b } from 'PACKAGE-LOCATION'
-initalizeBlake2b().then(usingWASM => {
-  console.log(usingWasm ? 'We are using WASM!' : 'We are using plain JS!')
-  let hash = new blake2b()
-    .update(Buffer.from('hello')) // pass in a buffer or uint8array
-    .update(Buffer.from(' '))
-    .update(Buffer.from('world'))
-    .digest('hex')
+import Blake2b from 'FuturePackageLocation'
+let hash = new Blake2b()
+  .update(Buffer.from('hello')) // pass in a buffer or uint8array
+  .update(Buffer.from(' '))
+  .update(Buffer.from('world'))
+  .digest('hex')
 
-  console.log('Blake2b hash of "hello world" is %s', hash)
-}).catch(err => {
-  console.log(err)
-})
+console.log('Blake2b hash of "hello world" is %s', hash)
 ```
 
 ## API
 
-#### `let hash = new blake2b(outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null)`
+#### `let hash = new Blake2b(outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null, forceUseJS: boolean = false)`
 
 Create a new hash instance. `outputLength` defaults to `32`.
 
@@ -40,11 +35,6 @@ Update the hash with a new piece of data. `data` should be a buffer or uint8arra
 #### `let digest = hash.digest(out?: ('binary'|'hex')|(Uint8Array|Buffer))`
 
 Digest / Finalize the hash. Passing 'out' as 'hex' will return a hex output where as passing nothing or 'binary' will return the binary output. You many also pass a final piece of data as a buffer or uint8array this will return the final hash in binary.
-
-#### `var promise = blake2b.ready([cb])`
-
-Wait for the WASM code to load. Returns the WebAssembly instance promise as well for convenience.
-You have to call this at least once before instantiating the hash.
 
 ## Browser demo
 
