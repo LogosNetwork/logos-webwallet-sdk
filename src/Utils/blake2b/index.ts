@@ -37,26 +37,6 @@ const SIGMA8 = [
 // because this is Javascript and we don't have uint64s
 const SIGMA82 = new Uint8Array(SIGMA8.map((x): number => x * 2))
 
-// default parameterBlock
-const parameterBlock = new Uint8Array([
-  0, 0, 0, 0, //  0: outlen, keylen, fanout, depth
-  0, 0, 0, 0, //  4: leaf length, sequential mode
-  0, 0, 0, 0, //  8: node offset
-  0, 0, 0, 0, // 12: node offset
-  0, 0, 0, 0, // 16: node depth, inner length, rfu
-  0, 0, 0, 0, // 20: rfu
-  0, 0, 0, 0, // 24: rfu
-  0, 0, 0, 0, // 28: rfu
-  0, 0, 0, 0, // 32: salt
-  0, 0, 0, 0, // 36: salt
-  0, 0, 0, 0, // 40: salt
-  0, 0, 0, 0, // 44: salt
-  0, 0, 0, 0, // 48: personal
-  0, 0, 0, 0, // 52: personal
-  0, 0, 0, 0, // 56: personal
-  0, 0, 0, 0 // 60: personal
-])
-
 export const initalizeBlake2b = (): Promise<boolean|Error> => {
   return new Promise<boolean|Error>((resolve, reject): void => {
     if (!wasm) resolve(false)
@@ -104,8 +84,6 @@ const SUPPORTED = typeof WebAssembly !== 'undefined'
 export default class Blake2b {
   private context: Context
 
-  private parameterBlock: Uint8Array
-
   private outlen: number
 
   private finalized: boolean
@@ -122,7 +100,7 @@ export default class Blake2b {
 
   private freeList: number[]
 
-  public constructor (outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null) {
+  public constructor (outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null, forceUseJS: boolean = false) {
     if (outlen < BYTES_MIN) throw new Error(`outlen must be at least ${BYTES_MIN}, was given ${outlen}`)
     if (outlen > BYTES_MAX) throw new Error(`outlen must be at most ${BYTES_MAX}, was given ${outlen}`)
     if (key !== null) {
@@ -137,12 +115,12 @@ export default class Blake2b {
     }
     this.v = new Uint32Array(32)
     this.m = new Uint32Array(32)
-    this.head = 64
-    this.freeList = []
     this.mode = null
     this.finalized = false
     this.outlen = outlen
-    if (wasm && wasm.exports && (this.mode === null || this.mode === 'wasm')) {
+    if (!forceUseJS && wasm && wasm.exports && (this.mode === null || this.mode === 'wasm')) {
+      this.freeList = []
+      this.head = 64
       this.mode = 'wasm'
       if (!this.freeList.length) {
         this.freeList.push(this.head)
@@ -166,9 +144,6 @@ export default class Blake2b {
     } else {
       if (wasm && !wasm.exports && this.mode === null) console.log('Using JS Fallback since WASM is still loading')
       this.mode = 'js'
-      // zero out parameterBlock before usage
-      this.parameterBlock = parameterBlock
-      this.parameterBlock.fill(0)
       // state, 'param block'
       this.context = {
         b: new Uint8Array(128),
@@ -177,19 +152,16 @@ export default class Blake2b {
         c: 0, // pointer within buffer
         outlen: outlen // output length in bytes
       } 
-      this.parameterBlock[0] = outlen
-      if (key) this.parameterBlock[1] = key.length
-      this.parameterBlock[2] = 1 // fanout
-      this.parameterBlock[3] = 1 // depth
-      if (salt) this.parameterBlock.set(salt, 32)
-      if (personal) this.parameterBlock.set(personal, 48)
       // initialize hash state
       for (let i = 0; i < 16; i++) {
-        this.context.h[i] = BLAKE2B_IV32[i] ^ this.B2B_GET32(this.parameterBlock, i * 4)
+        this.context.h[i] = BLAKE2B_IV32[i]
       }
+      const keylen = key ? key.length : 0
+      this.context.h[0] ^= 0x01010000 ^ (keylen << 8) ^ this.context.outlen
+
       // key the hash, if applicable
       if (key) {
-        this.blake2bUpdate(key)
+        this.update(key)
         // at the end
         this.context.c = 128
       }
@@ -279,11 +251,9 @@ export default class Blake2b {
 
   // Compression function. 'last' flag indicates last block.
   // Note we're representing 16 uint64s as 32 uint32s
-  private blake2bCompress = (last: boolean): void => {
-    let i = 0
-  
+  private blake2bCompress = (last: boolean): void => {  
     // init work variables
-    for (i = 0; i < 16; i++) {
+    for (let i = 0; i < 16; i++) {
       this.v[i] = this.context.h[i]
       this.v[i + 16] = BLAKE2B_IV32[i]
     }
@@ -300,12 +270,12 @@ export default class Blake2b {
     }
   
     // get little-endian words
-    for (i = 0; i < 32; i++) {
+    for (let i = 0; i < 32; i++) {
       this.m[i] = this.B2B_GET32(this.context.b, 4 * i)
     }
   
     // twelve rounds of mixing
-    for (i = 0; i < 12; i++) {
+    for (let i = 0; i < 12; i++) {
       this.B2B_G(0, 8, 16, 24, SIGMA82[i * 16 + 0], SIGMA82[i * 16 + 1])
       this.B2B_G(2, 10, 18, 26, SIGMA82[i * 16 + 2], SIGMA82[i * 16 + 3])
       this.B2B_G(4, 12, 20, 28, SIGMA82[i * 16 + 4], SIGMA82[i * 16 + 5])
@@ -316,45 +286,9 @@ export default class Blake2b {
       this.B2B_G(6, 8, 18, 28, SIGMA82[i * 16 + 14], SIGMA82[i * 16 + 15])
     }
   
-    for (i = 0; i < 16; i++) {
+    for (let i = 0; i < 16; i++) {
       this.context.h[i] = this.context.h[i] ^ this.v[i] ^ this.v[i + 16]
     }
-  }
-
-  // Completes a BLAKE2b streaming hash
-  // Returns a Uint8Array containing the message digest
-  private blake2bFinal = (out: Uint8Array): Uint8Array => {
-    this.context.t += this.context.c // mark last block offset
-    while (this.context.c < 128) { // fill up with zeros
-      this.context.b[this.context.c++] = 0
-    }
-    this.blake2bCompress(true) // final block flag = 1
-    for (let i = 0; i < this.context.outlen; i++) {
-      out[i] = this.context.h[i >> 2] >> (8 * (i & 3))
-    }
-    return out
-  }
-
-  private blake2bDigest = (out?: 'binary'|'hex'|Uint8Array): string|Uint8Array => {
-    const buf = (!out || out === 'binary' || out === 'hex') ? new Uint8Array(this.context.outlen) : out
-    if (buf.length < this.context.outlen) throw new Error('out must have at least outlen bytes of space')
-    this.blake2bFinal(buf)
-    if (out === 'hex') return hexSlice(buf)
-    return buf
-  }
-
-  // Updates a BLAKE2b streaming hash
-  // Requires hash context and Uint8Array (byte array)
-  private blake2bUpdate = (input: Uint8Array): Context => {
-    for (let i = 0; i < input.length; i++) {
-      if (this.context.c === 128) { // buffer full ?
-        this.context.t += this.context.c // add counters
-        this.blake2bCompress(false) // compress (not last)
-        this.context.c = 0 // counter to zero
-      }
-      this.context.b[this.context.c++] = input[i]
-    }
-    return this.context
   }
 
   public update = (input: Uint8Array | Buffer): Blake2b => {
@@ -364,7 +298,14 @@ export default class Blake2b {
       wasm.memory.set(input, this.head)
       wasm.exports.blake2b_update(this.pointer, this.head, this.head + input.length)
     } else {
-      this.context = this.blake2bUpdate(input)
+      for (let i = 0; i < input.length; i++) {
+        if (this.context.c === 128) { // buffer full ?
+          this.context.t += this.context.c // add counters
+          this.blake2bCompress(false) // compress (not last)
+          this.context.c = 0 // counter to zero
+        }
+        this.context.b[this.context.c++] = input[i]
+      }
     }
     return this
   }
@@ -386,7 +327,18 @@ export default class Blake2b {
       }
       return out
     } else {
-      return this.blake2bDigest(out)
+      const buf = (!out || out === 'binary' || out === 'hex') ? new Uint8Array(this.context.outlen) : out
+      if (buf.length < this.context.outlen) throw new Error(`out must have at least ${this.context.outlen} bytes of space`)
+      this.context.t += this.context.c // mark last block offset
+      while (this.context.c < 128) { // fill up with zeros
+        this.context.b[this.context.c++] = 0
+      }
+      this.blake2bCompress(true) // final block flag = 1
+      for (let i = 0; i < this.context.outlen; i++) {
+        buf[i] = this.context.h[i >> 2] >> (8 * (i & 3))
+      }
+      if (out === 'hex') return hexSlice(buf)
+      return buf
     }
   }
 

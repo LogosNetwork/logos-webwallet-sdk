@@ -402,7 +402,7 @@ export const isLogosAccount = (account: string): boolean => {
     const accountCrop = account.replace('lgs_', '')
     const keyBytes = decode(accountCrop.substring(0, 52))
     const hashBytes = decode(accountCrop.substring(52, 60))
-    const blakeHash = (new Blake2b(5, keyBytes).digest() as Uint8Array).reverse()
+    const blakeHash = (new Blake2b(5).update(keyBytes).digest() as Uint8Array).reverse()
     return equalArrays(hashBytes, blakeHash)
   }
   return false
@@ -411,7 +411,7 @@ export const isLogosAccount = (account: string): boolean => {
 export const accountFromHexKey = (hex: string): string => {
   if (isHexKey(hex)) {
     const keyBytes = hexToUint8(hex)
-    const checksumBytes = (new Blake2b(5, keyBytes).digest() as Uint8Array).reverse()
+    const checksumBytes = (new Blake2b(5).update(keyBytes).digest() as Uint8Array).reverse()
     const checksum = encode(checksumBytes)
     const account = encode(keyBytes)
     return 'lgs_' + account + checksum
@@ -427,7 +427,7 @@ export const keyFromAccount = (account: string): string => {
     const accountCrop = account.replace('lgs_', '')
     const keyBytes = decode(accountCrop.substring(0, 52))
     const hashBytes = decode(accountCrop.substring(52, 60))
-    const blakeHash = (new Blake2b(5, keyBytes).digest() as Uint8Array).reverse()
+    const blakeHash = (new Blake2b(5).update(keyBytes).digest() as Uint8Array).reverse()
     if (equalArrays(hashBytes, blakeHash)) {
       return uint8ToHex(keyBytes).toUpperCase()
     } else {
