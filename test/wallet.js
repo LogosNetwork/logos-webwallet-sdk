@@ -69,14 +69,7 @@ describe('Wallet', () => {
     wallet.createAccount()
     let encryptedWallet = null
     it('encrypts the wallet', () => {
-      console.log('1')
-      try {
-        encryptedWallet = wallet.encrypt()
-      } catch (err) {
-        console.log(err)
-      }
-      console.log('2')
-      console.log(encryptedWallet)
+      encryptedWallet = wallet.encrypt()
       let hex = /([\da-fA-F]+)/g
       expect(hex.test(encryptedWallet)).to.be.true
     })

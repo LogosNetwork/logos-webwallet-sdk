@@ -696,7 +696,6 @@ export default class Wallet {
 
     const payload = Buffer.concat([Buffer.from(checksum), salt, encryptedBytes])
 
-    console.log(payload.toString('hex'))
     // decrypt to check if wallet was corrupted during ecryption somehow
     if (this.decrypt(payload) === false) {
       return this.encrypt() // try again, shouldnt happen often

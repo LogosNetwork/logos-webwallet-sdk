@@ -129,7 +129,7 @@ export default class Blake2b {
         wasm.memory[this.pointer + 200] = 128
       }
     } else {
-      if (wasm && !wasm.exports && this.mode === null) console.log('Using JS Fallback since WASM is still loading')
+      if (wasm && !wasm.exports && this.mode === null) console.log(`Using JS Fallback since WASM is still loading`)
       this.mode = 'js'
       // state, 'param block'
       this.context = {
@@ -306,7 +306,7 @@ export default class Blake2b {
         return wasm.memory.slice(this.pointer + 128, this.pointer + 128 + this.outlen)
       }
       if (out === 'hex') {
-        return wasmHexSlice(wasm.memory, this.pointer + 128, this.outlen)
+        return wasmHexSlice(wasm.memory, this.pointer + 128, this.outlen).toUpperCase()
       }
       if (out.length < this.outlen) throw new Error('input must be TypedArray or Buffer')
       for (let i = 0; i < this.outlen; i++) {
@@ -324,7 +324,7 @@ export default class Blake2b {
       for (let i = 0; i < this.context.outlen; i++) {
         buf[i] = this.context.h[i >> 2] >> (8 * (i & 3))
       }
-      if (out === 'hex') return hexSlice(buf)
+      if (out === 'hex') return hexSlice(buf).toUpperCase()
       return buf
     }
   }
