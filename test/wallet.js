@@ -121,6 +121,7 @@ describe('Wallet', () => {
     const Wallet = LogosWallet.Wallet
     let wallet = new Wallet({
       password: 'password',
+      mqtt: false,
       logging: 'error',
       fullSync: false
     })
