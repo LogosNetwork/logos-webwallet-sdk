@@ -1,6 +1,6 @@
 {
   "name": "@logosnetwork/logos-webwallet-sdk",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Create Logos wallets without a full Logos node",
   "keywords": [
     "Logos",
@@ -43,29 +43,27 @@
     "@types/node": "^12.6.8",
     "@typescript-eslint/eslint-plugin": "^1.13.0",
     "@typescript-eslint/parser": "^1.13.0",
+    "awesome-typescript-loader": "^5.2.1",
     "babel-eslint": "^10.0.2",
     "babel-loader": "^8.0.6",
     "chai": "^4.2.0",
     "eslint": "^6.1.0",
     "mocha": "^6.2.0",
+    "source-map-loader": "^0.2.4",
     "standard": "^13.1.0",
     "ts-loader": "^6.0.4",
     "typescript": "^3.5.3",
     "webpack": "^4.38.0",
-    "webpack-cli": "^3.3.6",
-    "awesome-typescript-loader": "^5.2.1"
+    "webpack-cli": "^3.3.6"
   },
   "dependencies": {
     "@babel/runtime": "^7.5.5",
     "@logosnetwork/logos-rpc-client": "^1.1.33",
     "@types/pbkdf2": "^3.0.0",
     "big-integer": "^1.6.44",
-    "blake2b-wasm": "^1.1.7",
     "core-js": "^3.1.4",
     "mqtt": "^3.0.0",
-    "nanoassert": "^2.0.0",
     "pbkdf2": "^3.0.17",
-    "source-map-loader": "^0.2.4",
     "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef"
   },
   "bugs": {
