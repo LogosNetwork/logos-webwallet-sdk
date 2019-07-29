@@ -121,7 +121,6 @@ describe('Wallet', () => {
     const Wallet = LogosWallet.Wallet
     let wallet = new Wallet({
       password: 'password',
-      mqtt: false,
       logging: 'error',
       fullSync: false
     })
@@ -132,14 +131,63 @@ describe('Wallet', () => {
       })
       expect(wallet.account.address).to.equal('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo')
       await wallet.account.createSendRequest([{
-        destination: 'lgs_15iaeuk818zfgkbtou9fwu41mdrx81adygzaa9uhzc9pdjpqjaqdaz1my9mt',
-        amount: '100000000000000000000000000000'
-      }], true, false)
+        destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
+        amount: '300000000000000000000000000000'
+      }])
       await wallet.account.createSendRequest([{
-        destination: 'lgs_15iaeuk818zfgkbtou9fwu41mdrx81adygzaa9uhzc9pdjpqjaqdaz1my9mt',
-        amount: '100000000000000000000000000000'
-      }], true, false)
+        destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
+        amount: '300000000000000000000000000000'
+      }])
       expect(wallet.account.pendingChain).to.have.a.lengthOf(2)
+    }),
+    it('Issues a Token', async function () {
+      this.timeout(600000)
+      await wallet.account.createTokenIssuanceRequest({
+        name: `UnitTestCoin`,
+        symbol: `UTC`,
+        totalSupply: '1000',
+        feeRate: '1',
+        issuerInfo: '{"decimals":0,"website":"https://github.com/LogosNetwork/logos-webwallet-sdk"}',
+        settings: {
+          issuance: true,
+          modify_issuance: true,
+          revoke: true,
+          modify_revoke: true,
+          freeze: true,
+          modify_freeze: true,
+          adjust_fee: true,
+          modify_adjust_fee: true,
+          whitelist: false,
+          modify_whitelist: true
+        },
+        controllers: [{
+          account: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+          privileges: {
+            change_issuance: true,
+            change_modify_issuance: true,
+            change_revoke: true,
+            change_modify_revoke: true,
+            change_freeze: true,
+            change_modify_freeze: true,
+            change_adjust_fee: true,
+            change_modify_adjust_fee: true,
+            change_whitelist: true,
+            change_modify_whitelist: true,
+            issuance: true,
+            revoke: true,
+            freeze: true,
+            adjust_fee: true,
+            whitelist: true,
+            update_issuer_info: true,
+            update_controller: true,
+            burn: true,
+            distribute: true,
+            withdraw_fee: true,
+            withdraw_logos: true
+          }
+        }]
+      })
+      expect(wallet.account.pendingChain).to.have.a.lengthOf(3)
     })
   })
 })
