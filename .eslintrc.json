@@ -1,0 +1,94 @@
+{
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "standard"
+    ],
+    "env": {
+        "browser": true,
+        "amd": true
+    },
+    "globals": {
+        "it": "readonly",
+        "expect": "readonly",
+        "describe": "readonly"
+    },
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint"],
+    "parserOptions": {
+        "project": "./tsconfig.json"
+    },
+    "rules": {
+        "arrow-parens": 0,
+        "generator-star-spacing": 0,
+        "no-trailing-spaces": [ 0, { "skipBlankLines": true } ],
+        "@typescript-eslint/indent": ["error", 2],
+        "@typescript-eslint/camelcase": ["error", {
+            "allow": [
+                "new_info",
+                "issuer_info",
+                "change_issuance",
+                "change_modify_issuance",
+                "change_revoke",
+                "change_modify_revoke",
+                "change_freeze",
+                "change_modify_freeze",
+                "change_adjust_fee",
+                "change_modify_adjust_fee",
+                "change_whitelist",
+                "change_modify_whitelist",
+                "adjust_fee",
+                "update_issuer_info",
+                "update_controller",
+                "withdraw_fee",
+                "withdraw_logos",
+                "modify_issuance",
+                "modify_revoke",
+                "modify_freeze",
+                "modify_adjust_fee",
+                "modify_whitelist",
+                "token_fee",
+                "token_id",
+                "token_account",
+                "total_supply",
+                "fee_type",
+                "fee_rate",
+                "not_whitelisted"
+            ]
+        }],
+        "camelcase": ["error", {
+            "allow": [
+                "new_info",
+                "issuer_info",
+                "change_issuance",
+                "change_modify_issuance",
+                "change_revoke",
+                "change_modify_revoke",
+                "change_freeze",
+                "change_modify_freeze",
+                "change_adjust_fee",
+                "change_modify_adjust_fee",
+                "change_whitelist",
+                "change_modify_whitelist",
+                "adjust_fee",
+                "update_issuer_info",
+                "update_controller",
+                "withdraw_fee",
+                "withdraw_logos",
+                "modify_issuance",
+                "modify_revoke",
+                "modify_freeze",
+                "modify_adjust_fee",
+                "modify_whitelist",
+                "token_fee",
+                "token_id",
+                "token_account",
+                "total_supply",
+                "fee_type",
+                "fee_rate",
+                "not_whitelisted"
+            ]
+        }]
+    }
+}

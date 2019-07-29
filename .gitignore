@@ -2,5 +2,5 @@ node_modules
 /.idea/
 *.DS_Store
 docs/docs.json
-webpack/
-.jsbeautifyrc
+dist/
+tsbuild/

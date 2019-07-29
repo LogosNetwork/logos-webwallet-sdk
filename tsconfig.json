@@ -1,13 +1,22 @@
 {
-  "compilerOptions": {
-      "module": "commonjs",
-      "target": "es6",
-      "noImplicitAny": true,
-      "strictNullChecks": true,
-      "noEmit": true,
-      "forceConsistentCasingInFileNames": true
-  },
-  "files": [
-      "typings/index.d.ts"
-  ]
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "lib": ["es2018"],
+        "alwaysStrict": true,
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "forceConsistentCasingInFileNames": true,
+        "target": "es5",
+        "experimentalDecorators": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "suppressExcessPropertyErrors": true,
+        "declaration": true
+    },
+    "include": ["./src/**/*"],
+    "exclude": ["node_modules"]
 }
+  
