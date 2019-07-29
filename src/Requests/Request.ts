@@ -143,6 +143,17 @@ export default abstract class Request {
     }
 
     /**
+     * Type of the request
+     * @type {RequestType}
+     * @private
+     */
+    if (options.type !== undefined) {
+      this._type = options.type as RequestType
+    } else {
+      this._type = null
+    }
+
+    /**
      * Request version of webwallet SDK
      * @type {number}
      * @private
@@ -262,6 +273,7 @@ export default abstract class Request {
    * @readonly
    */
   public get type (): string {
+    if (!this._type) return null
     return this._type.text
   }
 
@@ -271,6 +283,7 @@ export default abstract class Request {
    * @readonly
    */
   public get typeValue (): number {
+    if (!this._type) return null
     return this._type.value
   }
 
@@ -312,6 +325,18 @@ export default abstract class Request {
     if (this.fee === null) throw new Error('Transaction fee is not set.')
     if (!this.origin) throw new Error('Origin account is not set.')
     if (!this.type) throw new Error('Request type is not defined.')
+
+    console.log('Getting Hash')
+    console.log('Typevalue: ')
+    console.log(decToHex(this.typeValue, 1))
+    console.log('Origin: ')
+    console.log(this.origin)
+    console.log('Previous: ')
+    console.log(this.previous)
+    console.log('Fee: ')
+    console.log(decToHex(this.fee, 16))
+    console.log('Sequence: ')
+    console.log(changeEndianness(decToHex(this.sequence, 4)))
     return new Blake2b()
       .update(hexToUint8(decToHex(this.typeValue, 1)))
       .update(hexToUint8(this.origin))

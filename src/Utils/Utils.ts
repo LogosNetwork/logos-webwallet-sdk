@@ -306,11 +306,11 @@ export const changeEndianness = (data: string): string => {
 export const decToHex = (str: string | number, bytes: number = null): string => {
   const dec = str.toString().split('')
   const sum = []
-  const hex = []
+  let hex = []
   let i
   let s
   while (dec.length) {
-    s = 1 * parseInt(dec.shift())
+    s = parseInt(dec.shift())
     for (i = 0; s || i < sum.length; i++) {
       s += (sum[i] || 0) * 10
       sum[i] = s % 16
@@ -335,7 +335,7 @@ export const hexToDec = (s: string): string => {
     const r = []
     const newX = x.split('').map(Number)
     const newY = y.split('').map(Number)
-    while (x.length || y.length) {
+    while (newX.length || newY.length) {
       const s = (newX.pop() || 0) + (newY.pop() || 0) + c
       r.unshift(s < 10 ? s : s - 10)
       c = s < 10 ? 0 : 1
