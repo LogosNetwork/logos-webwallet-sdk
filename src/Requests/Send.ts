@@ -64,16 +64,10 @@ export default class Send extends Request {
     if (!this.transactions) throw new Error('Transactions are not set.')
     const context = super.requestHash()
     for (const transaction of this.transactions) {
-      console.log('Destination: ')
-      console.log(keyFromAccount(transaction.destination))
-      console.log('Amount: ')
-      console.log(decToHex(transaction.amount, 16))
       context.update(hexToUint8(keyFromAccount(transaction.destination)))
       context.update(hexToUint8(decToHex(transaction.amount, 16)))
     }
-    let finalizedHash = context.digest('hex') as string
-    console.log(finalizedHash)
-    return finalizedHash
+    return context.digest('hex') as string
   }
 
   /**

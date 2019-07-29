@@ -306,7 +306,7 @@ export const changeEndianness = (data: string): string => {
 export const decToHex = (str: string | number, bytes: number = null): string => {
   const dec = str.toString().split('')
   const sum = []
-  let hex = []
+  const hex = []
   let i
   let s
   while (dec.length) {

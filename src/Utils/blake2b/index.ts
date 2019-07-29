@@ -65,6 +65,9 @@ const SALTBYTES = 16
 const PERSONALBYTES = 16
 const SUPPORTED = typeof WebAssembly !== 'undefined'
 
+let head = 64
+const freeList: number[] = []
+
 // Creates a BLAKE2b hashing context
 // Requires an output length between 1 and 64 bytes
 // Takes an optional Uint8Array key
@@ -82,10 +85,6 @@ export default class Blake2b {
   private v: Uint32Array
 
   private m: Uint32Array
-
-  private head: number
-
-  private freeList: number[]
 
   public constructor (outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null, forceUseJS: boolean = false) {
     if (outlen < BYTES_MIN) throw new Error(`outlen must be at least ${BYTES_MIN}, was given ${outlen}`)
@@ -106,14 +105,12 @@ export default class Blake2b {
     this.finalized = false
     this.outlen = outlen
     if (!forceUseJS && wasm && wasm.exports && (this.mode === null || this.mode === 'wasm')) {
-      this.freeList = []
-      this.head = 64
       this.mode = 'wasm'
-      if (!this.freeList.length) {
-        this.freeList.push(this.head)
-        this.head += 216
+      if (!freeList.length) {
+        freeList.push(head)
+        head += 216
       }
-      this.pointer = this.freeList.pop()
+      this.pointer = freeList.pop()
       wasm.memory.fill(0, 0, 64)
       wasm.memory[0] = this.outlen
       wasm.memory[1] = key ? key.length : 0
@@ -125,7 +122,7 @@ export default class Blake2b {
       wasm.exports.blake2b_init(this.pointer, this.outlen)
       if (key) {
         this.update(key)
-        wasm.memory.fill(0, this.head, this.head + key.length) // whiteout key
+        wasm.memory.fill(0, head, head + key.length) // whiteout key
         wasm.memory[this.pointer + 200] = 128
       }
     } else {
@@ -281,9 +278,9 @@ export default class Blake2b {
   public update = (input: Uint8Array | Buffer): Blake2b => {
     if (this.finalized) throw new Error(`Hash instance finalized`)
     if (wasm && wasm.exports && this.mode === 'wasm') {
-      if (this.head + input.length > wasm.memory.length) wasm.realloc(this.head + input.length)
-      wasm.memory.set(input, this.head)
-      wasm.exports.blake2b_update(this.pointer, this.head, this.head + input.length)
+      if (head + input.length > wasm.memory.length) wasm.realloc(head + input.length)
+      wasm.memory.set(input, head)
+      wasm.exports.blake2b_update(this.pointer, head, head + input.length)
     } else {
       for (let i = 0; i < input.length; i++) {
         if (this.context.c === 128) { // buffer full ?
@@ -299,8 +296,10 @@ export default class Blake2b {
 
   public digest = (out?: 'binary'|'hex'|Uint8Array|Buffer): Uint8Array|string => {
     if (this.finalized) throw new Error(`Hash instance finalized`)
+    this.finalized = true
+
     if (wasm && wasm.exports && this.mode === 'wasm') {
-      this.freeList.push(this.pointer)
+      freeList.push(this.pointer)
       wasm.exports.blake2b_final(this.pointer)
       if (!out || out === 'binary') {
         return wasm.memory.slice(this.pointer + 128, this.pointer + 128 + this.outlen)
@@ -308,7 +307,7 @@ export default class Blake2b {
       if (out === 'hex') {
         return wasmHexSlice(wasm.memory, this.pointer + 128, this.outlen).toUpperCase()
       }
-      if (out.length < this.outlen) throw new Error('input must be TypedArray or Buffer')
+      if (out.length >= this.outlen) throw new Error('input must be TypedArray or Buffer')
       for (let i = 0; i < this.outlen; i++) {
         out[i] = wasm.memory[this.pointer + 128 + i]
       }
