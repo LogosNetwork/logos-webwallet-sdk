@@ -345,8 +345,8 @@ export default class LogosAccount extends Account {
                   this.addToken(tokenID)
                   tokenBalances[tokenID] = accountInfo.balance
                 }
-                this._tokenBalances = tokenBalances
-                this._pendingTokenBalances = tokenBalances
+                this._tokenBalances = { ...tokenBalances }
+                this._pendingTokenBalances = { ...tokenBalances }
               }
               this.synced = true
               console.info(`${this.address} has been lazy synced`)
@@ -364,8 +364,8 @@ export default class LogosAccount extends Account {
                   this.addToken(tokenID)
                   tokenBalances[tokenID] = accountInfo.balance
                 }
-                this._tokenBalances = tokenBalances
-                this._pendingTokenBalances = tokenBalances
+                this._tokenBalances = { ...tokenBalances }
+                this._pendingTokenBalances = { ...tokenBalances }
               }
             }
             this.synced = true
@@ -421,7 +421,7 @@ export default class LogosAccount extends Account {
       }
     }
     this.balance = sum.toString()
-    this._tokenBalances = tokenSums
+    this._tokenBalances = { ...tokenSums }
     for (const pendingRequest of this.pendingChain) {
       if (pendingRequest instanceof Send) {
         sum = sum.minus(bigInt(pendingRequest.totalAmount)).minus(bigInt(pendingRequest.fee))
@@ -443,7 +443,7 @@ export default class LogosAccount extends Account {
       }
     }
     this.pendingBalance = sum.toString()
-    this._pendingTokenBalances = tokenSums
+    this._pendingTokenBalances = { ...tokenSums }
   }
 
   /**
