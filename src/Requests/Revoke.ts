@@ -49,7 +49,7 @@ export default class Revoke extends TokenRequest {
 
   public set transaction (transaction: Transaction) {
     if (typeof transaction.destination === 'undefined') throw new Error('destination should be passed in transaction object')
-    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the base unit of your token (e.g. satoshi)')
+    if (typeof transaction.amount === 'undefined') throw new Error('amount should be passed in transaction object - pass this as the minor unit of your token (e.g. satoshi)')
     this._transaction = transaction
   }
 

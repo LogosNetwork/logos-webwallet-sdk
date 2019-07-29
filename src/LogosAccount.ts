@@ -126,7 +126,7 @@ export default class LogosAccount extends Account {
     }
 
     /**
-     * Token Balance of the token account in base unit of tokens
+     * Token Balance of the token account in minor unit of tokens
      * @type {TokenBalances}
      * @private
      */
@@ -137,7 +137,7 @@ export default class LogosAccount extends Account {
     }
 
     /**
-     * Pending Token Balance of the token account in base unit of tokens
+     * Pending Token Balance of the token account in minor unit of tokens
      *
      * pending token balance is the token balance minus the token sends that are pending
      * @type {TokenBalances}
@@ -186,7 +186,7 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * The balance of the tokens in base token unit
+   * The balance of the tokens in the minor token unit
    * @type {TokenBalances}
    * @readonly
    */
@@ -195,7 +195,7 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * The pending token balance of the account in base token
+   * The pending token balance of the account in the minor token unit
    *
    * pending token balance is balance minus the token sends that are pending
    *
@@ -207,13 +207,25 @@ export default class LogosAccount extends Account {
   }
 
   /**
-   * The balance of the given token in the base units
+   * The balance of the given token in the minor unit and major unit (if available)
    * @param {string} tokenID - Token ID of the token in question, you can also send the token account address
-   * @returns {string} the token account info object
+   * @returns {{minor: string;major?: string}} The balance in minor unit or converted units
    * @readonly
    */
-  public tokenBalance (token: string): string {
-    return this.tokenBalances[keyFromAccount(token)]
+  public tokenBalance (token: string): {minor: string;major?: string} {
+    const tokenAccountKey = keyFromAccount(token)
+    const tokenAddress = accountFromHexKey(tokenAccountKey)
+    const minorValue = this.tokenBalances[tokenAccountKey]
+    if (minorValue) {
+      const result: {minor: string;major?: string} = {
+        minor: minorValue
+      }
+      if (!this.wallet.tokenAccounts[tokenAddress]) return result
+      result.major = this.wallet.tokenAccounts[tokenAddress].convertToMajor(minorValue)
+      return result
+    } else {
+      return null
+    }
   }
 
   /**

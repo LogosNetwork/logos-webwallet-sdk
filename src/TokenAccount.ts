@@ -347,7 +347,7 @@ export default class TokenAccount extends Account {
   }
 
   /**
-   * The balance of the token in the base token unit
+   * The balance of the token in the minor token unit
    * @type {string}
    * @readonly
    */
@@ -360,7 +360,7 @@ export default class TokenAccount extends Account {
   }
 
   /**
-   * The total supply of the token in base token
+   * The total supply of the token in minor token
    * @type {string}
    * @readonly
    */
@@ -373,7 +373,7 @@ export default class TokenAccount extends Account {
   }
 
   /**
-   * The total supply of the token in base token
+   * The total supply of the token in the minor token unit
    * @type {string}
    * @readonly
    */
@@ -467,6 +467,34 @@ export default class TokenAccount extends Account {
 
   public set controllers (val: Controller[]) {
     this._controllers = val
+  }
+
+  /**
+   * The decimals of the token
+   * @type {number}
+   */
+  public get decimals (): number {
+    try {
+      const parsedInfo = JSON.parse(this.issuerInfo)
+      if (parsedInfo &&
+        typeof parsedInfo.decimals !== 'undefined' &&
+        parsedInfo.decimals > 0) {
+        return parseInt(parsedInfo.decimals)
+      }
+      return null
+    } catch (e) {
+      return null
+    }
+  }
+
+  public convertToMajor (minorValue: string): string {
+    if (this.decimals) return this.wallet.rpcClient().convert.fromTo(minorValue, 0, this.decimals)
+    return null
+  }
+
+  public convertToMinor (majorValue: string): string {
+    if (this.decimals) return this.wallet.rpcClient().convert.fromTo(majorValue, this.decimals, 0)
+    return null
   }
 
   /**

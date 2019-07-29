@@ -34,7 +34,7 @@ export default class WithdrawLogos extends TokenRequest {
   public set transaction (transaction: Transaction) {
     if (!transaction) throw new Error('transaction is was not sent.')
     if (!transaction.destination) throw new Error('destination should be passed in transaction object')
-    if (!transaction.amount) throw new Error('amount should be passed in transaction object - pass this as the base unit logos')
+    if (!transaction.amount) throw new Error('amount should be passed in transaction object - pass this as the minor unit logos')
     this._transaction = transaction
   }
 

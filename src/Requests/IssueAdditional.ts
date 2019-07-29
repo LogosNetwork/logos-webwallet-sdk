@@ -32,7 +32,7 @@ export default class IssueAdditional extends TokenRequest {
   }
 
   public set amount (amount: string) {
-    if (typeof amount === 'undefined') throw new Error('amount should be passed - pass this as the base unit of your token (e.g. satoshi)')
+    if (typeof amount === 'undefined') throw new Error('amount should be passed - pass this as the minor unit of your token (e.g. satoshi)')
     this._amount = amount
   }
 

@@ -504,6 +504,15 @@ export default abstract class Account {
   }
 
   /**
+   * Return the balance of the account in Logos
+   * @returns {string}
+   * @readonly
+   */
+  public get balanceInLogos (): string {
+    return this.wallet.rpcClient().convert.fromReason(this.balance, 'LOGOS')
+  }
+
+  /**
    * Verify the integrity of the send & pending chains
    *
    * @returns {boolean}

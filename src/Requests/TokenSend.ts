@@ -68,7 +68,7 @@ export default class TokenSend extends TokenRequest {
   }
 
   /**
-   * Return the string amount of the Token Fee in the base unit of the token
+   * Return the string amount of the Token Fee in the minor unit of the token
    * @type {string}
    */
   public get tokenFee (): string {
