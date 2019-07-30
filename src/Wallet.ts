@@ -465,6 +465,14 @@ export default class Wallet {
     this._rpc = val
   }
 
+  /**
+   * The password of the wallet
+   * @type {string}
+   */
+  public get password (): string {
+    return this._password
+  }
+
   public set password (password: string) {
     this._password = password
   }
@@ -774,7 +782,7 @@ export default class Wallet {
    * Constructs the wallet from an encrypted base64 encoded wallet
    *
    * @param {string} - encrypted wallet
-   * @returns {Promise<Wallet>} wallet data
+   * @returns {Wallet} wallet data
    */
   public load (encryptedWallet: string): Wallet {
     this.accounts = {}
