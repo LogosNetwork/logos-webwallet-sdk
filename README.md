@@ -9,196 +9,95 @@ npm i @logosnetwork/logos-webwallet-sdk
 
 ## Usage
 
+### Sending Logos
 ```js
-const LogosWallet = require('@logosnetwork/logos-webwallet-sdk')
-const Wallet = LogosWallet.Wallet
-let wallet = new Wallet({
+const SDK = require('@logosnetwork/logos-webwallet-sdk')
+const wallet = new SDK.Wallet({
   password: 'password' // Make this strong
 })
-let account = wallet.createAccount({
-  index: 0
-}).then((val) => {
-  account.createBlock('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo', '1000000000000000000000000000000', true, wallet.rpc)
+wallet.createAccount({
+  privateKey: '34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4'
+}).then((account) => {
+  account.createSendRequest([{
+    destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6',
+    amount: '300000000000000000000000000000'
+  }])
 })
 ```
 
-## Class structure
-
-full documentation coming soon
-
-```ts
-export class Wallet {
-      constructor(options?: WalletOptions)
-      public walletID: string
-      public currentAccountAddress: LogosAddress
-      public seed: Hexadecimal64Length
-      public rpc: RPCOptions
-      public mqtt: string
-      public readonly accounts: Account[]
-      public readonly account: Account
-      public readonly balance: string
-      public readonly pendingBlocks: Block[]
-      public setPassword(password: string): void
-      public createSeed(overwrite?: boolean): Hexadecimal64Length
-      public addAccount(account: Account): Account
-      public createAccount(options?: AccountOptions): Promise<Account>
-      public recalculateWalletBalancesFromChain(): void
-      public getBlock(hash: Hexadecimal64Length): Block | boolean
-      public confirmBlock(account: LogosAddress, hash: Hexadecimal64Length): void
-      public encrypt(): string
-      public load(encryptedWallet: string): Promise<WalletData>
-      private _decrypt(encryptedWallet: string): WalletData | boolean
-      private _generateAccountOptionsFromSeed(index: number): MinimialAccount
-      private _generateAccountOptionsFromPrivateKey(privateKey: Hexadecimal64Length): MinimialAccount
-}
-
-export class Account {
-    constructor(options?: AccountOptions);
-    public label: string
-    public synced: boolean
-    public readonly index: number
-    public readonly previous: Hexadecimal64Length
-    public readonly address: LogosAddress
-    public readonly publicKey: Hexadecimal64Length
-    public readonly privateKey: Hexadecimal64Length
-    public readonly balance: string
-    public readonly pendingBalance: string
-    public readonly representative: LogosAddress
-    public readonly chain: Block[]
-    public readonly recieveChain: Block[]
-    public readonly pendingChain: Block[]
-    public readonly blockCount: number
-    public readonly pendingBlockCount: number
-    public readonly recieveCount: number
-    public sync(options: RPCOptions): Promise<Account>
-    public updateBalancesFromChain(): void
-    public verifyChain(): boolean
-    public verifyRecieveChain(): boolean
-    public recentBlocks(count?: number, offset?: number): Block[]
-    public recentPendingBlocks(count?: number, offset?: number): Block[]
-    public recentReceiveBlocks(count?: number, offset?: number): Block[]
-    public getBlocksUpTo(hash: Hexadecimal64Length): Block[]
-    public getPendingBlocksUpTo(hash: Hexadecimal64Length): Block[]
-    public getReceiveBlocksUpTo(hash: Hexadecimal64Length): Block[]
-    public removePendingBlocks(): void
-    public removePendingBlock(hash: Hexadecimal64Length): boolean
-    public getBlock(hash: Hexadecimal64Length): Block
-    public createBlock(to: LogosAddress, amount?: string, remoteWork?: boolean, rpc?: RPCOptions): Promise<Block>
-    public getPendingBlock(hash: Hexadecimal64Length): boolean | Block
-    public confirmBlock(hash: Hexadecimal64Length, rpc: RPCOptions | boolean): void
-    public addReceiveBlock(block: MQTTBlockOptions): boolean | Block
-}
-
-export class Block {
-    constructor(options?: BlockOptions);
-    public signature: Hexadecimal64Length
-    public readonly hash: Hexadecimal64Length
-    public work: Hexadecimal16Length
-    public amount: string
-    public previous: Hexadecimal64Length
-    public transactionFee: string
-    public readonly representative: Hexadecimal64Length
-    public readonly destination: Hexadecimal64Length
-    public readonly account: Hexadecimal64Length
-    public createWork(testNet?: boolean): Hexadecimal16Length
-    public setRepresentative(account: LogosAddress): void
-    public setDestination(account: LogosAddress): void
-    public setAccount(account: LogosAddress): void
-    public sign(privateKey: Hexadecimal64Length): boolean
-    public verify(): boolean
-    public publish(options: RPCOptions): Promise<Hexadecimal64Length>
-    public toJSON(pretty?: boolean): BlockJSON
-}
-//#endregion
-
-//#region Typedefs
-
-type WalletOptions = {
-  password: string
-  seed?: Hexadecimal64Length
-  deterministicKeyIndex?: number
-  currentAccountAddress?: LogosAddress
-  accounts?: Map<LogosAddress, Account>
-  walletID?: string
-  version?: number
-  remoteWork?: boolean
-  rpc?: RPCOptions
-};
-
-type AccountOptions = {
-  label?: string
-  address?: LogosAddress
-  publicKey?: Hexadecimal64Length
-  privateKey?: Hexadecimal64Length
-  balance?: string | number
-  pendingBalance?: string | number
-  representative?: LogosAddress
-  chain?: Block[]
-  receiveChain?: Block[]
-  pendingChain?: Block[]
-  previous?: Hexadecimal64Length
-  version?: number
-  index?: number
-};
-
-type BlockOptions = {
-  hash?: Hexadecimal64Length
-  signature?: Hexadecimal64Length
-  work?: Hexadecimal16Length
-  amount?: string
-  previous?: Hexadecimal64Length
-  transactionFee?: string
-  representative?: LogosAddress
-  destination?: LogosAddress
-  account?: LogosAddress
-};
-
-type BlockJSON = string
-
-type WalletData = {
-  seed?: Hexadecimal64Length
-  deterministicKeyIndex?: number
-  version?: number
-  walletID?: string | boolean
-  accounts?: MinimialAccount[]
-}
-
-type MinimialAccount = {
-  privateKey?: Hexadecimal64Length
-  publicKey?: Hexadecimal64Length
-  address?: LogosAddress
-  index?: number
-  label?: string
-}
-
-type MQTTBlockOptions = {
-  type: string
-  account: LogosAddress
-  previous: Hexadecimal64Length
-  representative: LogosAddress
-  amount: string
-  transaction_fee: string
-  link: Hexadecimal64Length
-  link_as_account: LogosAddress
-  signature: string
-  work: Hexadecimal16Length
-  timestamp: string
-  hash: Hexadecimal64Length
-  batchBlockHash: Hexadecimal64Length
-  }
-
-type RPCOptions = {
-  host: string,
-  delegates: string[],
-  proxy?: string
-}
-
-type Hexadecimal64Length = string
-type Hexadecimal16Length = string
-type LogosAddress = string
+### Creating a Token
+```js
+const SDK = require('@logosnetwork/logos-webwallet-sdk')
+const wallet = new SDK.Wallet({
+  password: 'password' // Make this strong
+})
+wallet.createAccount({
+  privateKey: '34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4'
+}).then((account) => {
+  account.createTokenIssuanceRequest({
+    name: `UnitTestCoin`,
+    symbol: `UTC`,
+    totalSupply: '1000',
+    feeRate: '1',
+    issuerInfo: '{"decimals":0,"website":"https://github.com/LogosNetwork/logos-webwallet-sdk"}',
+    settings: {
+      issuance: true,
+      modify_issuance: true,
+      revoke: true,
+      modify_revoke: true,
+      freeze: true,
+      modify_freeze: true,
+      adjust_fee: true,
+      modify_adjust_fee: true,
+      whitelist: false,
+      modify_whitelist: true
+    },
+    controllers: [{
+      account: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+      privileges: {
+        change_issuance: true,
+        change_modify_issuance: true,
+        change_revoke: true,
+        change_modify_revoke: true,
+        change_freeze: true,
+        change_modify_freeze: true,
+        change_adjust_fee: true,
+        change_modify_adjust_fee: true,
+        change_whitelist: true,
+        change_modify_whitelist: true,
+        issuance: true,
+        revoke: true,
+        freeze: true,
+        adjust_fee: true,
+        whitelist: true,
+        update_issuer_info: true,
+        update_controller: true,
+        burn: true,
+        distribute: true,
+        withdraw_fee: true,
+        withdraw_logos: true
+      }
+    }]
+  })
+})
 ```
 
-
-## Documentation
-
-Coming Soon
+## Classes
+ * Wallet
+ * LogosAccount
+ * TokenAccount
+ * AdjustFee
+ * AdjustUserStatus
+ * Burn
+ * ChangeSetting
+ * Distribute
+ * ImmuteSetting
+ * Issuance
+ * IssueAdditional
+ * Revoke
+ * Send
+ * TokenSend
+ * UpdateController
+ * UpdateIssuerInfo
+ * WithdrawFee
+ * WithdrawLogos

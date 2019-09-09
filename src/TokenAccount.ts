@@ -164,7 +164,7 @@ export default class TokenAccount extends Account {
     }
     super(options)
 
-    if (options.issuance !== undefined) {
+    if (options.issuance !== undefined && options.issuance !== null) {
       this._tokenBalance = options.issuance.totalSupply
       this._totalSupply = options.issuance.totalSupply
       this._tokenFeeBalance = '0'
