@@ -62,6 +62,10 @@ interface WalletOptions {
   version?: number;
 }
 
+/**
+ * ## Wallet
+ * The wallet is the primary way you will interact with the SDK.
+ */
 export default class Wallet {
   private _password: string
 
@@ -101,6 +105,47 @@ export default class Wallet {
 
   private _mqttClient: MqttClient
 
+/**
+  * ### Instantiating
+  * ```typescript
+  * import Wallet from '@logosnetwork/logos-webwallet-sdk'
+  * const wallet = new Wallet({
+  *     password: null,
+  *     seed: null,
+  *     deterministicKeyIndex: 0,
+  *     currentAccountAddress: null,
+  *     accounts: {},
+  *     tokenAccounts: {},
+  *     walletID: null,
+  *     batchSends: true,
+  *     fullSync: true,
+  *     lazyErrors: false,
+  *     tokenSync: false,
+  *     validateSync: true,
+  *     mqtt: defaultMQTT,
+  *     rpc: defaultRPC
+  * })
+  * ```
+  * 
+  * All wallet options are optional defaults are shown in the example above
+  * 
+  * |Wallet Option| Description |
+  * |--|--|
+  * | [[password]] | Password is used to encrypt and decrypt the wallet data |
+  * | [[seed]] | Seed is the deterministic entropy that we will use to generate key pairs from  |
+  * | [[deterministicKeyIndex]] | index of where you wish to start generating key paris from |
+  * | [[currentAccountAddress]] | the current selected account address |
+  * | [[accounts]] | [[AccountMap]] of all the [[LogosAccount|logos accounts]] in the Wallet  |
+  * | [[tokenAccounts]] | [[TokenAccountMap]] of all the [[TokenAccount|token accounts]] in the Wallet |
+  * | [[walletID]] | identifier of this wallet instance |
+  * | [[batchSends]] | when batchsends is true the SDK automatically combines send transactions to reduce overall amount of transactions |
+  * | [[fullSync]] | when fullSync is true the SDK will load the full history of the TokenAccounts and Accounts in the system. This is recommend to be true when working with tokens. |
+  * | [[lazyErrors]] | when lazyErrors is true the SDK will not throw errors for transactions that have insufficient funds and will queue the transactions until the account has the funds to complete the action. |
+  * | [[tokenSync]] | when tokenSync is true the SDK will load and sync the TokenAccounts that have interacted with the LogosAccounts. |
+  * | [[validateSync]] | when validateSync is true the SDK will check all signatures of all the requests in the account chains. This is recommended to be true but when syncing an account with a long history this can be computationally heavy. |
+  * | [[mqtt]] | address of your mqtt server `'wss://pla.bs:8443'` is the default server. Check out the logos backend repo to run your own backend mqtt. |
+  * | [[rpc]] | Node information of the delegates where you are sending requests to. This will change in the future as we get more core node functionality such as websockets and proper tx acceptor delegate lists. See [[RPCOptions]] |
+  */
   public constructor (options: WalletOptions = {
     password: null,
     seed: null,
@@ -308,7 +353,10 @@ export default class Wallet {
 
   /**
    * The id of the wallet
-   * @type {string} The hex identifier of the wallet
+   * #### Example
+   * ```typescript
+   * const walletID = wallet.walletID
+   * ```
    */
   public get walletID (): string {
     return this._walletID
@@ -319,8 +367,11 @@ export default class Wallet {
   }
 
   /**
-   * Should the webwallet SDK batch requests
-   * @type {boolean}
+   * Is the wallet batching requests
+   * #### Example
+   * ```typescript
+   * const isBatchingSends = wallet.batchSends
+   * ```
    */
   public get batchSends (): boolean {
     return this._batchSends
@@ -334,7 +385,10 @@ export default class Wallet {
    * Full Sync - syncs the entire send and recieve chains
    * This is recommend to be true when using an untrusted RPC node
    * In the future this will be safe when we have BLS sig validation of Request Blocks
-   * @type {boolean}
+   * #### Example
+   * ```typescript
+   * const isFullSyncing = wallet.fullSync
+   * ```
    */
   public get fullSync (): boolean {
     return this._fullSync
@@ -346,7 +400,10 @@ export default class Wallet {
 
   /**
    * Sync Tokens - Syncs all associated token's of the accounts on the account sync instead of on use
-   * @type {boolean}
+   * #### Example
+   * ```typescript
+   * const areTokensSyncing = wallet.tokenSync
+   * ```
    */
   public get tokenSync (): boolean {
     return this._tokenSync
@@ -360,7 +417,10 @@ export default class Wallet {
    * Validate Sync
    * if this option is true the SDK will generate hashes of each requests based on the content data and verify signatures
    * This should always be true when using a untrusted RPC node
-   * @type {boolean}
+   * #### Example
+   * ```typescript
+   * const isValidatingSignatures = wallet.validateSync
+   * ```
    */
   public get validateSync (): boolean {
     return this._validateSync
@@ -372,7 +432,10 @@ export default class Wallet {
 
   /**
    * Lazy Errors allows you to add request that are not valid for the current pending balances to the pending chain
-   * @type {boolean}
+   * #### Example
+   * ```typescript
+   * const isValidatingSignatures = wallet.validateSync
+   * ```
    */
   public get lazyErrors (): boolean {
     return this._lazyErrors
@@ -383,9 +446,11 @@ export default class Wallet {
   }
 
   /**
-   * Array of all the accounts in the wallet
-   * @type {AccountMap}
-   * @readonly
+   * [[AccountMap]] of all the [[LogosAccount|LogosAccounts]] in the wallet
+   * #### Example
+   * ```typescript
+   * const accounts = wallet.accounts
+   * ```
    */
   public get accounts (): AccountMap {
     return this._accounts
@@ -396,8 +461,11 @@ export default class Wallet {
   }
 
   /**
-   * Map of all the TokenAccounts in the wallet
-   * @type {TokenAccountMap}
+   * [[TokenAccountMap]] of all the [[TokenAccount|TokenAccounts]] in the wallet
+   * #### Example
+   * ```typescript
+   * const tokenAccounts = wallet.tokenAccounts
+   * ```
    * @readonly
    */
   public get tokenAccounts (): TokenAccountMap {
@@ -405,8 +473,11 @@ export default class Wallet {
   }
 
   /**
-   * The current account
-   * @type {LogosAccount}
+   * Returns the current [[LogosAccount]] of the wallet
+   * #### Example
+   * ```typescript
+   * const account = wallet.account
+   * ```
    * @readonly
    */
   public get account (): LogosAccount {
@@ -415,7 +486,10 @@ export default class Wallet {
 
   /**
    * The current account address
-   * @type {string}
+   * #### Example
+   * ```typescript
+   * const currentAccountAddress = wallet.currentAccountAddress
+   * ```
    */
   public get currentAccountAddress (): string {
     return this._currentAccountAddress
@@ -427,8 +501,11 @@ export default class Wallet {
   }
 
   /**
-   * The current balance of all the wallets in reason
-   * @type {string}
+   * The current balance of all the [[LogosAccount|LogosAccounts]] in reason
+   * #### Example
+   * ```typescript
+   * const walletBalanceInReason = wallet.balance
+   * ```
    * @readonly
    */
   public get balance (): string {
@@ -441,7 +518,10 @@ export default class Wallet {
 
   /**
    * The mqtt host for listening to confirmations from Logos consensus
-   * @type {string}
+   * #### Example
+   * ```typescript
+   * const mqttWsAddress = wallet.mqtt
+   * ```
    */
   public get mqtt (): string {
     return this._mqtt
@@ -454,8 +534,11 @@ export default class Wallet {
   }
 
   /**
-   * The rpc options for connecting to the RPC
-   * @type {RPCOptions | false}
+   * The [[RPCOptions]] for connecting to the RPC or set this to false to disable communication
+   * #### Example
+   * ```typescript
+   * const rpcInfo = wallet.rpc
+   * ```
    */
   public get rpc (): RPCOptions|false {
     return this._rpc
@@ -467,7 +550,11 @@ export default class Wallet {
 
   /**
    * The password of the wallet
-   * @type {string}
+   * in the future we will remove the ability to store the password and request it in realtime so it is in memory for less time
+   * #### Example
+   * ```typescript
+   * const password = wallet.password
+   * ```
    */
   public get password (): string {
     return this._password
@@ -484,7 +571,11 @@ export default class Wallet {
 
   /**
    * Return the seed of the wallet
-   * @type {string}
+   * in the future we will remove the ability to access the seed unless you pass a password
+   * #### Example
+   * ```typescript
+   * const seed = wallet.seed
+   * ```
    */
   public get seed (): string {
     return this._seed
@@ -492,7 +583,10 @@ export default class Wallet {
 
   /**
    * Return boolean if all the accounts in the wallet are synced
-   * @type {boolean}
+   * #### Example
+   * ```typescript
+   * const isWalletSynced = wallet.synced
+   * ```
    */
   public get synced (): boolean {
     for (const address in this.tokenAccounts) {
@@ -509,8 +603,11 @@ export default class Wallet {
   }
 
   /**
-   * Return all the requests that are pending in every account associated to this wallet
-   * @type {Request[]}
+   * Return all the requests that are pending in every [[LogosAccount]] in this wallet
+   * #### Example
+   * ```typescript
+   * const pendingRequests = wallet.pendingRequests
+   * ```
    * @readonly
    */
   public get pendingRequests (): Request[] {

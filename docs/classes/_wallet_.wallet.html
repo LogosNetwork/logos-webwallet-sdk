@@ -69,6 +69,16 @@
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
+			<section class="tsd-panel tsd-comment">
+				<div class="tsd-comment tsd-typography">
+					<div class="lead">
+						<a href="#wallet" id="wallet" style="color: inherit; text-decoration: none;">
+							<h2>Wallet</h2>
+						</a>
+						<p>The wallet is the primary way you will interact with the SDK.</p>
+					</div>
+				</div>
+			</section>
 			<section class="tsd-panel tsd-hierarchy">
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
@@ -172,9 +182,98 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L102">Wallet.ts:102</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L106">Wallet.ts:106</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<a href="#instantiating" id="instantiating" style="color: inherit; text-decoration: none;">
+										<h3>Instantiating</h3>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">import</span> Wallet <span class="hljs-keyword">from</span> <span class="hljs-string">'@logosnetwork/logos-webwallet-sdk'</span>
+<span class="hljs-keyword">const</span> wallet = <span class="hljs-keyword">new</span> Wallet({
+    password: <span class="hljs-literal">null</span>,
+    seed: <span class="hljs-literal">null</span>,
+    deterministicKeyIndex: <span class="hljs-number">0</span>,
+    currentAccountAddress: <span class="hljs-literal">null</span>,
+    accounts: {},
+    tokenAccounts: {},
+    walletID: <span class="hljs-literal">null</span>,
+    batchSends: <span class="hljs-literal">true</span>,
+    fullSync: <span class="hljs-literal">true</span>,
+    lazyErrors: <span class="hljs-literal">false</span>,
+    tokenSync: <span class="hljs-literal">false</span>,
+    validateSync: <span class="hljs-literal">true</span>,
+    mqtt: defaultMQTT,
+    rpc: defaultRPC
+})</code></pre>
+								</div>
+								<p>All wallet options are optional defaults are shown in the example above</p>
+								<table>
+									<thead>
+										<tr>
+											<th>Wallet Option</th>
+											<th>Description</th>
+										</tr>
+									</thead>
+									<tbody><tr>
+											<td><a href="_wallet_.wallet.html#password">password</a></td>
+											<td>Password is used to encrypt and decrypt the wallet data</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#seed">seed</a></td>
+											<td>Seed is the deterministic entropy that we will use to generate key pairs from</td>
+										</tr>
+										<tr>
+											<td><a href="../interfaces/_wallet_.walletjson.html#deterministickeyindex">deterministicKeyIndex</a></td>
+											<td>index of where you wish to start generating key paris from</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#currentaccountaddress">currentAccountAddress</a></td>
+											<td>the current selected account address</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#accounts">accounts</a></td>
+											<td><a href="../interfaces/_wallet_.accountmap.html">AccountMap</a> of all the <a href="_logosaccount_.logosaccount.html">logos accounts</a> in the Wallet</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#tokenaccounts">tokenAccounts</a></td>
+											<td><a href="../interfaces/_wallet_.tokenaccountmap.html">TokenAccountMap</a> of all the <a href="_tokenaccount_.tokenaccount.html">token accounts</a> in the Wallet</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#walletid">walletID</a></td>
+											<td>identifier of this wallet instance</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#batchsends">batchSends</a></td>
+											<td>when batchsends is true the SDK automatically combines send transactions to reduce overall amount of transactions</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#fullsync">fullSync</a></td>
+											<td>when fullSync is true the SDK will load the full history of the TokenAccounts and Accounts in the system. This is recommend to be true when working with tokens.</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#lazyerrors">lazyErrors</a></td>
+											<td>when lazyErrors is true the SDK will not throw errors for transactions that have insufficient funds and will queue the transactions until the account has the funds to complete the action.</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#tokensync">tokenSync</a></td>
+											<td>when tokenSync is true the SDK will load and sync the TokenAccounts that have interacted with the LogosAccounts.</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#validatesync">validateSync</a></td>
+											<td>when validateSync is true the SDK will check all signatures of all the requests in the account chains. This is recommended to be true but when syncing an account with a long history this can be computationally heavy.</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#mqtt">mqtt</a></td>
+											<td>address of your mqtt server <code>&#39;wss://pla.bs:8443&#39;</code> is the default server. Check out the logos backend repo to run your own backend mqtt.</td>
+										</tr>
+										<tr>
+											<td><a href="_wallet_.wallet.html#rpc">rpc</a></td>
+											<td>Node information of the delegates where you are sending requests to. This will change in the future as we get more core node functionality such as websockets and proper tx acceptor delegate lists. See <a href="../interfaces/_wallet_.rpcoptions.html">RPCOptions</a></td>
+										</tr>
+								</tbody></table>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -194,7 +293,7 @@
 					<div class="tsd-signature tsd-kind-icon">_accounts<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L90">Wallet.ts:90</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L94">Wallet.ts:94</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -212,7 +311,7 @@
 					<div class="tsd-signature tsd-kind-icon">_batch<wbr>Sends<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L74">Wallet.ts:74</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L78">Wallet.ts:78</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -222,7 +321,7 @@
 					<div class="tsd-signature tsd-kind-icon">_current<wbr>Account<wbr>Address<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L70">Wallet.ts:70</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L74">Wallet.ts:74</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -232,7 +331,7 @@
 					<div class="tsd-signature tsd-kind-icon">_deterministic<wbr>Key<wbr>Index<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L68">Wallet.ts:68</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L72">Wallet.ts:72</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -242,7 +341,7 @@
 					<div class="tsd-signature tsd-kind-icon">_full<wbr>Sync<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L76">Wallet.ts:76</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L80">Wallet.ts:80</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -252,7 +351,7 @@
 					<div class="tsd-signature tsd-kind-icon">_iterations<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L86">Wallet.ts:86</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L90">Wallet.ts:90</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -262,7 +361,7 @@
 					<div class="tsd-signature tsd-kind-icon">_lazy<wbr>Errors<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L82">Wallet.ts:82</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L86">Wallet.ts:86</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -272,7 +371,7 @@
 					<div class="tsd-signature tsd-kind-icon">_mqtt<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L100">Wallet.ts:100</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L104">Wallet.ts:104</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -282,7 +381,7 @@
 					<div class="tsd-signature tsd-kind-icon">_mqtt<wbr>Client<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">MqttClient</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L102">Wallet.ts:102</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L106">Wallet.ts:106</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -292,7 +391,7 @@
 					<div class="tsd-signature tsd-kind-icon">_mqtt<wbr>Connected<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L98">Wallet.ts:98</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L102">Wallet.ts:102</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -302,7 +401,7 @@
 					<div class="tsd-signature tsd-kind-icon">_password<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L66">Wallet.ts:66</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L70">Wallet.ts:70</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -312,7 +411,7 @@
 					<div class="tsd-signature tsd-kind-icon">_rpc<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_wallet_.rpcoptions.html" class="tsd-signature-type">RPCOptions</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">false</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L84">Wallet.ts:84</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L88">Wallet.ts:88</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -322,7 +421,7 @@
 					<div class="tsd-signature tsd-kind-icon">_seed<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L88">Wallet.ts:88</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L92">Wallet.ts:92</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -332,7 +431,7 @@
 					<div class="tsd-signature tsd-kind-icon">_token<wbr>Accounts<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L94">Wallet.ts:94</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L98">Wallet.ts:98</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -350,7 +449,7 @@
 					<div class="tsd-signature tsd-kind-icon">_token<wbr>Sync<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L78">Wallet.ts:78</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L82">Wallet.ts:82</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -360,7 +459,7 @@
 					<div class="tsd-signature tsd-kind-icon">_validate<wbr>Sync<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L80">Wallet.ts:80</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L84">Wallet.ts:84</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -370,7 +469,7 @@
 					<div class="tsd-signature tsd-kind-icon">_walletID<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L72">Wallet.ts:72</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L76">Wallet.ts:76</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -387,17 +486,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L412">Wallet.ts:412</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L483">Wallet.ts:483</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>The current account</p>
+									<p>Returns the current <a href="_logosaccount_.logosaccount.html">LogosAccount</a> of the wallet</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> account = wallet.account</code></pre>
 								</div>
 								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{LogosAccount}</p>
-									</dd>
 									<dt>readonly</dt>
 									<dd></dd>
 								</dl>
@@ -417,32 +517,33 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L390">Wallet.ts:390</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L455">Wallet.ts:455</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Array of all the accounts in the wallet</p>
+									<p><a href="../interfaces/_wallet_.accountmap.html">AccountMap</a> of all the <a href="_logosaccount_.logosaccount.html">LogosAccounts</a> in the wallet</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> accounts = wallet.accounts</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{AccountMap}</p>
-									</dd>
-									<dt>readonly</dt>
-									<dd></dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <a href="../interfaces/_wallet_.accountmap.html" class="tsd-signature-type">AccountMap</a></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L394">Wallet.ts:394</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L459">Wallet.ts:459</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Array of all the accounts in the wallet</p>
+									<p><a href="../interfaces/_wallet_.accountmap.html">AccountMap</a> of all the <a href="_logosaccount_.logosaccount.html">LogosAccounts</a> in the wallet</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> accounts = wallet.accounts</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -465,17 +566,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L434">Wallet.ts:434</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L511">Wallet.ts:511</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>The current balance of all the wallets in reason</p>
+									<p>The current balance of all the <a href="_logosaccount_.logosaccount.html">LogosAccounts</a> in reason</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> walletBalanceInReason = wallet.balance</code></pre>
 								</div>
 								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string}</p>
-									</dd>
 									<dt>readonly</dt>
 									<dd></dd>
 								</dl>
@@ -495,30 +597,33 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L325">Wallet.ts:325</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L376">Wallet.ts:376</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Should the webwallet SDK batch requests</p>
+									<p>Is the wallet batching requests</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isBatchingSends = wallet.batchSends</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{boolean}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L329">Wallet.ts:329</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L380">Wallet.ts:380</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Should the webwallet SDK batch requests</p>
+									<p>Is the wallet batching requests</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isBatchingSends = wallet.batchSends</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -542,30 +647,33 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L420">Wallet.ts:420</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L494">Wallet.ts:494</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The current account address</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> currentAccountAddress = wallet.currentAccountAddress</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L424">Wallet.ts:424</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L498">Wallet.ts:498</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The current account address</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> currentAccountAddress = wallet.currentAccountAddress</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -589,7 +697,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L339">Wallet.ts:339</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L393">Wallet.ts:393</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -597,19 +705,18 @@
 									<p>Full Sync - syncs the entire send and recieve chains
 										This is recommend to be true when using an untrusted RPC node
 									In the future this will be safe when we have BLS sig validation of Request Blocks</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isFullSyncing = wallet.fullSync</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{boolean}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L343">Wallet.ts:343</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L397">Wallet.ts:397</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -617,6 +724,10 @@
 									<p>Full Sync - syncs the entire send and recieve chains
 										This is recommend to be true when using an untrusted RPC node
 									In the future this will be safe when we have BLS sig validation of Request Blocks</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isFullSyncing = wallet.fullSync</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -640,30 +751,33 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L377">Wallet.ts:377</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L440">Wallet.ts:440</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Lazy Errors allows you to add request that are not valid for the current pending balances to the pending chain</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isValidatingSignatures = wallet.validateSync</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{boolean}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L381">Wallet.ts:381</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L444">Wallet.ts:444</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Lazy Errors allows you to add request that are not valid for the current pending balances to the pending chain</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isValidatingSignatures = wallet.validateSync</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -687,30 +801,33 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L446">Wallet.ts:446</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L526">Wallet.ts:526</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The mqtt host for listening to confirmations from Logos consensus</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> mqttWsAddress = wallet.mqtt</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L450">Wallet.ts:450</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L530">Wallet.ts:530</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The mqtt host for listening to confirmations from Logos consensus</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> mqttWsAddress = wallet.mqtt</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -734,30 +851,35 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L472">Wallet.ts:472</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L559">Wallet.ts:559</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>The password of the wallet</p>
+									<p>The password of the wallet
+									in the future we will remove the ability to store the password and request it in realtime so it is in memory for less time</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> password = wallet.password</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L476">Wallet.ts:476</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L563">Wallet.ts:563</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>The password of the wallet</p>
+									<p>The password of the wallet
+									in the future we will remove the ability to store the password and request it in realtime so it is in memory for less time</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> password = wallet.password</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -780,17 +902,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L516">Wallet.ts:516</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L613">Wallet.ts:613</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Return all the requests that are pending in every account associated to this wallet</p>
+									<p>Return all the requests that are pending in every <a href="_logosaccount_.logosaccount.html">LogosAccount</a> in this wallet</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> pendingRequests = wallet.pendingRequests</code></pre>
 								</div>
 								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{Request[]}</p>
-									</dd>
 									<dt>readonly</dt>
 									<dd></dd>
 								</dl>
@@ -810,18 +933,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L460">Wallet.ts:460</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L543">Wallet.ts:543</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>The rpc options for connecting to the RPC</p>
+									<p>The <a href="../interfaces/_wallet_.rpcoptions.html">RPCOptions</a> for connecting to the RPC or set this to false to disable communication</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> rpcInfo = wallet.rpc</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{RPCOptions | false}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <a href="../interfaces/_wallet_.rpcoptions.html" class="tsd-signature-type">RPCOptions</a>
 								<span class="tsd-signature-symbol"> | </span>
@@ -831,12 +953,16 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L464">Wallet.ts:464</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L547">Wallet.ts:547</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>The rpc options for connecting to the RPC</p>
+									<p>The <a href="../interfaces/_wallet_.rpcoptions.html">RPCOptions</a> for connecting to the RPC or set this to false to disable communication</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> rpcInfo = wallet.rpc</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -860,30 +986,35 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L489">Wallet.ts:489</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L580">Wallet.ts:580</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Return the seed of the wallet</p>
+									<p>Return the seed of the wallet
+									in the future we will remove the ability to access the seed unless you pass a password</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> seed = wallet.seed</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L480">Wallet.ts:480</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L567">Wallet.ts:567</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Return the seed of the wallet</p>
+									<p>Return the seed of the wallet
+									in the future we will remove the ability to access the seed unless you pass a password</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> seed = wallet.seed</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -906,18 +1037,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L497">Wallet.ts:497</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L591">Wallet.ts:591</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Return boolean if all the accounts in the wallet are synced</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isWalletSynced = wallet.synced</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{boolean}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
@@ -933,17 +1063,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L403">Wallet.ts:403</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L471">Wallet.ts:471</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Map of all the TokenAccounts in the wallet</p>
+									<p><a href="../interfaces/_wallet_.tokenaccountmap.html">TokenAccountMap</a> of all the <a href="_tokenaccount_.tokenaccount.html">TokenAccounts</a> in the wallet</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> tokenAccounts = wallet.tokenAccounts</code></pre>
 								</div>
 								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{TokenAccountMap}</p>
-									</dd>
 									<dt>readonly</dt>
 									<dd></dd>
 								</dl>
@@ -963,30 +1094,33 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L351">Wallet.ts:351</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L408">Wallet.ts:408</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Sync Tokens - Syncs all associated token&#39;s of the accounts on the account sync instead of on use</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> areTokensSyncing = wallet.tokenSync</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{boolean}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L355">Wallet.ts:355</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L412">Wallet.ts:412</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Sync Tokens - Syncs all associated token&#39;s of the accounts on the account sync instead of on use</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> areTokensSyncing = wallet.tokenSync</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1010,7 +1144,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L365">Wallet.ts:365</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L425">Wallet.ts:425</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1018,19 +1152,18 @@
 									<p>Validate Sync
 										if this option is true the SDK will generate hashes of each requests based on the content data and verify signatures
 									This should always be true when using a untrusted RPC node</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isValidatingSignatures = wallet.validateSync</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{boolean}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L369">Wallet.ts:369</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L429">Wallet.ts:429</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1038,6 +1171,10 @@
 									<p>Validate Sync
 										if this option is true the SDK will generate hashes of each requests based on the content data and verify signatures
 									This should always be true when using a untrusted RPC node</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isValidatingSignatures = wallet.validateSync</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1061,30 +1198,33 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L313">Wallet.ts:313</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L361">Wallet.ts:361</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The id of the wallet</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> walletID = wallet.walletID</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string} The hex identifier of the wallet</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L317">Wallet.ts:317</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L365">Wallet.ts:365</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The id of the wallet</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> walletID = wallet.walletID</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1110,7 +1250,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L543">Wallet.ts:543</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L640">Wallet.ts:640</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1141,7 +1281,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L573">Wallet.ts:573</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L670">Wallet.ts:670</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1172,7 +1312,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L617">Wallet.ts:617</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L714">Wallet.ts:714</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1210,7 +1350,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L531">Wallet.ts:531</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L628">Wallet.ts:628</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1246,7 +1386,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L587">Wallet.ts:587</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L684">Wallet.ts:684</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1281,7 +1421,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L803">Wallet.ts:803</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L900">Wallet.ts:900</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1313,7 +1453,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L683">Wallet.ts:683</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L780">Wallet.ts:780</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1335,7 +1475,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L864">Wallet.ts:864</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L961">Wallet.ts:961</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1364,7 +1504,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L838">Wallet.ts:838</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L935">Wallet.ts:935</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1393,7 +1533,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L667">Wallet.ts:667</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L764">Wallet.ts:764</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1428,7 +1568,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L787">Wallet.ts:787</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L884">Wallet.ts:884</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1457,7 +1597,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L124">Wallet.ts:124</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L169">Wallet.ts:169</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1480,7 +1620,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L928">Wallet.ts:928</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L1025">Wallet.ts:1025</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1502,7 +1642,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L919">Wallet.ts:919</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L1016">Wallet.ts:1016</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1524,7 +1664,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L655">Wallet.ts:655</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L752">Wallet.ts:752</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1546,7 +1686,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L555">Wallet.ts:555</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L652">Wallet.ts:652</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1577,7 +1717,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L770">Wallet.ts:770</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L867">Wallet.ts:867</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1608,7 +1748,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L883">Wallet.ts:883</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L980">Wallet.ts:980</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1639,7 +1779,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L720">Wallet.ts:720</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L817">Wallet.ts:817</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1667,7 +1807,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L971">Wallet.ts:971</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L1068">Wallet.ts:1068</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1690,7 +1830,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/dfbfab1/src/Wallet.ts#L902">Wallet.ts:902</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/e7da60a/src/Wallet.ts#L999">Wallet.ts:999</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
