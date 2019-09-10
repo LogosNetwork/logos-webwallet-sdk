@@ -362,6 +362,13 @@ export default class Wallet {
     return this._walletID
   }
 
+  /**
+   * The id of the wallet
+   * #### Example
+   * ```typescript
+   * wallet.walletID = '2c0a4be6b9ccda9158ed96f0dd596f72dad66015e8444c64e2ea0b9c7e553ec6'
+   * ```
+   */
   public set walletID (id: string) {
     this._walletID = id
   }
@@ -377,6 +384,13 @@ export default class Wallet {
     return this._batchSends
   }
 
+  /**
+   * Is the wallet batching requests
+   * #### Example
+   * ```typescript
+   * wallet.batchSends = true
+   * ```
+   */
   public set batchSends (val: boolean) {
     this._batchSends = val
   }
@@ -394,6 +408,15 @@ export default class Wallet {
     return this._fullSync
   }
 
+  /**
+   * Full Sync - syncs the entire send and recieve chains
+   * This is recommend to be true when using an untrusted RPC node
+   * In the future this will be safe when we have BLS sig validation of Request Blocks
+   * #### Example
+   * ```typescript
+   * wallet.fullSync = true
+   * ```
+   */
   public set fullSync (val: boolean) {
     this._fullSync = val
   }
@@ -409,6 +432,13 @@ export default class Wallet {
     return this._tokenSync
   }
 
+  /**
+   * Sync Tokens - Syncs all associated token's of the accounts on the account sync instead of on use
+   * #### Example
+   * ```typescript
+   * wallet.tokenSync = false
+   * ```
+   */
   public set tokenSync (val: boolean) {
     this._tokenSync = val
   }
@@ -426,6 +456,15 @@ export default class Wallet {
     return this._validateSync
   }
 
+  /**
+   * Validate Sync
+   * if this option is true the SDK will generate hashes of each requests based on the content data and verify signatures
+   * This should always be true when using a untrusted RPC node
+   * #### Example
+   * ```typescript
+   * wallet.validateSync = false
+   * ```
+   */
   public set validateSync (val: boolean) {
     this._validateSync = val
   }
@@ -434,13 +473,20 @@ export default class Wallet {
    * Lazy Errors allows you to add request that are not valid for the current pending balances to the pending chain
    * #### Example
    * ```typescript
-   * const isValidatingSignatures = wallet.validateSync
+   * const delayingErros = wallet.lazyErrors
    * ```
    */
   public get lazyErrors (): boolean {
     return this._lazyErrors
   }
 
+  /**
+   * Lazy Errors allows you to add request that are not valid for the current pending balances to the pending chain
+   * #### Example
+   * ```typescript
+   * wallet.lazyErrors = false
+   * ```
+   */
   public set lazyErrors (val: boolean) {
     this._lazyErrors = val
   }
@@ -456,6 +502,17 @@ export default class Wallet {
     return this._accounts
   }
 
+  /**
+   * [[AccountMap]] of all the [[LogosAccount|LogosAccounts]] in the wallet
+   * #### Example
+   * ```typescript
+   * wallet.accounts = {
+   *  'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo': new LogosAccount({
+   *    privateKey: 34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4
+   *  })
+   * }
+   * ```
+   */  
   public set accounts (accounts: AccountMap) {
     this._accounts = accounts
   }
@@ -466,7 +523,6 @@ export default class Wallet {
    * ```typescript
    * const tokenAccounts = wallet.tokenAccounts
    * ```
-   * @readonly
    */
   public get tokenAccounts (): TokenAccountMap {
     return this._tokenAccounts
@@ -478,7 +534,6 @@ export default class Wallet {
    * ```typescript
    * const account = wallet.account
    * ```
-   * @readonly
    */
   public get account (): LogosAccount {
     return this.accounts[this.currentAccountAddress]
@@ -495,6 +550,13 @@ export default class Wallet {
     return this._currentAccountAddress
   }
 
+  /**
+   * The current account address
+   * #### Example
+   * ```typescript
+   * wallet.currentAccountAddress = 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'
+   * ```
+   */
   public set currentAccountAddress (address: string) {
     if (!Object.prototype.hasOwnProperty.call(this.accounts, address)) throw new Error(`Account ${address} does not exist in this wallet.`)
     this._currentAccountAddress = address
@@ -506,7 +568,6 @@ export default class Wallet {
    * ```typescript
    * const walletBalanceInReason = wallet.balance
    * ```
-   * @readonly
    */
   public get balance (): string {
     const totalBalance = bigInt(0)
@@ -527,6 +588,13 @@ export default class Wallet {
     return this._mqtt
   }
 
+  /**
+   * The mqtt host for listening to confirmations from Logos consensus
+   * #### Example
+   * ```typescript
+   * wallet.mqtt = 'wss://pla.bs:8443'
+   * ```
+   */
   public set mqtt (val: string) {
     this.mqttDisconnect()
     this._mqtt = val
@@ -544,6 +612,16 @@ export default class Wallet {
     return this._rpc
   }
 
+  /**
+   * The [[RPCOptions]] for connecting to the RPC or set this to false to disable communication
+   * #### Example
+   * ```typescript
+   * wallet.rpc = {
+   *  proxy: 'https://pla.bs',
+   *  delegates: ['3.215.28.211', '3.214.93.111', '3.214.55.84', '3.214.51.200', '3.214.37.34', '3.214.209.198', '3.214.205.240', '3.214.204.82', '3.214.195.211', '3.214.188.128', '3.214.175.150', '3.213.75.16', '3.213.212.158', '3.213.17.31', '3.213.150.192', '3.213.110.174', '3.213.108.208', '3.212.255.243', '3.212.220.108', '3.209.93.207', '3.209.30.240', '3.208.253.215', '3.208.232.242', '18.233.235.87', '18.233.175.15', '18.211.221.254', '18.211.1.90', '18.208.239.123', '18.206.29.223', '18.204.189.145', '174.129.135.230', '100.25.175.142']
+   * }
+   * ```
+   */  
   public set rpc (val: RPCOptions|false) {
     this._rpc = val
   }
@@ -560,10 +638,26 @@ export default class Wallet {
     return this._password
   }
 
+  /**
+   * The password of the wallet
+   * in the future we will remove the ability to store the password and request it in realtime so it is in memory for less time
+   * #### Example
+   * ```typescript
+   * wallet.password = 'password'
+   * ```
+   */  
   public set password (password: string) {
     this._password = password
   }
 
+  /**
+   * Return the seed of the wallet
+   * in the future we will remove the ability to access the seed unless you pass a password
+   * #### Example
+   * ```typescript
+   * wallet.seed = '6A4C54C619A784891D5DBCA1FCC5FA08D6B910B49A51BEA13C3DC913BB45AF13'
+   * ```
+   */  
   public set seed (hexSeed: string) {
     if (!/[0-9A-F]{64}/i.test(hexSeed)) throw new Error('Invalid Hex Seed.')
     this._seed = hexSeed
@@ -608,7 +702,6 @@ export default class Wallet {
    * ```typescript
    * const pendingRequests = wallet.pendingRequests
    * ```
-   * @readonly
    */
   public get pendingRequests (): Request[] {
     const pendingRequests: Request[] = []
@@ -619,11 +712,12 @@ export default class Wallet {
   }
 
   /**
-   * Sets a random seed for the wallet
-   *
-   * @param {boolean} overwrite - Set to true to overwrite an existing seed
-   * @throws An exception on existing seed
-   * @returns {string}
+   * Generates and sets a random seed for the wallet
+   * 
+   * #### Example
+   * ```typescript
+   * wallet.createSeed()
+   * ```
    */
   public createSeed (overwrite: boolean = false): string {
     if (this.seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
@@ -634,8 +728,14 @@ export default class Wallet {
   /**
    * Adds a account to the wallet
    *
-   * @param {LogosAccount} account - the account you wish to add
-   * @returns {LogosAccount}
+   * #### Example
+   * ```typescript
+   * wallet.addAccount(new LogosAccount(
+   *   {
+   *     privateKey: 34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4
+   *   }
+   * ))
+   * ```
    */
   public addAccount (account: LogosAccount): LogosAccount {
     this.accounts[account.address] = account
@@ -646,8 +746,10 @@ export default class Wallet {
   /**
    * Removes an account to the wallet
    *
-   * @param {string} address - the account you wish to remove
-   * @returns {boolean}
+   * #### Example
+   * ```typescript
+   * wallet.removeAccount('lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo')
+   * ```
    */
   public removeAccount (address: string): boolean {
     if (this.accounts[address]) {
@@ -664,8 +766,11 @@ export default class Wallet {
   /**
    * Adds a tokenAccount to the wallet
    *
-   * @param {TokenAccount} tokenAccount - the tokenAccount you wish to add
-   * @returns {TokenAccount}
+   * #### Example
+   * ```typescript
+   * const tokenAccount = await wallet.createTokenAccount('lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd')
+   * wallet.addTokenAccount(tokenAccount)
+   * ```
    */
   public addTokenAccount (tokenAccount: TokenAccount): TokenAccount {
     this.tokenAccounts[tokenAccount.address] = tokenAccount
@@ -678,8 +783,10 @@ export default class Wallet {
    *
    * You are allowed to add a tokenAccount using the address
    *
-   * @param {string} address - address of the token account.
-   * @returns {Promise<Account>}
+   * #### Example
+   * ```typescript
+   * const tokenAccount = await wallet.createTokenAccount('lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd')
+   * ```
    */
   public async createTokenAccount (address: string, issuance: Issuance = null): Promise<TokenAccount> {
     if (this.tokenAccounts[address]) {
@@ -707,9 +814,14 @@ export default class Wallet {
    *
    * You are allowed to create an account using your seed, precalculated account options, or a privateKey
    *
-   * @param {AccountOptions} options - the options to populate the account. If you send just private key it will generate the account from that privateKey. If you just send index it will genereate the account from that determinstic seed index.
+   * @param {LogosAccountOptions} options - the options to populate the account. If you send just private key it will generate the account from that privateKey. If you just send index it will genereate the account from that determinstic seed index.
    * @param {boolean} setCurrent - sets the current account to newly created accounts this is default true
-   * @returns {Promise<Account>}
+   * @returns {Promise<LogosAccount>}
+   * 
+   * #### Example
+   * ```typescript
+   * const account = await wallet.createAccount()
+   * ```
    */
   public async createAccount (options: LogosAccountOptions = null, setCurrent = true): Promise<LogosAccount> {
     let accountInfo = null
@@ -748,6 +860,10 @@ export default class Wallet {
   /**
    * Updates the balance of all the accounts
    * @returns {void}
+   * #### Example
+   * ```typescript
+   * wallet.recalculateWalletBalancesFromChain()
+   * ```
    */
   public recalculateWalletBalancesFromChain (): void {
     for (const account of Object.values(this.accounts)) {
@@ -760,6 +876,10 @@ export default class Wallet {
    *
    * @param {string} hash - The hash of the request we are looking for the object of
    * @returns {Request | false } false if no request object of the specified hash was found
+   * #### Example
+   * ```typescript
+   * wallet.getRequest('E8CA715349FFD12DE7CB76045CAAA52448655F3B34624A1E31514763C81C4795')
+   * ```
    */
   public getRequest (hash: string): Request | false {
     for (const account of Object.values(this.accounts)) {
@@ -776,6 +896,10 @@ export default class Wallet {
    * Encrypts and packs the wallet data in a hex string
    *
    * @returns {string}
+   * #### Example
+   * ```typescript
+   * wallet.encrypt()
+   * ```
    */
   public encrypt (): string {
     let encryptedWallet = JSON.stringify(this.toJSON())
@@ -813,6 +937,10 @@ export default class Wallet {
    *
    * @param {boolean} - encrypted wallet
    * @returns {Promise<boolean>}
+   * #### Example
+   * ```typescript
+   * const isWalletSynced = await wallet.sync()
+   * ```
    */
   public async sync (force = false): Promise<boolean> {
     return new Promise<boolean>((resolve): void => {
@@ -863,6 +991,10 @@ export default class Wallet {
    *
    * @param {number} delegateIndex - The delegate you wish to connect to
    * @returns {Logos}
+   * #### Example
+   * ```typescript
+   * const rpcClient = wallet.rpcClient()
+   * ```
    */
   public rpcClient (delegateIndex = 0): Logos {
     if (this.rpc) {
@@ -876,10 +1008,14 @@ export default class Wallet {
   }
 
   /**
-   * Constructs the wallet from an encrypted base64 encoded wallet
+   * Constructs the wallet from an encrypted base64 encoded wallet and the password
    *
    * @param {string} - encrypted wallet
    * @returns {Wallet} wallet data
+   * #### Example
+   * ```typescript
+   * const wallet = wallet.load(encryptedWalletData)
+   * ```
    */
   public load (encryptedWallet: string): Wallet {
     this.accounts = {}
@@ -1012,6 +1148,10 @@ export default class Wallet {
    * Disconnect from the mqtt
    *
    * @returns {void}
+   * #### Example
+   * ```typescript
+   * wallet.mqttDisconnect()
+   * ```
    */
   public mqttDisconnect (): void {
     this._mqttClient.end()
@@ -1021,6 +1161,10 @@ export default class Wallet {
    * Connect to the mqtt
    *
    * @returns {void}
+   * #### Example
+   * ```typescript
+   * wallet.mqttConnect()
+   * ```
    */
   public mqttConnect (): void {
     if (this.mqtt) {
@@ -1064,6 +1208,10 @@ export default class Wallet {
   /**
    * Returns the base Wallet JSON
    * @returns {WalletJSON} JSON request
+   * #### Example
+   * ```typescript
+   * const walletJSON = wallet.toJSON()
+   * ```
    */
   public toJSON (): WalletJSON {
     const obj: WalletJSON = {
