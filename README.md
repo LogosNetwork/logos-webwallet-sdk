@@ -7,25 +7,13 @@ Creates Logos wallets without full nodes
 npm i @logosnetwork/logos-webwallet-sdk
 ```
 
+## Visual Demo
+[Demonstration](https://pla.bs/forge)
+
 ## Classes Documentation
  * [Wallet](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_wallet_.wallet.html)
  * [LogosAccount](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_logosaccount_.logosaccount.html)
  * [TokenAccount](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_tokenaccount_.tokenaccount.html)
- * [AdjustFee](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_adjustfee_.adjustfee.html)
- * [AdjustUserStatus](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_adjustuserstatus_.adjustuserstatus.html)
- * [Burn](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_burn_.burn.html)
- * [ChangeSetting](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_changesetting_.changesetting.html)
- * [Distribute](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_distribute_.distribute.html)
- * [ImmuteSetting](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_immutesetting_.immutesetting.html)
- * [Issuance](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_issuance_.issuance.html)
- * [IssueAdditional](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_issueadditional_.issueadditional.html)
- * [Revoke](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_revoke_.revoke.html)
- * [Send](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_send_.send.html)
- * [TokenSend](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_tokensend_.tokensend.html)
- * [UpdateController](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_updatecontroller_.updatecontroller.html)
- * [UpdateIssuerInfo](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_updateissuerinfo_.updateissuerinfo.html)
- * [WithdrawFee](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_withdrawfee_.withdrawfee.html)
- * [WithdrawLogos](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_requests_withdrawlogos_.withdrawlogos.html)
 
 ## Quick Examples
 

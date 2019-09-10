@@ -69,7 +69,9 @@ export interface SyncedResponse {
 }
 
 /**
- * The Accounts contain the keys, chains, and balances.
+ * ## Logos Account
+ * This class is the base class of an account on the Logos Network.
+ * The most common uses for this account is to check the balance, history, and create new requests from this account as the origin.
  */
 export default class LogosAccount extends Account {
   private _index: number
@@ -82,6 +84,46 @@ export default class LogosAccount extends Account {
 
   private _pendingTokenBalances: TokenBalances
 
+/**
+  * ### Instantiating
+  * ```typescript
+  * const LogosAccount = new LogosAccount({
+  *     label: null,
+  *     address: null,
+  *     publicKey: null,
+  *     balance: '0',
+  *     pendingBalance: '0',
+  *     wallet: null,
+  *     chain: [],
+  *     receiveChain: [],
+  *     pendingChain: [],
+  *     privateKey: null
+  *     tokenBalances: {},
+  *     tokens: [],
+  *     pendingTokenBalances: {},
+  *     index: null
+  * })
+  * ```
+  * 
+  * All logos account options are optional defaults are shown in the example above
+  * 
+  * |Account Options| Description |
+  * |--|--|
+  * | label | Account label e.g. Checking Account |
+  * | address | Address is the lgs_ string  |
+  * | publicKey | Public key of the account |
+  * | balance | Balance of the account in the minor unit of Logos |
+  * | pendingBalance | balance of the account including pending transaction in the minor unit of Logos |
+  * | wallet | reference back to the parent wallet class |
+  * | chain | Array of [[Request]] that are confirmed on this account's send chain |
+  * | receiveChain | Array of [[Request]] that are confirmed on this account's receive chain |
+  * | pendingChain | Array of [[Request]] that are *not* confirmed on this account's send chain |
+  * | [[privateKey]] | Private key of the account used to sign transactions |
+  * | [[tokenBalances]] | Balances tokens that this account has in their  |
+  * | [[tokens]] | Array of token addresses associated with this account |
+  * | [[pendingTokenBalances]] | Unconfirmed balances of the tokens |
+  * | [[index]] | index of the account |
+  */
   public constructor (options: LogosAccountOptions = {
     privateKey: null,
     tokenBalances: {},
@@ -152,7 +194,10 @@ export default class LogosAccount extends Account {
 
   /**
    * The type of the account (LogosAccount or TokenAccount)
-   * @type {string}
+   * #### Example
+   * ```typescript
+   * const type = logosAccount.type
+   * ```
    */
   public get type (): 'LogosAccount' {
     return 'LogosAccount'
@@ -160,8 +205,10 @@ export default class LogosAccount extends Account {
 
   /**
    * The index of the account
-   * @type {number}
-   * @readonly
+   * #### Example
+   * ```typescript
+   * const index = logosAccount.index
+   * ```
    */
   public get index (): number {
     return this._index
@@ -169,8 +216,10 @@ export default class LogosAccount extends Account {
 
   /**
    * The private key of the account
-   * @type {string}
-   * @readonly
+   * #### Example
+   * ```typescript
+   * const privateKey = logosAccount.privateKey
+   * ```
    */
   public get privateKey (): string {
     return this._privateKey
@@ -178,8 +227,10 @@ export default class LogosAccount extends Account {
 
   /**
    * Array of associated token ids to this account (full list available only with fullsync)
-   * @type {string[]}
-   * @readonly
+   * #### Example
+   * ```typescript
+   * const tokens = logosAccount.tokens
+   * ```
    */
   public get tokens (): string[] {
     return this._tokens
@@ -187,8 +238,10 @@ export default class LogosAccount extends Account {
 
   /**
    * The balance of the tokens in the minor token unit
-   * @type {TokenBalances}
-   * @readonly
+   * #### Example
+   * ```typescript
+   * const tokenBalances = logosAccount.tokenBalances
+   * ```
    */
   public get tokenBalances (): TokenBalances {
     return this._tokenBalances
@@ -199,8 +252,10 @@ export default class LogosAccount extends Account {
    *
    * pending token balance is balance minus the token sends that are pending
    *
-   * @type {TokenBalances}
-   * @readonly
+   * #### Example
+   * ```typescript
+   * const pendingTokenBalances = logosAccount.pendingTokenBalances
+   * ```
    */
   public get pendingTokenBalances (): TokenBalances {
     return this._pendingTokenBalances
@@ -210,7 +265,10 @@ export default class LogosAccount extends Account {
    * The balance of the given token in the minor unit and major unit (if available)
    * @param {string} tokenID - Token ID of the token in question, you can also send the token account address
    * @returns {{minor: string;major?: string}} The balance in minor unit or converted units
-   * @readonly
+   * #### Example
+   * ```typescript
+   * const tokenBalance = logosAccount.tokenBalance('lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd')
+   * ```
    */
   public tokenBalance (token: string): {minor: string;major?: string} {
     const tokenAccountKey = keyFromAccount(token)
@@ -233,6 +291,10 @@ export default class LogosAccount extends Account {
    *
    * @param {string} tokenID - The TokenID you are associating with this account (this will be converted into a token account when stored)
    * @returns {string[]} Array of all the associated tokens
+   * #### Example
+   * ```typescript
+   * const token = await logosAccount.addToken('lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd')
+   * ```
    */
   public async addToken (tokenID: string): Promise<string[]> {
     const tokenAddress = accountFromHexKey(tokenID)
@@ -248,6 +310,10 @@ export default class LogosAccount extends Account {
   /**
    * Checks if the account is synced
    * @returns {Promise<SyncedResponse>}
+   * #### Example
+   * ```typescript
+   * const isSynced = await logosAccount.isSynced()
+   * ```
    */
   public isSynced (): Promise<SyncedResponse> {
     return new Promise((resolve): void => {
@@ -300,7 +366,12 @@ export default class LogosAccount extends Account {
 
   /**
    * Scans the account history using RPC and updates the local chain
+   * 
    * @returns {Promise<Account>}
+   * #### Example
+   * ```typescript
+   * const isSynced = await logosAccount.sync()
+   * ```
    */
   public sync (): Promise<Account> {
     return new Promise((resolve): void => {
@@ -392,6 +463,10 @@ export default class LogosAccount extends Account {
   /**
    * Updates the balances of the account by traversing the chain
    * @returns {void}
+   * #### Example
+   * ```typescript
+   * logosAccount.updateBalancesFromChain()
+   * ```
    */
   public updateBalancesFromChain (): void {
     let sum = bigInt(0)
@@ -462,7 +537,10 @@ export default class LogosAccount extends Account {
    * Updates the balances of the account by doing math on the previous balance when given a new request
    * Also updates the pending balance based on the new balance and the pending chain
    * @param {Request} request - request that is being calculated on
-   * @returns {void}
+   * #### Example
+   * ```typescript
+   * logosAccount.updateBalancesFromRequest()
+   * ```
    */
   public updateBalancesFromRequest (request: Request): void {
     let sum = bigInt(this.balance)
@@ -530,7 +608,10 @@ export default class LogosAccount extends Account {
    * Creates a request object from the mqtt info and adds the request to the appropriate chain
    *
    * @param {RequestOptions} requestInfo - Request information from the RPC or MQTT
-   * @returns {Request}
+   * #### Example
+   * ```typescript
+   * logosAccount.addConfirmedRequest([[RpcRequest]])
+   * ```
    */
   public async addConfirmedRequest (requestInfo: RpcRequest): Promise<Request> {
     let request = null
@@ -587,7 +668,10 @@ export default class LogosAccount extends Account {
 
   /**
    * Removes all pending requests from the pending chain
-   * @returns {void}
+   * #### Example
+   * ```typescript
+   * logosAccount.removePendingRequests()
+   * ```
    */
   public removePendingRequests (): void {
     super.removePendingRequests()
@@ -598,7 +682,10 @@ export default class LogosAccount extends Account {
    * Validates that the account has enough funds at the current time to publish the request
    *
    * @param {Request} request - Request Class
-   * @returns {boolean}
+   * #### Example
+   * ```typescript
+   * await logosAccount.validateRequest(REQUEST)
+   * ```
    */
   public async validateRequest (request: Request): Promise<boolean> {
     // Validate current values are appropriate for sends
@@ -650,7 +737,10 @@ export default class LogosAccount extends Account {
    *
    * @param {Request} request - Request information from the RPC or MQTT
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
-   * @returns {Request}
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.addRequest(REQUEST)
+   * ```
    */
   public async addRequest (request: Request): Promise<Request> {
     request.sign(this.privateKey)
@@ -664,7 +754,15 @@ export default class LogosAccount extends Account {
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
    * @throws An exception if the request is rejected by the RPC
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createSendRequest([
+   *  {
+   *    destination: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+   *    amount: '1'
+   *  }
+   * ])
+   * ```
    */
   public async createSendRequest (transactions: Transaction[]): Promise<Request> {
     if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
@@ -693,7 +791,56 @@ export default class LogosAccount extends Account {
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a token issuance
    * @throws An exception if the request is rejected by the RPC
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createTokenIssuanceRequest(
+   *  {
+   *   name: `UnitTestCoin`,
+   *   symbol: `UTC`,
+   *   totalSupply: '1000',
+   *   feeRate: '1',
+   *   issuerInfo: '{"decimals":0,"website":"https://github.com/LogosNetwork/logos-webwallet-sdk"}',
+   *   settings: {
+   *     issuance: true,
+   *     modify_issuance: true,
+   *     revoke: true,
+   *     modify_revoke: true,
+   *     freeze: true,
+   *     modify_freeze: true,
+   *     adjust_fee: true,
+   *     modify_adjust_fee: true,
+   *     whitelist: false,
+   *     modify_whitelist: true
+   *   },
+   *   controllers: [{
+   *     account: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+   *     privileges: {
+   *       change_issuance: true,
+   *       change_modify_issuance: true,
+   *       change_revoke: true,
+   *       change_modify_revoke: true,
+   *       change_freeze: true,
+   *       change_modify_freeze: true,
+   *       change_adjust_fee: true,
+   *       change_modify_adjust_fee: true,
+   *       change_whitelist: true,
+   *       change_modify_whitelist: true,
+   *       issuance: true,
+   *       revoke: true,
+   *       freeze: true,
+   *       adjust_fee: true,
+   *       whitelist: true,
+   *       update_issuer_info: true,
+   *       update_controller: true,
+   *       burn: true,
+   *       distribute: true,
+   *       withdraw_fee: true,
+   *       withdraw_logos: true
+   *     }
+   *   }]
+   *  }
+   * )
+   * ```
    */
   public async createTokenIssuanceRequest (options: IssuanceOptions): Promise<Request> {
     if (!options.name) throw new Error('You must pass name as a part of the TokenOptions')
@@ -742,7 +889,10 @@ export default class LogosAccount extends Account {
    *
    * @param {TokenRequest} options - Object contained the tokenID or tokenAccount
    * @throws An exception if no tokenID or tokenAccount
-   * @returns {Promise<TokenAccount>} the token account info object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.getTokenAccount('lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd')
+   * ```
    */
   public async getTokenAccount (token: string | {
     token_id?: string;
@@ -767,7 +917,13 @@ export default class LogosAccount extends Account {
    * @throws An exception if the account has not been synced
    * @throws An exception if the pending balance is less than the required amount to do a send
    * @throws An exception if the request is rejected by the RPC
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createTokenSendRequest('lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd', [{
+   *  destination: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+   *  amount: '1'
+   * }])
+   * ```
    */
   public async createTokenSendRequest (token: string, transactions: Transaction[]): Promise<Request> {
     if (this.synced === false) throw new Error('This account has not been synced or is being synced with the RPC network')
@@ -807,7 +963,13 @@ export default class LogosAccount extends Account {
    *
    * @param {IssueAdditionalOptions} options - The Token ID & amount
    * @throws An exception if the token account balance is less than the required amount to do a issue additional token request
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createIssueAdditionalRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  amount: '1'
+   * })
+   * ```
    */
   public async createIssueAdditionalRequest (options: IssueAdditionalJSON): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -831,7 +993,14 @@ export default class LogosAccount extends Account {
    *
    * @param {ChangeSettingOptions} options - Token ID, setting, value
    * @throws An exception if the token account balance is less than the required amount to do a change setting token request
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createChangeSettingRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  setting: 'issuance',
+   *  value: true
+   * })
+   * ```
    */
   public async createChangeSettingRequest (options: ChangeSettingOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -855,7 +1024,13 @@ export default class LogosAccount extends Account {
    *
    * @param {ImmuteSettingOptions} options - Token ID, setting
    * @throws An exception if the token account balance is less than the required amount to do a immute setting token request
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createImmuteSettingRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  setting: 'issuance'
+   * })
+   * ```
    */
   public async createImmuteSettingRequest (options: ImmuteSettingOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -878,7 +1053,17 @@ export default class LogosAccount extends Account {
    *
    * @param {RevokeOptions} options - Token ID, transaction, source
    * @throws An exception if the token account balance is less than the required amount to do a Revoke token request
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createRevokeRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  source: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+   *  transaction: {
+   *    amount: '1',
+   *    destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6' 
+   *  }
+   * })
+   * ```
    */
   public async createRevokeRequest (options: RevokeOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -904,7 +1089,14 @@ export default class LogosAccount extends Account {
    *
    * @param {AdjustUserStatusOptions} options - The Token ID, account, and status
    * @throws An exception if the pending balance is less than the required amount to adjust a users status
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createAdjustUserStatusRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  account: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+   *  status: 'frozen'
+   * })
+   * ```
    */
   public async createAdjustUserStatusRequest (options: AdjustUserStatusOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -929,7 +1121,14 @@ export default class LogosAccount extends Account {
    *
    * @param {AdjustFeeOptions} options - The Token ID, feeRate, and feeType
    * @throws An exception if the pending balance is less than the required amount to do a token distibution
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createAdjustFeeRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  feeType: 'flat',
+   *  feeRate: '0'
+   * })
+   * ```
    */
   public async createAdjustFeeRequest (options: AdjustFeeOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -955,7 +1154,13 @@ export default class LogosAccount extends Account {
    *
    * @param {UpdateIssuerInfoOptions} options - The Token ID and issuerInfo
    * @throws An exception if the pending balance is less than the required amount to Update Issuer Info
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createUpdateIssuerInfoRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  issuerInfo: '{"decimals":0,"website":"https://github.com/LogosNetwork/logos-webwallet-sdk"}'
+   * })
+   * ```
    */
   public async createUpdateIssuerInfoRequest (options: UpdateIssuerInfoOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -979,7 +1184,39 @@ export default class LogosAccount extends Account {
    *
    * @param {UpdateControllerOptions} options - The Token ID, action ('add' or 'remove'), and controller
    * @throws An exception if the pending balance is less than the required amount to Update Controller
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createUpdateControllerRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  action: 'add',
+   *  controller: {
+   *     account: 'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo',
+   *     privileges: {
+   *       change_issuance: true,
+   *       change_modify_issuance: true,
+   *       change_revoke: true,
+   *       change_modify_revoke: true,
+   *       change_freeze: true,
+   *       change_modify_freeze: true,
+   *       change_adjust_fee: true,
+   *       change_modify_adjust_fee: true,
+   *       change_whitelist: true,
+   *       change_modify_whitelist: true,
+   *       issuance: true,
+   *       revoke: true,
+   *       freeze: true,
+   *       adjust_fee: true,
+   *       whitelist: true,
+   *       update_issuer_info: true,
+   *       update_controller: true,
+   *       burn: true,
+   *       distribute: true,
+   *       withdraw_fee: true,
+   *       withdraw_logos: true
+   *     }
+   *   }
+   * })
+   * ```
    */
   public async createUpdateControllerRequest (options: UpdateControllerOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -1005,7 +1242,13 @@ export default class LogosAccount extends Account {
    *
    * @param {BurnOptions} options - The Token ID & amount
    * @throws An exception if the token account balance is less than the required amount to do a burn token request
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createBurnRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  amount: '1'
+   * })
+   * ```
    */
   public async createBurnRequest (options: BurnOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -1029,7 +1272,16 @@ export default class LogosAccount extends Account {
    *
    * @param {TokenDistributeOptions} options - The Token ID & transaction
    * @throws An exception if the pending balance is less than the required amount to do a token distibution
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createDistributeRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  transaction: {
+   *    amount: '1',
+   *    destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6' 
+   *  }
+   * })
+   * ```
    */
   public async createDistributeRequest (options: DistributeOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -1053,7 +1305,16 @@ export default class LogosAccount extends Account {
    *
    * @param {WithdrawFeeOptions} options - The Token ID & transaction
    * @throws An exception if the pending balance is less than the required amount to do a withdraw fee request
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createWithdrawFeeRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  transaction: {
+   *    amount: '1',
+   *    destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6' 
+   *  }
+   * })
+   * ```
    */
   public async createWithdrawFeeRequest (options: WithdrawFeeOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -1077,7 +1338,16 @@ export default class LogosAccount extends Account {
    *
    * @param {WithdrawLogosOptions} options - The Token ID & transaction
    * @throws An exception if the pending balance is less than the required amount to do a withdraw logos request
-   * @returns {Promise<Request>} the request object
+   * #### Example
+   * ```typescript
+   * const request = await logosAccount.createWithdrawLogosRequest({
+   *  tokenAccount: 'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd',
+   *  transaction: {
+   *    amount: '1',
+   *    destination: 'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6' 
+   *  }
+   * })
+   * ```
    */
   public async createWithdrawLogosRequest (options: WithdrawLogosOptions): Promise<Request> {
     const tokenAccount = await this.getTokenAccount(options)
@@ -1100,7 +1370,12 @@ export default class LogosAccount extends Account {
    * Confirms the request in the local chain
    *
    * @param {MQTTRequestOptions} requestInfo The request from MQTT
-   * @returns {Promise<void>}
+   * #### Example
+   * ```typescript
+   * await logosAccount.processRequest(
+   *  RpcRequest
+   * )
+   * ```
    */
   public async processRequest (requestInfo: RpcRequest): Promise<void> {
     // Confirm the requests / updates balances / broadcasts next block
@@ -1234,7 +1509,10 @@ export default class LogosAccount extends Account {
 
   /**
    * Returns the logos account JSON
-   * @returns {LogosAccountJSON} JSON request
+   * #### Example
+   * ```typescript
+   * const logosAccountJSON = await logosAccount.toJSON()
+   * ```
    */
   public toJSON (): LogosAccountJSON {
     const obj: LogosAccountJSON = super.toJSON()

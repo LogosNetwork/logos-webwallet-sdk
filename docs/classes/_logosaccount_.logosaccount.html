@@ -72,7 +72,11 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<p>The Accounts contain the keys, chains, and balances.</p>
+						<a href="#logos-account" id="logos-account" style="color: inherit; text-decoration: none;">
+							<h2>Logos Account</h2>
+						</a>
+						<p>This class is the base class of an account on the Logos Network.
+						The most common uses for this account is to check the balance, history, and create new requests from this account as the origin.</p>
 					</div>
 				</div>
 			</section>
@@ -204,9 +208,97 @@
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#constructor">constructor</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L83">LogosAccount.ts:83</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L85">LogosAccount.ts:85</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<a href="#instantiating" id="instantiating" style="color: inherit; text-decoration: none;">
+										<h3>Instantiating</h3>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> LogosAccount = <span class="hljs-keyword">new</span> LogosAccount({
+    label: <span class="hljs-literal">null</span>,
+    address: <span class="hljs-literal">null</span>,
+    publicKey: <span class="hljs-literal">null</span>,
+    balance: <span class="hljs-string">'0'</span>,
+    pendingBalance: <span class="hljs-string">'0'</span>,
+    wallet: <span class="hljs-literal">null</span>,
+    chain: [],
+    receiveChain: [],
+    pendingChain: [],
+    privateKey: <span class="hljs-literal">null</span>
+    tokenBalances: {},
+    tokens: [],
+    pendingTokenBalances: {},
+    index: <span class="hljs-literal">null</span>
+})</code></pre>
+								</div>
+								<p>All logos account options are optional defaults are shown in the example above</p>
+								<table>
+									<thead>
+										<tr>
+											<th>Account Options</th>
+											<th>Description</th>
+										</tr>
+									</thead>
+									<tbody><tr>
+											<td>label</td>
+											<td>Account label e.g. Checking Account</td>
+										</tr>
+										<tr>
+											<td>address</td>
+											<td>Address is the lgs_ string</td>
+										</tr>
+										<tr>
+											<td>publicKey</td>
+											<td>Public key of the account</td>
+										</tr>
+										<tr>
+											<td>balance</td>
+											<td>Balance of the account in the minor unit of Logos</td>
+										</tr>
+										<tr>
+											<td>pendingBalance</td>
+											<td>balance of the account including pending transaction in the minor unit of Logos</td>
+										</tr>
+										<tr>
+											<td>wallet</td>
+											<td>reference back to the parent wallet class</td>
+										</tr>
+										<tr>
+											<td>chain</td>
+											<td>Array of <a href="_requests_request_.request.html">Request</a> that are confirmed on this account&#39;s send chain</td>
+										</tr>
+										<tr>
+											<td>receiveChain</td>
+											<td>Array of <a href="_requests_request_.request.html">Request</a> that are confirmed on this account&#39;s receive chain</td>
+										</tr>
+										<tr>
+											<td>pendingChain</td>
+											<td>Array of <a href="_requests_request_.request.html">Request</a> that are <em>not</em> confirmed on this account&#39;s send chain</td>
+										</tr>
+										<tr>
+											<td><a href="_logosaccount_.logosaccount.html#privatekey">privateKey</a></td>
+											<td>Private key of the account used to sign transactions</td>
+										</tr>
+										<tr>
+											<td><a href="_logosaccount_.logosaccount.html#tokenbalances">tokenBalances</a></td>
+											<td>Balances tokens that this account has in their</td>
+										</tr>
+										<tr>
+											<td><a href="_logosaccount_.logosaccount.html#tokens">tokens</a></td>
+											<td>Array of token addresses associated with this account</td>
+										</tr>
+										<tr>
+											<td><a href="_logosaccount_.logosaccount.html#pendingtokenbalances">pendingTokenBalances</a></td>
+											<td>Unconfirmed balances of the tokens</td>
+										</tr>
+										<tr>
+											<td><a href="_logosaccount_.logosaccount.html#index">index</a></td>
+											<td>index of the account</td>
+										</tr>
+								</tbody></table>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
@@ -226,7 +318,7 @@
 					<div class="tsd-signature tsd-kind-icon">_index<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L75">LogosAccount.ts:75</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L77">LogosAccount.ts:77</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -236,7 +328,7 @@
 					<div class="tsd-signature tsd-kind-icon">_pending<wbr>Token<wbr>Balances<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_logosaccount_.tokenbalances.html" class="tsd-signature-type">TokenBalances</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L83">LogosAccount.ts:83</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L85">LogosAccount.ts:85</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -246,7 +338,7 @@
 					<div class="tsd-signature tsd-kind-icon">_private<wbr>Key<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L77">LogosAccount.ts:77</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L79">LogosAccount.ts:79</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -256,7 +348,7 @@
 					<div class="tsd-signature tsd-kind-icon">_token<wbr>Balances<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_logosaccount_.tokenbalances.html" class="tsd-signature-type">TokenBalances</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L81">LogosAccount.ts:81</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L83">LogosAccount.ts:83</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -266,7 +358,7 @@
 					<div class="tsd-signature tsd-kind-icon">_tokens<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L79">LogosAccount.ts:79</a></li>
+							<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L81">LogosAccount.ts:81</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -284,7 +376,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#address">address</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L328">Account.ts:328</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L328">Account.ts:328</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -315,7 +407,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#balance">balance</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L345">Account.ts:345</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L345">Account.ts:345</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -334,7 +426,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#balance">balance</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L349">Account.ts:349</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L349">Account.ts:349</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -363,7 +455,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#balanceinlogos">balanceInLogos</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L511">Account.ts:511</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L511">Account.ts:511</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -391,7 +483,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#chain">chain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L386">Account.ts:386</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L386">Account.ts:386</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -410,7 +502,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#chain">chain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L390">Account.ts:390</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L390">Account.ts:390</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -438,20 +530,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L166">LogosAccount.ts:166</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L213">LogosAccount.ts:213</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The index of the account</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> index = logosAccount.index</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{number}</p>
-									</dd>
-									<dt>readonly</dt>
-									<dd></dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4>
 						</li>
@@ -469,7 +558,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#label">label</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L310">Account.ts:310</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L310">Account.ts:310</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -488,7 +577,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#label">label</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L319">Account.ts:319</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L319">Account.ts:319</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -518,7 +607,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#pendingbalance">pendingBalance</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L361">Account.ts:361</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L361">Account.ts:361</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -540,7 +629,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#pendingbalance">pendingBalance</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L365">Account.ts:365</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L365">Account.ts:365</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -571,7 +660,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#pendingchain">pendingChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L413">Account.ts:413</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L413">Account.ts:413</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -591,7 +680,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#pendingchain">pendingChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L417">Account.ts:417</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L417">Account.ts:417</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -621,7 +710,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#pendingrequestcount">pendingRequestCount</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L437">Account.ts:437</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L437">Account.ts:437</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -650,7 +739,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L205">LogosAccount.ts:205</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L260">LogosAccount.ts:260</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -658,13 +747,10 @@
 									<p>The pending token balance of the account in the minor token unit</p>
 								</div>
 								<p>pending token balance is balance minus the token sends that are pending</p>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{TokenBalances}</p>
-									</dd>
-									<dt>readonly</dt>
-									<dd></dd>
-								</dl>
+								<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+									<h4>Example</h4>
+								</a>
+								<pre><code class="language-typescript"><span class="hljs-keyword">const</span> pendingTokenBalances = logosAccount.pendingTokenBalances</code></pre>
 							</div>
 							<h4 class="tsd-returns-title">Returns <a href="../interfaces/_logosaccount_.tokenbalances.html" class="tsd-signature-type">TokenBalances</a></h4>
 						</li>
@@ -681,7 +767,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#previous">previous</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L457">Account.ts:457</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L457">Account.ts:457</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -711,20 +797,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L175">LogosAccount.ts:175</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L224">LogosAccount.ts:224</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The private key of the account</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> privateKey = logosAccount.privateKey</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string}</p>
-									</dd>
-									<dt>readonly</dt>
-									<dd></dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
@@ -741,7 +824,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#publickey">publicKey</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L337">Account.ts:337</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L337">Account.ts:337</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -772,7 +855,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#receivechain">receiveChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L398">Account.ts:398</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L398">Account.ts:398</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -791,7 +874,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#receivechain">receiveChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L402">Account.ts:402</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L402">Account.ts:402</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -820,7 +903,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#receivecount">receiveCount</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L447">Account.ts:447</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L447">Account.ts:447</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -850,7 +933,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#requestcount">requestCount</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L427">Account.ts:427</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L427">Account.ts:427</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -880,7 +963,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#sequence">sequence</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L474">Account.ts:474</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L474">Account.ts:474</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -912,7 +995,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#synced">synced</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L489">Account.ts:489</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L489">Account.ts:489</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -931,7 +1014,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#synced">synced</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L493">Account.ts:493</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L493">Account.ts:493</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -959,20 +1042,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L193">LogosAccount.ts:193</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L246">LogosAccount.ts:246</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The balance of the tokens in the minor token unit</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> tokenBalances = logosAccount.tokenBalances</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{TokenBalances}</p>
-									</dd>
-									<dt>readonly</dt>
-									<dd></dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <a href="../interfaces/_logosaccount_.tokenbalances.html" class="tsd-signature-type">TokenBalances</a></h4>
 						</li>
@@ -988,20 +1068,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L184">LogosAccount.ts:184</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L235">LogosAccount.ts:235</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Array of associated token ids to this account (full list available only with fullsync)</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> tokens = logosAccount.tokens</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string[]}</p>
-									</dd>
-									<dt>readonly</dt>
-									<dd></dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h4>
 						</li>
@@ -1017,18 +1094,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L157">LogosAccount.ts:157</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L202">LogosAccount.ts:202</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The type of the account (LogosAccount or TokenAccount)</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> <span class="hljs-keyword">type</span> = logosAccount.type</code></pre>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>type</dt>
-									<dd><p>{string}</p>
-									</dd>
-								</dl>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">"LogosAccount"</span></h4>
 						</li>
@@ -1045,7 +1121,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#version">version</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L502">Account.ts:502</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L502">Account.ts:502</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1076,7 +1152,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#wallet">wallet</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L374">Account.ts:374</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L374">Account.ts:374</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1097,7 +1173,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#wallet">wallet</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L378">Account.ts:378</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L378">Account.ts:378</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1128,7 +1204,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L535">LogosAccount.ts:535</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L616">LogosAccount.ts:616</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1142,6 +1218,10 @@
 									<h5>requestInfo: <span class="tsd-signature-type">RpcRequest</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>Request information from the RPC or MQTT</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript">logosAccount.addConfirmedRequest([[RpcRequest]])</code></pre>
 									</div>
 								</li>
 							</ul>
@@ -1160,7 +1240,7 @@
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#addrequest">addRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L655">LogosAccount.ts:655</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L745">LogosAccount.ts:745</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1170,6 +1250,10 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to adjust a users status</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.addRequest(REQUEST)</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1197,7 +1281,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#addtoreceivechain">addToReceiveChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L742">Account.ts:742</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L742">Account.ts:742</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1229,7 +1313,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#addtosendchain">addToSendChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L760">Account.ts:760</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L760">Account.ts:760</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1260,7 +1344,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L237">LogosAccount.ts:237</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L299">LogosAccount.ts:299</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1279,6 +1363,10 @@
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></h4>
 							<p>Array of all the associated tokens</p>
+							<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+								<h4>Example</h4>
+							</a>
+							<pre><code class="language-typescript"><span class="hljs-keyword">const</span> token = <span class="hljs-keyword">await</span> logosAccount.addToken(<span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>)</code></pre>
 						</li>
 					</ul>
 				</section>
@@ -1293,7 +1381,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#broadcastrequest">broadcastRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L785">Account.ts:785</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L785">Account.ts:785</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1315,7 +1403,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1170">LogosAccount.ts:1170</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1445">LogosAccount.ts:1445</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1337,7 +1425,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L934">LogosAccount.ts:934</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1133">LogosAccount.ts:1133</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1347,6 +1435,14 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to do a token distibution</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createAdjustFeeRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ feeType: <span class="hljs-string">'flat'</span>,
+ feeRate: <span class="hljs-string">'0'</span>
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1360,7 +1456,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1374,7 +1469,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L909">LogosAccount.ts:909</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1101">LogosAccount.ts:1101</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1384,6 +1479,14 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to adjust a users status</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createAdjustUserStatusRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ account: <span class="hljs-string">'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'</span>,
+ status: <span class="hljs-string">'frozen'</span>
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1397,7 +1500,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1411,7 +1513,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1010">LogosAccount.ts:1010</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1253">LogosAccount.ts:1253</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1421,6 +1523,13 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the token account balance is less than the required amount to do a burn token request</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createBurnRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ amount: <span class="hljs-string">'1'</span>
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1434,7 +1543,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1448,7 +1556,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L836">LogosAccount.ts:836</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1005">LogosAccount.ts:1005</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1458,6 +1566,14 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the token account balance is less than the required amount to do a change setting token request</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createChangeSettingRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ setting: <span class="hljs-string">'issuance'</span>,
+ value: <span class="hljs-literal">true</span>
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1471,7 +1587,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1485,7 +1600,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1034">LogosAccount.ts:1034</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1286">LogosAccount.ts:1286</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1495,6 +1610,16 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to do a token distibution</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createDistributeRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ transaction: {
+   amount: <span class="hljs-string">'1'</span>,
+   destination: <span class="hljs-string">'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6'</span>
+ }
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1508,7 +1633,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1522,7 +1646,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L860">LogosAccount.ts:860</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1035">LogosAccount.ts:1035</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1532,6 +1656,13 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the token account balance is less than the required amount to do a immute setting token request</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createImmuteSettingRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ setting: <span class="hljs-string">'issuance'</span>
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1545,7 +1676,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1559,7 +1689,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L812">LogosAccount.ts:812</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L974">LogosAccount.ts:974</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1569,6 +1699,13 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the token account balance is less than the required amount to do a issue additional token request</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createIssueAdditionalRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ amount: <span class="hljs-string">'1'</span>
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1582,7 +1719,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1596,7 +1732,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L883">LogosAccount.ts:883</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1068">LogosAccount.ts:1068</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1606,6 +1742,17 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the token account balance is less than the required amount to do a Revoke token request</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createRevokeRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ source: <span class="hljs-string">'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'</span>,
+ transaction: {
+   amount: <span class="hljs-string">'1'</span>,
+   destination: <span class="hljs-string">'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6'</span>
+ }
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1619,7 +1766,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1633,7 +1779,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L669">LogosAccount.ts:669</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L767">LogosAccount.ts:767</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1649,6 +1795,15 @@
 									</dd>
 									<dt>throws</dt>
 									<dd><p>An exception if the request is rejected by the RPC</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createSendRequest([
+ {
+   destination: <span class="hljs-string">'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'</span>,
+   amount: <span class="hljs-string">'1'</span>
+ }
+])</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1662,7 +1817,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1676,7 +1830,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L698">LogosAccount.ts:698</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L845">LogosAccount.ts:845</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1692,6 +1846,56 @@
 									</dd>
 									<dt>throws</dt>
 									<dd><p>An exception if the request is rejected by the RPC</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createTokenIssuanceRequest(
+ {
+  name: <span class="hljs-string">`UnitTestCoin`</span>,
+  symbol: <span class="hljs-string">`UTC`</span>,
+  totalSupply: <span class="hljs-string">'1000'</span>,
+  feeRate: <span class="hljs-string">'1'</span>,
+  issuerInfo: <span class="hljs-string">'{"decimals":0,"website":"https://github.com/LogosNetwork/logos-webwallet-sdk"}'</span>,
+  settings: {
+    issuance: <span class="hljs-literal">true</span>,
+    modify_issuance: <span class="hljs-literal">true</span>,
+    revoke: <span class="hljs-literal">true</span>,
+    modify_revoke: <span class="hljs-literal">true</span>,
+    freeze: <span class="hljs-literal">true</span>,
+    modify_freeze: <span class="hljs-literal">true</span>,
+    adjust_fee: <span class="hljs-literal">true</span>,
+    modify_adjust_fee: <span class="hljs-literal">true</span>,
+    whitelist: <span class="hljs-literal">false</span>,
+    modify_whitelist: <span class="hljs-literal">true</span>
+  },
+  controllers: [{
+    account: <span class="hljs-string">'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'</span>,
+    privileges: {
+      change_issuance: <span class="hljs-literal">true</span>,
+      change_modify_issuance: <span class="hljs-literal">true</span>,
+      change_revoke: <span class="hljs-literal">true</span>,
+      change_modify_revoke: <span class="hljs-literal">true</span>,
+      change_freeze: <span class="hljs-literal">true</span>,
+      change_modify_freeze: <span class="hljs-literal">true</span>,
+      change_adjust_fee: <span class="hljs-literal">true</span>,
+      change_modify_adjust_fee: <span class="hljs-literal">true</span>,
+      change_whitelist: <span class="hljs-literal">true</span>,
+      change_modify_whitelist: <span class="hljs-literal">true</span>,
+      issuance: <span class="hljs-literal">true</span>,
+      revoke: <span class="hljs-literal">true</span>,
+      freeze: <span class="hljs-literal">true</span>,
+      adjust_fee: <span class="hljs-literal">true</span>,
+      whitelist: <span class="hljs-literal">true</span>,
+      update_issuer_info: <span class="hljs-literal">true</span>,
+      update_controller: <span class="hljs-literal">true</span>,
+      burn: <span class="hljs-literal">true</span>,
+      distribute: <span class="hljs-literal">true</span>,
+      withdraw_fee: <span class="hljs-literal">true</span>,
+      withdraw_logos: <span class="hljs-literal">true</span>
+    }
+  }]
+ }
+)</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1705,7 +1909,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1719,7 +1922,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L772">LogosAccount.ts:772</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L928">LogosAccount.ts:928</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1735,6 +1938,13 @@
 									</dd>
 									<dt>throws</dt>
 									<dd><p>An exception if the request is rejected by the RPC</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createTokenSendRequest(<span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>, [{
+ destination: <span class="hljs-string">'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'</span>,
+ amount: <span class="hljs-string">'1'</span>
+}])</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1754,7 +1964,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1768,7 +1977,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L984">LogosAccount.ts:984</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1221">LogosAccount.ts:1221</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1778,6 +1987,39 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to Update Controller</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createUpdateControllerRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ action: <span class="hljs-string">'add'</span>,
+ controller: {
+    account: <span class="hljs-string">'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'</span>,
+    privileges: {
+      change_issuance: <span class="hljs-literal">true</span>,
+      change_modify_issuance: <span class="hljs-literal">true</span>,
+      change_revoke: <span class="hljs-literal">true</span>,
+      change_modify_revoke: <span class="hljs-literal">true</span>,
+      change_freeze: <span class="hljs-literal">true</span>,
+      change_modify_freeze: <span class="hljs-literal">true</span>,
+      change_adjust_fee: <span class="hljs-literal">true</span>,
+      change_modify_adjust_fee: <span class="hljs-literal">true</span>,
+      change_whitelist: <span class="hljs-literal">true</span>,
+      change_modify_whitelist: <span class="hljs-literal">true</span>,
+      issuance: <span class="hljs-literal">true</span>,
+      revoke: <span class="hljs-literal">true</span>,
+      freeze: <span class="hljs-literal">true</span>,
+      adjust_fee: <span class="hljs-literal">true</span>,
+      whitelist: <span class="hljs-literal">true</span>,
+      update_issuer_info: <span class="hljs-literal">true</span>,
+      update_controller: <span class="hljs-literal">true</span>,
+      burn: <span class="hljs-literal">true</span>,
+      distribute: <span class="hljs-literal">true</span>,
+      withdraw_fee: <span class="hljs-literal">true</span>,
+      withdraw_logos: <span class="hljs-literal">true</span>
+    }
+  }
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1791,7 +2033,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1805,7 +2046,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L960">LogosAccount.ts:960</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1165">LogosAccount.ts:1165</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1815,6 +2056,13 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to Update Issuer Info</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createUpdateIssuerInfoRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ issuerInfo: <span class="hljs-string">'{"decimals":0,"website":"https://github.com/LogosNetwork/logos-webwallet-sdk"}'</span>
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1828,7 +2076,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1842,7 +2089,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1058">LogosAccount.ts:1058</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1319">LogosAccount.ts:1319</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1852,6 +2099,16 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to do a withdraw fee request</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createWithdrawFeeRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ transaction: {
+   amount: <span class="hljs-string">'1'</span>,
+   destination: <span class="hljs-string">'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6'</span>
+ }
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1865,7 +2122,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1879,7 +2135,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1082">LogosAccount.ts:1082</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1352">LogosAccount.ts:1352</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1889,6 +2145,16 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if the pending balance is less than the required amount to do a withdraw logos request</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.createWithdrawLogosRequest({
+ tokenAccount: <span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>,
+ transaction: {
+   amount: <span class="hljs-string">'1'</span>,
+   destination: <span class="hljs-string">'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6'</span>
+ }
+})</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -1902,7 +2168,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_requests_request_.request.html" class="tsd-signature-type">Request</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the request object</p>
 						</li>
 					</ul>
 				</section>
@@ -1917,7 +2182,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#getchainrequest">getChainRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L700">Account.ts:700</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L700">Account.ts:700</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1950,7 +2215,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#getpendingrequest">getPendingRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L714">Account.ts:714</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L714">Account.ts:714</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1983,7 +2248,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#getpendingrequestsupto">getPendingRequestsUpTo</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L621">Account.ts:621</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L621">Account.ts:621</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2016,7 +2281,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#getreceiverequestsupto">getReceiveRequestsUpTo</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L636">Account.ts:636</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L636">Account.ts:636</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2049,7 +2314,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#getrecieverequest">getRecieveRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L728">Account.ts:728</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L728">Account.ts:728</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2082,7 +2347,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#getrequest">getRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L678">Account.ts:678</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L678">Account.ts:678</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2115,7 +2380,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#getrequestsupto">getRequestsUpTo</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L606">Account.ts:606</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L606">Account.ts:606</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2147,7 +2412,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L747">LogosAccount.ts:747</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L897">LogosAccount.ts:897</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2157,6 +2422,10 @@
 								<dl class="tsd-comment-tags">
 									<dt>throws</dt>
 									<dd><p>An exception if no tokenID or tokenAccount</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">const</span> request = <span class="hljs-keyword">await</span> logosAccount.getTokenAccount(<span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>)</code></pre>
 									</dd>
 								</dl>
 							</div>
@@ -2167,7 +2436,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_tokenaccount_.tokenaccount.html" class="tsd-signature-type">TokenAccount</a><span class="tsd-signature-symbol">&gt;</span></h4>
-							<p>the token account info object</p>
 						</li>
 					</ul>
 				</section>
@@ -2181,7 +2449,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L252">LogosAccount.ts:252</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L318">LogosAccount.ts:318</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2190,6 +2458,10 @@
 								</div>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_logosaccount_.syncedresponse.html" class="tsd-signature-type">SyncedResponse</a><span class="tsd-signature-symbol">&gt;</span></h4>
+							<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+								<h4>Example</h4>
+							</a>
+							<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isSynced = <span class="hljs-keyword">await</span> logosAccount.isSynced()</code></pre>
 						</li>
 					</ul>
 				</section>
@@ -2203,7 +2475,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1105">LogosAccount.ts:1105</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1380">LogosAccount.ts:1380</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2217,6 +2489,12 @@
 									<h5>requestInfo: <span class="tsd-signature-type">RpcRequest</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>The request from MQTT</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">await</span> logosAccount.processRequest(
+ RpcRequest
+)</code></pre>
 									</div>
 								</li>
 							</ul>
@@ -2235,7 +2513,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#recentpendingrequests">recentPendingRequests</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L575">Account.ts:575</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L575">Account.ts:575</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2274,7 +2552,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#recentreceiverequests">recentReceiveRequests</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L591">Account.ts:591</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L591">Account.ts:591</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2313,7 +2591,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#recentrequests">recentRequests</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L559">Account.ts:559</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L559">Account.ts:559</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2352,7 +2630,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#removependingrequest">removePendingRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L660">Account.ts:660</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L660">Account.ts:660</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2385,12 +2663,16 @@
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#removependingrequests">removePendingRequests</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L592">LogosAccount.ts:592</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L676">LogosAccount.ts:676</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Removes all pending requests from the pending chain</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript">logosAccount.removePendingRequests()</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
@@ -2407,7 +2689,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1144">LogosAccount.ts:1144</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1419">LogosAccount.ts:1419</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2440,7 +2722,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L305">LogosAccount.ts:305</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L376">LogosAccount.ts:376</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2449,6 +2731,10 @@
 								</div>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="_account_.account.html" class="tsd-signature-type">Account</a><span class="tsd-signature-symbol">&gt;</span></h4>
+							<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+								<h4>Example</h4>
+							</a>
+							<pre><code class="language-typescript"><span class="hljs-keyword">const</span> isSynced = <span class="hljs-keyword">await</span> logosAccount.sync()</code></pre>
 						</li>
 					</ul>
 				</section>
@@ -2463,16 +2749,19 @@
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#tojson">toJSON</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L1239">LogosAccount.ts:1239</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L1517">LogosAccount.ts:1517</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Returns the logos account JSON</p>
+									<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+										<h4>Example</h4>
+									</a>
+									<pre><code class="language-typescript"><span class="hljs-keyword">const</span> logosAccountJSON = <span class="hljs-keyword">await</span> logosAccount.toJSON()</code></pre>
 								</div>
 							</div>
 							<h4 class="tsd-returns-title">Returns <a href="../interfaces/_logosaccount_.logosaccountjson.html" class="tsd-signature-type">LogosAccountJSON</a></h4>
-							<p>JSON request</p>
 						</li>
 					</ul>
 				</section>
@@ -2486,17 +2775,13 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L215">LogosAccount.ts:215</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L273">LogosAccount.ts:273</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>The balance of the given token in the minor unit and major unit (if available)</p>
 								</div>
-								<dl class="tsd-comment-tags">
-									<dt>readonly</dt>
-									<dd></dd>
-								</dl>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
@@ -2506,6 +2791,10 @@
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">object</span></h4>
 							<p>The balance in minor unit or converted units</p>
+							<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+								<h4>Example</h4>
+							</a>
+							<pre><code class="language-typescript"><span class="hljs-keyword">const</span> tokenBalance = logosAccount.tokenBalance(<span class="hljs-string">'lgs_3q69z3kf6cq9n9smago3p1ptuyqy9pa3mdykyi9o8f7gnof47qdyxj9gejxd'</span>)</code></pre>
 							<ul class="tsd-parameters">
 								<li class="tsd-parameter">
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> major<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span></h5>
@@ -2527,7 +2816,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L396">LogosAccount.ts:396</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L471">LogosAccount.ts:471</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2536,6 +2825,10 @@
 								</div>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+							<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+								<h4>Example</h4>
+							</a>
+							<pre><code class="language-typescript">logosAccount.updateBalancesFromChain()</code></pre>
 						</li>
 					</ul>
 				</section>
@@ -2549,7 +2842,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L467">LogosAccount.ts:467</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L545">LogosAccount.ts:545</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2564,6 +2857,10 @@
 									<h5>request: <a href="_requests_request_.request.html" class="tsd-signature-type">Request</a></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>request that is being calculated on</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript">logosAccount.updateBalancesFromRequest()</code></pre>
 									</div>
 								</li>
 							</ul>
@@ -2582,7 +2879,7 @@
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#validaterequest">validateRequest</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/LogosAccount.ts#L603">LogosAccount.ts:603</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/LogosAccount.ts#L690">LogosAccount.ts:690</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2596,6 +2893,10 @@
 									<h5>request: <a href="_requests_request_.request.html" class="tsd-signature-type">Request</a></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>Request Class</p>
+										<a href="#example" id="example" style="color: inherit; text-decoration: none;">
+											<h4>Example</h4>
+										</a>
+										<pre><code class="language-typescript"><span class="hljs-keyword">await</span> logosAccount.validateRequest(REQUEST)</code></pre>
 									</div>
 								</li>
 							</ul>
@@ -2614,7 +2915,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#verifychain">verifyChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L520">Account.ts:520</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L520">Account.ts:520</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2637,7 +2938,7 @@
 							<aside class="tsd-sources">
 								<p>Inherited from <a href="_account_.account.html">Account</a>.<a href="_account_.account.html#verifyreceivechain">verifyReceiveChain</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/3109fb8/src/Account.ts#L545">Account.ts:545</a></li>
+									<li>Defined in <a href="https://github.com/LogosNetwork/logos-webwallet-sdk/blob/a868838/src/Account.ts#L545">Account.ts:545</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
