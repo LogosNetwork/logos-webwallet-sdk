@@ -1278,16 +1278,15 @@ export default class Wallet {
         minReconnectionDelay: 10
       })
 
-      ws.onopen = () => {
+      ws.onopen = (): void => {
         console.info('Webwallet SDK Connected to Logos Node Websocket')
-        const confirmation_subscription = {
+        ws.send(JSON.stringify({
           action: 'subscribe', 
           topic: 'confirmation'
-        }
-        ws.send(JSON.stringify(confirmation_subscription))
+        }))
       }
 
-      ws.onmessage = msg => {
+      ws.onmessage = (msg): void => {
         console.log(msg.data)
         const json = JSON.parse(msg.data)
         if (json.topic === 'confirmation') {
