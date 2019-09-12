@@ -1281,19 +1281,19 @@ export default class Wallet {
       ws.onopen = () => {
         console.info('Webwallet SDK Connected to Logos Node Websocket')
         const confirmation_subscription = {
-          "action": "subscribe", 
-          "topic": "confirmation"
+          action: 'subscribe', 
+          topic: 'confirmation'
         }
         ws.send(JSON.stringify(confirmation_subscription))
-      };
+      }
 
       ws.onmessage = msg => {
         console.log(msg.data)
         const json = JSON.parse(msg.data)
-        if (json.topic === "confirmation") {
-          console.log ('Confirmed', json.message.hash)
+        if (json.topic === 'confirmation') {
+          console.log('Confirmed', json.message.hash)
         }
-      };
+      }
     }
   }
 
