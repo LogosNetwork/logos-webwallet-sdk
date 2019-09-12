@@ -60,11 +60,14 @@
     "@babel/runtime": "^7.6.0",
     "@logosnetwork/logos-rpc-client": "^1.1.33",
     "@types/pbkdf2": "^3.0.0",
+    "@types/ws": "^6.0.3",
     "big-integer": "^1.6.44",
     "core-js": "^3.2.1",
     "mqtt": "^3.0.0",
     "pbkdf2": "^3.0.17",
-    "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef"
+    "reconnecting-websocket": "^4.2.0",
+    "tweetnacl": "git+https://git@github.com/jaimehgb/tweetnacl-js.git#ef9ea5fd95c3ca98128877c58e40ef1a711421ef",
+    "ws": "^7.1.2"
   },
   "bugs": {
     "url": "https://github.com/LogosNetwork/logos-webwallet-sdk/issues"

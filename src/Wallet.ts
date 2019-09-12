@@ -1,4 +1,6 @@
 import mqttPattern from './Utils/mqttPattern'
+import * as WebSocket from 'ws'
+import ReconnectingWebSocket from 'reconnecting-websocket'
 import Logos, { LogosConstructorOptions } from '@logosnetwork/logos-rpc-client'
 import { AES, defaultMQTT, defaultRPC, testnetDelegates, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
 import { pbkdf2Sync } from 'pbkdf2'
@@ -57,9 +59,9 @@ interface WalletOptions {
   lazyErrors?: boolean;
   tokenSync?: boolean;
   validateSync?: boolean;
+  ws?: boolean;
   mqtt?: string;
   rpc?: RPCOptions|false;
-  localCluster: boolean;
   version?: number;
 }
 
@@ -100,9 +102,11 @@ export default class Wallet {
     [address: string]: TokenAccount;
   }
 
-  private _mqttConnected: boolean
+  private _wsConnected: boolean
 
   private _mqtt: string
+
+  private _ws: boolean
 
   private _mqttClient: MqttClient
 
@@ -125,6 +129,7 @@ export default class Wallet {
   *     lazyErrors: false,
   *     tokenSync: false,
   *     validateSync: true,
+  *     ws: false,
   *     mqtt: defaultMQTT,
   *     rpc: defaultRPC
   * })
@@ -146,6 +151,7 @@ export default class Wallet {
   * | [[lazyErrors]] | when lazyErrors is true the SDK will not throw errors for transactions that have insufficient funds and will queue the transactions until the account has the funds to complete the action. |
   * | [[tokenSync]] | when tokenSync is true the SDK will load and sync the TokenAccounts that have interacted with the LogosAccounts. |
   * | [[validateSync]] | when validateSync is true the SDK will check all signatures of all the requests in the account chains. This is recommended to be true but when syncing an account with a long history this can be computationally heavy. |
+  * | [[ws]] | when ws is true connect to local logos node websocket. You should only use mqtt or ws not both! mqtt will take priority over WS the MQTT setup uses less resources at the current time. |
   * | [[mqtt]] | address of your mqtt server `'wss://pla.bs:8443'` is the default server. Check out the logos backend repo to run your own backend mqtt. |
   * | [[rpc]] | Node information of the delegates where you are sending requests to. This will change in the future as we get more core node functionality such as websockets and proper tx acceptor delegate lists. See [[RPCOptions]] |
   */
@@ -162,9 +168,9 @@ export default class Wallet {
     lazyErrors: false,
     tokenSync: false,
     validateSync: true,
+    ws: false,
     mqtt: defaultMQTT,
     rpc: defaultRPC,
-    localCluster: false,
     version: 1
   }) {
     this.loadOptions(options)
@@ -291,7 +297,7 @@ export default class Wallet {
       delegates[index] = testnetDelegates[delegates[index].ip]
     }
     for (const delegate of Object.values(delegates)) {
-      this._delegates.push(`http://${delegate}:55000`)
+      this._delegates.push(delegate)
     }
 
     /**
@@ -359,8 +365,8 @@ export default class Wallet {
     } else {
       this._mqtt = defaultMQTT
     }
-    this._mqttConnected = false
-    this.mqttConnect()
+    this._wsConnected = false
+    this.wsConnect()
   }
 
   /**
@@ -504,6 +510,30 @@ export default class Wallet {
   }
 
   /**
+   * When ws is true connect to local logos node websocket
+   * If mqtt is set then logos node websocket will not be used
+   * #### Example
+   * ```typescript
+   * const usingLogosWebsocket = wallet.ws
+   * ```
+   */
+  public get ws (): boolean {
+    return this._ws
+  }
+
+  /**
+   * When ws is true connect to local logos node websocket
+   * If mqtt is set then logos node websocket will not be used
+   * #### Example
+   * ```typescript
+   * wallet.ws = true
+   * ```
+   */
+  public set ws (val: boolean) {
+    this._ws = val
+  }
+
+  /**
    * [[AccountMap]] of all the [[LogosAccount|LogosAccounts]] in the wallet
    * #### Example
    * ```typescript
@@ -610,7 +640,7 @@ export default class Wallet {
   public set mqtt (val: string) {
     this.mqttDisconnect()
     this._mqtt = val
-    this.mqttConnect()
+    this.wsConnect()
   }
 
   /**
@@ -794,7 +824,7 @@ export default class Wallet {
    */
   public addAccount (account: LogosAccount): LogosAccount {
     this.accounts[account.address] = account
-    if (this.mqtt && this._mqttConnected) this.subscribe(`account/${account.address}`)
+    if (this.mqtt && this._wsConnected) this.subscribe(`account/${account.address}`)
     return this.accounts[account.address]
   }
 
@@ -809,7 +839,7 @@ export default class Wallet {
   public removeAccount (address: string): boolean {
     if (this.accounts[address]) {
       delete this.accounts[address]
-      if (this.mqtt && this._mqttConnected) this.unsubscribe(`account/${address}`)
+      if (this.mqtt && this._wsConnected) this.unsubscribe(`account/${address}`)
       if (address === this.currentAccountAddress) {
         this.currentAccountAddress = Object.keys(this.accounts)[0]
       }
@@ -829,7 +859,7 @@ export default class Wallet {
    */
   public addTokenAccount (tokenAccount: TokenAccount): TokenAccount {
     this.tokenAccounts[tokenAccount.address] = tokenAccount
-    if (this.mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
+    if (this.mqtt && this._wsConnected) this.subscribe(`account/${tokenAccount.address}`)
     return this.tokenAccounts[tokenAccount.address]
   }
 
@@ -852,7 +882,7 @@ export default class Wallet {
         wallet: this,
         issuance: issuance
       })
-      if (this.mqtt && this._mqttConnected) this.subscribe(`account/${tokenAccount.address}`)
+      if (this.mqtt && this._wsConnected) this.subscribe(`account/${tokenAccount.address}`)
       this.tokenAccounts[tokenAccount.address] = tokenAccount
       if (this.rpc && !issuance) {
         await this.tokenAccounts[tokenAccount.address].sync()
@@ -1148,7 +1178,7 @@ export default class Wallet {
    * @private
    */
   private subscribe (topic: string): void {
-    if (this._mqttConnected && this._mqttClient) {
+    if (this._wsConnected && this._mqttClient) {
       this._mqttClient.subscribe(topic, (err): void => {
         if (!err) {
           console.info(`subscribed to ${topic}`)
@@ -1167,7 +1197,7 @@ export default class Wallet {
    * @private
    */
   private unsubscribe (topic: string): void {
-    if (this._mqttConnected && this._mqttClient) {
+    if (this._wsConnected && this._mqttClient) {
       this._mqttClient.unsubscribe(topic, (err: Error): void => {
         if (!err) {
           console.info(`unsubscribed from ${topic}`)
@@ -1197,15 +1227,15 @@ export default class Wallet {
    * @returns {void}
    * #### Example
    * ```typescript
-   * wallet.mqttConnect()
+   * wallet.wsConnect()
    * ```
    */
-  public mqttConnect (): void {
+  public wsConnect (): void {
     if (this.mqtt) {
       this._mqttClient = connect(this.mqtt)
       this._mqttClient.on('connect', (): void => {
         console.info('Webwallet SDK Connected to MQTT')
-        this._mqttConnected = true
+        this._wsConnected = true
         this.subscribe('delegateChange')
         for (const address of Object.keys(this.accounts)) {
           this.subscribe(`account/${address}`)
@@ -1215,7 +1245,7 @@ export default class Wallet {
         }
       })
       this._mqttClient.on('close', (): void => {
-        this._mqttConnected = false
+        this._wsConnected = false
         console.info('Webwallet SDK disconnected from MQTT')
       })
       this._mqttClient.on('message', (topic, request): void => {
@@ -1239,6 +1269,31 @@ export default class Wallet {
           }
         }
       })
+    } else if (this.ws && this.rpc) {
+      const ws = new ReconnectingWebSocket(`ws://${this.rpc.node}:18000`, [], {
+        WebSocket,
+        connectionTimeout: 1000,
+        maxRetries: 1000,
+        maxReconnectionDelay: 2000,
+        minReconnectionDelay: 10
+      })
+
+      ws.onopen = () => {
+        console.info('Webwallet SDK Connected to Logos Node Websocket')
+        const confirmation_subscription = {
+          "action": "subscribe", 
+          "topic": "confirmation"
+        }
+        ws.send(JSON.stringify(confirmation_subscription))
+      };
+
+      ws.onmessage = msg => {
+        console.log(msg.data)
+        const json = JSON.parse(msg.data)
+        if (json.topic === "confirmation") {
+          console.log ('Confirmed', json.message.hash)
+        }
+      };
     }
   }
 

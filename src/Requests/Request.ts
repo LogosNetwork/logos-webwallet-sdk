@@ -354,7 +354,7 @@ export default abstract class Request {
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
     const RPC = new Logos({
-      url: delegates[delegateId],
+      url: `http://${delegates[delegateId]}:55000`,
       proxyURL: proxy
     })
     console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
