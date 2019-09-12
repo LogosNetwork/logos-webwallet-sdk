@@ -86,7 +86,7 @@ export default class Blake2b {
 
   private m: Uint32Array
 
-  public constructor (outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null, forceUseJS: boolean = false) {
+  public constructor (outlen = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null, forceUseJS = false) {
     if (outlen < BYTES_MIN) throw new Error(`outlen must be at least ${BYTES_MIN}, was given ${outlen}`)
     if (outlen > BYTES_MAX) throw new Error(`outlen must be at most ${BYTES_MAX}, was given ${outlen}`)
     if (key !== null) {
@@ -126,7 +126,7 @@ export default class Blake2b {
         wasm.memory[this.pointer + 200] = 128
       }
     } else {
-      if (wasm && !wasm.exports && this.mode === null) console.log(`Using JS Fallback since WASM is still loading`)
+      if (wasm && !wasm.exports && this.mode === null) console.log('Using JS Fallback since WASM is still loading')
       this.mode = 'js'
       // state, 'param block'
       this.context = {
@@ -276,7 +276,7 @@ export default class Blake2b {
   }
 
   public update = (input: Uint8Array | Buffer): Blake2b => {
-    if (this.finalized) throw new Error(`Hash instance finalized`)
+    if (this.finalized) throw new Error('Hash instance finalized')
     if (wasm && wasm.exports && this.mode === 'wasm') {
       if (head + input.length > wasm.memory.length) wasm.realloc(head + input.length)
       wasm.memory.set(input, head)
@@ -295,7 +295,7 @@ export default class Blake2b {
   }
 
   public digest = (out?: 'binary'|'hex'|Uint8Array|Buffer): Uint8Array|string => {
-    if (this.finalized) throw new Error(`Hash instance finalized`)
+    if (this.finalized) throw new Error('Hash instance finalized')
     this.finalized = true
 
     if (wasm && wasm.exports && this.mode === 'wasm') {

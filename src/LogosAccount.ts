@@ -84,7 +84,7 @@ export default class LogosAccount extends Account {
 
   private _pendingTokenBalances: TokenBalances
 
-/**
+  /**
   * ### Instantiating
   * ```typescript
   * const LogosAccount = new LogosAccount({
@@ -341,7 +341,7 @@ export default class LogosAccount extends Account {
                 resolve({ account: this.address, synced: this.synced, type: 'LogosAccount' })
               }
             } else {
-              console.info(`Finished Syncing: Requests were not validated`)
+              console.info('Finished Syncing: Requests were not validated')
               this.synced = synced
               resolve({ account: this.address, synced: this.synced, type: 'LogosAccount' })
             }
@@ -400,7 +400,7 @@ export default class LogosAccount extends Account {
                 resolve(this)
               }
             } else {
-              console.info(`Finished Syncing: Requests were not validated`)
+              console.info('Finished Syncing: Requests were not validated')
               this.synced = true
               resolve(this)
             }
@@ -691,18 +691,18 @@ export default class LogosAccount extends Account {
     // Validate current values are appropriate for sends
     if (request instanceof Send) {
       if (bigInt(this.balance).minus(bigInt(request.totalAmount)).minus(request.fee).lesser(0)) {
-        console.error(`Invalid Request: Not Enough Funds including fee to send that amount`)
+        console.error('Invalid Request: Not Enough Funds including fee to send that amount')
         return false
       }
       return true
     } else if (request instanceof TokenSend) {
       const tokenAccount = await this.getTokenAccount(request.tokenID)
       if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-        console.error(`Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends`)
+        console.error('Invalid Token Send Request: Not Enough Logos to pay the logos fee for token sends')
         return false
       }
       if (!this.tokenBalances[tokenAccount.tokenID]) {
-        console.error(`Invalid Token Send Request: User doesn't have a token account with the specified token`)
+        console.error('Invalid Token Send Request: User doesn\'t have a token account with the specified token')
         return false
       }
       if (tokenAccount.feeType === 'flat' && bigInt(tokenAccount.feeRate).greater(request.tokenFee)) {
@@ -718,13 +718,13 @@ export default class LogosAccount extends Account {
         return false
       }
       if (bigInt(this.tokenBalances[tokenAccount.tokenID]).minus(bigInt(request.totalAmount)).minus(bigInt(request.tokenFee)).lesser(0)) {
-        console.error(`Invalid Token Send Request: Not Enough Token to pay the token fee for token sends`)
+        console.error('Invalid Token Send Request: Not Enough Token to pay the token fee for token sends')
         return false
       }
       return true
     } else if (request.type === 'issuance') {
       if (bigInt(this.balance).minus(request.fee).lesser(0)) {
-        console.error(`Invalid Issuance Request: Account does not have enough Logos to afford the fee to broadcast an issuance`)
+        console.error('Invalid Issuance Request: Account does not have enough Logos to afford the fee to broadcast an issuance')
         return false
       }
       return true

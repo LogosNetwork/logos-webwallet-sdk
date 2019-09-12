@@ -537,7 +537,7 @@ export default class TokenAccount extends Account {
                 resolve({ account: this.address, synced: this.synced, type: 'TokenAccount' })
               }
             } else {
-              console.info(`Finished Syncing: Requests were not validated`)
+              console.info('Finished Syncing: Requests were not validated')
               this.synced = synced
               resolve({ account: this.address, synced: this.synced, type: 'TokenAccount' })
             }
@@ -603,7 +603,7 @@ export default class TokenAccount extends Account {
                   resolve(this)
                 }
               } else {
-                console.info(`Finished Syncing: Requests were not validated`)
+                console.info('Finished Syncing: Requests were not validated')
                 this.synced = true
                 resolve(this)
               }
@@ -868,11 +868,11 @@ export default class TokenAccount extends Account {
           return true
         }
       } else if (request instanceof Revoke) {
-        if (!this.hasSetting(`revoke`)) {
+        if (!this.hasSetting('revoke')) {
           console.error(`Invalid Revoke Request: ${this.name} does not support revoking accounts`)
           return false
-        } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
-          console.error(`Invalid Revoke Request: Controller does not have permission to issue revoke requests`)
+        } else if (!this.controllerPrivilege(request.originAccount, 'revoke')) {
+          console.error('Invalid Revoke Request: Controller does not have permission to issue revoke requests')
           return false
         } else if (await !this.accountHasFunds(request.source, request.transaction.amount)) {
           console.error(`Invalid Revoke Request: Source account does not have sufficient ${this.symbol} to complete this request`)
@@ -885,21 +885,21 @@ export default class TokenAccount extends Account {
         }
       } else if (request instanceof AdjustUserStatus) {
         if (request.status === 'frozen' || request.status === 'unfrozen') {
-          if (!this.hasSetting(`freeze`)) {
+          if (!this.hasSetting('freeze')) {
             console.error(`Invalid Adjust User Status: ${this.name} does not support freezing accounts`)
             return false
-          } else if (!this.controllerPrivilege(request.originAccount, `freeze`)) {
-            console.error(`Invalid Adjust User Status Request: Controller does not have permission to freeze accounts`)
+          } else if (!this.controllerPrivilege(request.originAccount, 'freeze')) {
+            console.error('Invalid Adjust User Status Request: Controller does not have permission to freeze accounts')
             return false
           } else {
             return true
           }
         } else if (request.status === 'whitelisted' || request.status === 'not_whitelisted') {
-          if (!this.hasSetting(`whitelist`)) {
+          if (!this.hasSetting('whitelist')) {
             console.error(`Invalid Adjust User Status: ${this.name} does not require whitelisting accounts`)
             return false
-          } else if (!this.controllerPrivilege(request.originAccount, `revoke`)) {
-            console.error(`Invalid Adjust User Status Request: Controller does not have permission to whitelist accounts`)
+          } else if (!this.controllerPrivilege(request.originAccount, 'revoke')) {
+            console.error('Invalid Adjust User Status Request: Controller does not have permission to whitelist accounts')
             return false
           } else {
             return true
@@ -909,25 +909,25 @@ export default class TokenAccount extends Account {
           return false
         }
       } else if (request instanceof AdjustFee) {
-        if (!this.hasSetting(`adjust_fee`)) {
+        if (!this.hasSetting('adjust_fee')) {
           console.error(`Invalid Adjust Fee Request: ${this.name} does not allow changing the fee type or fee rate`)
           return false
-        } else if (!this.controllerPrivilege(request.originAccount, `adjust_fee`)) {
-          console.error(`Invalid Adjust Fee Request: Controller does not have permission to freeze accounts`)
+        } else if (!this.controllerPrivilege(request.originAccount, 'adjust_fee')) {
+          console.error('Invalid Adjust Fee Request: Controller does not have permission to freeze accounts')
           return false
         } else {
           return true
         }
       } else if (request instanceof UpdateIssuerInfo) {
-        if (!this.controllerPrivilege(request.originAccount, `update_issuer_info`)) {
-          console.error(`Invalid Update Issuer Info Request: Controller does not have permission to update the issuer info`)
+        if (!this.controllerPrivilege(request.originAccount, 'update_issuer_info')) {
+          console.error('Invalid Update Issuer Info Request: Controller does not have permission to update the issuer info')
           return false
         } else {
           return true
         }
       } else if (request instanceof UpdateController) {
-        if (!this.controllerPrivilege(request.originAccount, `update_controller`)) {
-          console.error(`Invalid Update Controller Request: Controller does not have permission to update controllers`)
+        if (!this.controllerPrivilege(request.originAccount, 'update_controller')) {
+          console.error('Invalid Update Controller Request: Controller does not have permission to update controllers')
           return false
         } else if (this.controllers.length === 10 && request.action === 'add' && !this.isController(request.controller.account)) {
           console.error(`Invalid Update Controller Request: ${this.name} already has 10 controllers you must remove one first`)
@@ -936,18 +936,18 @@ export default class TokenAccount extends Account {
           return true
         }
       } else if (request instanceof Burn) {
-        if (!this.controllerPrivilege(request.originAccount, `burn`)) {
-          console.error(`Invalid Burn Request: Controller does not have permission to burn tokens`)
+        if (!this.controllerPrivilege(request.originAccount, 'burn')) {
+          console.error('Invalid Burn Request: Controller does not have permission to burn tokens')
           return false
         } else if (bigInt(this.tokenBalance).lesser(bigInt(request.amount))) {
-          console.error(`Invalid Burn Request: the token balance of the token account is less than the amount of tokens you are trying to burn`)
+          console.error('Invalid Burn Request: the token balance of the token account is less than the amount of tokens you are trying to burn')
           return false
         } else {
           return true
         }
       } else if (request instanceof Distribute) {
-        if (!this.controllerPrivilege(request.originAccount, `distribute`)) {
-          console.error(`Invalid Distribute Request: Controller does not have permission to distribute tokens`)
+        if (!this.controllerPrivilege(request.originAccount, 'distribute')) {
+          console.error('Invalid Distribute Request: Controller does not have permission to distribute tokens')
           return false
         } else if (bigInt(this.tokenBalance).lesser(bigInt(request.transaction.amount))) {
           console.error(`Invalid Distribute Request: Token account does not have sufficient ${this.symbol} to distribute`)
@@ -959,11 +959,11 @@ export default class TokenAccount extends Account {
           return true
         }
       } else if (request instanceof WithdrawFee) {
-        if (!this.controllerPrivilege(request.originAccount, `withdraw_fee`)) {
-          console.error(`Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee`)
+        if (!this.controllerPrivilege(request.originAccount, 'withdraw_fee')) {
+          console.error('Invalid Withdraw Fee Request: Controller does not have permission to withdraw fee')
           return false
         } else if (bigInt(this.tokenFeeBalance).lesser(bigInt(request.transaction.amount))) {
-          console.error(`Invalid Withdraw Fee Request: Token account does not have a sufficient token fee balance to withdraw the specified amount`)
+          console.error('Invalid Withdraw Fee Request: Token account does not have a sufficient token fee balance to withdraw the specified amount')
           return false
         } else if (await !this.validTokenDestination(request.transaction.destination)) {
           console.error(`Invalid Withdraw Fee Request: Destination does not have permission to receive ${this.symbol}`)
@@ -972,11 +972,11 @@ export default class TokenAccount extends Account {
           return true
         }
       } else if (request instanceof WithdrawLogos) {
-        if (!this.controllerPrivilege(request.originAccount, `withdraw_logos`)) {
-          console.error(`Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos`)
+        if (!this.controllerPrivilege(request.originAccount, 'withdraw_logos')) {
+          console.error('Invalid Withdraw Logos Request: Controller does not have permission to withdraw logos')
           return false
         } else if (bigInt(this.balance).lesser(bigInt(request.transaction.amount).plus(bigInt(request.fee)))) {
-          console.error(`Invalid Withdraw Logos Request: Token account does not have sufficient balance to withdraw the specified amount + the minimum logos fee`)
+          console.error('Invalid Withdraw Logos Request: Token account does not have sufficient balance to withdraw the specified amount + the minimum logos fee')
           return false
         } else {
           return true

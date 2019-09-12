@@ -795,7 +795,7 @@ export default abstract class Account {
         }
         return request
       } else {
-        console.info(`Request is already pending!`)
+        console.info('Request is already pending!')
       }
     }
     return null

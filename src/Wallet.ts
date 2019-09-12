@@ -108,7 +108,7 @@ export default class Wallet {
 
   private _delegates: string[]
 
-/**
+  /**
   * ### Instantiating
   * ```typescript
   * import Wallet from '@logosnetwork/logos-webwallet-sdk'
@@ -287,8 +287,8 @@ export default class Wallet {
     }
 
     const delegates = this.rpcClient.epochs.delegateIPs()
-    for (let index in delegates) {
-      delegates[index] = testnetDelegates[delegates[index]['ip']]
+    for (const index in delegates) {
+      delegates[index] = testnetDelegates[delegates[index].ip]
     }
     for (const delegate of Object.values(delegates)) {
       this._delegates.push(`http://${delegate}:55000`)
@@ -774,7 +774,7 @@ export default class Wallet {
    * wallet.createSeed()
    * ```
    */
-  public createSeed (overwrite: boolean = false): string {
+  public createSeed (overwrite = false): string {
     if (this.seed && !overwrite) throw new Error('Seed already exists. To overwrite set the seed or set overwrite to true')
     this.seed = uint8ToHex(nacl.randomBytes(32))
     return this.seed
@@ -1206,7 +1206,7 @@ export default class Wallet {
       this._mqttClient.on('connect', (): void => {
         console.info('Webwallet SDK Connected to MQTT')
         this._mqttConnected = true
-        this.subscribe(`delegateChange`)
+        this.subscribe('delegateChange')
         for (const address of Object.keys(this.accounts)) {
           this.subscribe(`account/${address}`)
         }
@@ -1221,7 +1221,7 @@ export default class Wallet {
       this._mqttClient.on('message', (topic, request): void => {
         const requestObject = JSON.parse(request.toString())
         if (topic === 'delegateChange' && this.rpc) {
-          console.info(`MQTT Delegate Change`)
+          console.info('MQTT Delegate Change')
           this.delegates = []
           for (const delegate of Object.values(requestObject)) {
             this.delegates.push(`http://${delegate}:55000`)
