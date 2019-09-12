@@ -1,6 +1,6 @@
 import * as bigInt from 'big-integer'
 import Account, { AccountJSON, AccountOptions } from './Account'
-import { Settings as RpcSettings, Privileges as RpcPrivileges, Request as RpcRequest } from '@logosnetwork/logos-rpc-client/dist/api'
+import { Settings as RpcSettings, Privileges as RpcPrivileges, Request as RpcRequest } from '@logosnetwork/logos-rpc-client/api'
 import {
   accountFromHexKey,
   keyFromAccount,
@@ -488,12 +488,12 @@ export default class TokenAccount extends Account {
   }
 
   public convertToMajor (minorValue: string): string {
-    if (this.decimals) return this.wallet.rpcClient().convert.fromTo(minorValue, 0, this.decimals)
+    if (this.decimals) return this.wallet.rpcClient.convert.fromTo(minorValue, 0, this.decimals)
     return null
   }
 
   public convertToMinor (majorValue: string): string {
-    if (this.decimals) return this.wallet.rpcClient().convert.fromTo(majorValue, this.decimals, 0)
+    if (this.decimals) return this.wallet.rpcClient.convert.fromTo(majorValue, this.decimals, 0)
     return null
   }
 
@@ -503,7 +503,7 @@ export default class TokenAccount extends Account {
    */
   public isSynced (): Promise<SyncedResponse> {
     return new Promise((resolve): void => {
-      const RPC = this.wallet.rpcClient()
+      const RPC = this.wallet.rpcClient
       RPC.accounts.info(this.address).then(async (info): Promise<void> => {
         let synced = true
         if (info && info.frontier) {
@@ -569,7 +569,7 @@ export default class TokenAccount extends Account {
       this.synced = false
       this.chain = []
       this.receiveChain = []
-      const RPC = this.wallet.rpcClient()
+      const RPC = this.wallet.rpcClient
 
       RPC.accounts.info(this.address).then((info): void => {
         if (!info || !info.type || info.type !== 'TokenAccount') {
@@ -784,7 +784,7 @@ export default class TokenAccount extends Account {
       console.warn('Cannot client-side validate if an account has funds without RPC enabled')
       return true
     } else {
-      const RPC = this.wallet.rpcClient()
+      const RPC = this.wallet.rpcClient
       const info = await RPC.accounts.info(address)
       return bigInt(info.tokens[this.tokenID].balance).greaterOrEquals(bigInt(amount))
     }
@@ -802,7 +802,7 @@ export default class TokenAccount extends Account {
       console.warn('Cannot client-side validate destination without RPC enabled')
       return true
     } else {
-      const RPC = this.wallet.rpcClient()
+      const RPC = this.wallet.rpcClient
       const info = await RPC.accounts.info(address)
       if (info.type !== 'LogosAccount') return false
       let tokenInfo = null

@@ -1,7 +1,7 @@
 import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import * as bigInt from 'big-integer'
-import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
+import { Transaction } from '@logosnetwork/logos-rpc-client/api'
 interface TokenSendOptions extends TokenRequestOptions {
   transactions?: Transaction[];
   tokenFee?: string;

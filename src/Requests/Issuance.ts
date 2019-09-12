@@ -2,7 +2,7 @@ import { hexToUint8, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, 
 import Request, { RequestOptions, RequestJSON } from './Request'
 import * as bigInt from 'big-integer'
 import { Settings, Controller, Privileges } from '../TokenAccount'
-import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
+import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/api'
 import Blake2b from '../Utils/blake2b'
 type feeType = 'flat' | 'percentage'
 export interface IssuanceOptions extends RequestOptions {

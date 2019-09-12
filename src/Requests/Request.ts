@@ -2,6 +2,7 @@ import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GEN
 import Blake2b from '../Utils/blake2b'
 import * as nacl from 'tweetnacl/nacl'
 import Logos from '@logosnetwork/logos-rpc-client'
+import { RPCOptions } from '../Wallet'
 export interface RequestOptions {
   origin?: string;
   previous?: string;
@@ -15,10 +16,6 @@ export interface RequestOptions {
 interface RequestType {
   text: string;
   value: number;
-}
-interface PublishOptions {
-  proxy?: string;
-  delegates: string[];
 }
 export interface RequestJSON {
   previous?: string;
@@ -346,10 +343,10 @@ export default abstract class Request {
 
   /**
    * Publishes the request
-   * @param {RPCOptions} options - rpc options
+   * @param {string[]} delegates - current delegates
    * @returns {Promise<{hash:string}>} response of transcation publish
    */
-  public async publish (options: PublishOptions = defaultRPC): Promise<{hash: string}> {
+  public async publish (delegates: string[], proxy: string | null = null): Promise<{hash: string}> {
     let delegateId = null
     if (this.previous !== GENESIS_HASH) {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32
@@ -358,8 +355,8 @@ export default abstract class Request {
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
     const RPC = new Logos({
-      url: `http://${options.delegates[delegateId]}:55000`,
-      proxyURL: options.proxy
+      url: delegates[delegateId],
+      proxyURL: proxy
     })
     console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
     const response = await RPC.requests.publish(JSON.stringify(this.toJSON()))

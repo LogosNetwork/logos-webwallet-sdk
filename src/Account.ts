@@ -509,7 +509,7 @@ export default abstract class Account {
    * @readonly
    */
   public get balanceInLogos (): string {
-    return this.wallet.rpcClient().convert.fromReason(this.balance, 'LOGOS')
+    return this.wallet.rpcClient.convert.fromReason(this.balance, 'LOGOS')
   }
 
   /**
@@ -788,7 +788,7 @@ export default abstract class Account {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpc)
+          await request.publish(this.wallet.delegates, this.wallet.rpc.proxy)
         } catch (err) {
           console.error(err)
           this.removePendingRequests()

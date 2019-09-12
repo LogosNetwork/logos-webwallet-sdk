@@ -1,7 +1,7 @@
 import { hexToUint8, decToHex, keyFromAccount, deserializeController, changeEndianness, serializeController, accountFromHexKey } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
 import { Controller, Privileges, Settings } from '../TokenAccount'
-import { Controller as RpcController } from '@logosnetwork/logos-rpc-client/dist/api'
+import { Controller as RpcController } from '@logosnetwork/logos-rpc-client/api'
 
 const Actions = {
   add: 0,

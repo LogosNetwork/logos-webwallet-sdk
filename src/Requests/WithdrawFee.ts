@@ -1,6 +1,6 @@
 import { hexToUint8, decToHex, keyFromAccount } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
-import { Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
+import { Transaction } from '@logosnetwork/logos-rpc-client/api'
 export interface WithdrawFeeOptions extends TokenRequestOptions {
   transaction?: Transaction;
 }

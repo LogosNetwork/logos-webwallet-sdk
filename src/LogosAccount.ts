@@ -6,7 +6,7 @@ import {
 } from './Utils/Utils'
 import * as bigInt from 'big-integer'
 import Account, { AccountOptions, AccountJSON } from './Account'
-import { Request as RpcRequest, Transaction } from '@logosnetwork/logos-rpc-client/dist/api'
+import { Request as RpcRequest, Transaction } from '@logosnetwork/logos-rpc-client/api'
 
 import { 
   Send,
@@ -317,7 +317,7 @@ export default class LogosAccount extends Account {
    */
   public isSynced (): Promise<SyncedResponse> {
     return new Promise((resolve): void => {
-      const RPC = this.wallet.rpcClient()
+      const RPC = this.wallet.rpcClient
       RPC.accounts.info(this.address).then(async (info): Promise<void> => {
         let synced = true
         if (info && info.frontier) {
@@ -384,7 +384,7 @@ export default class LogosAccount extends Account {
       this.pendingBalance = '0'
       this._tokens = []
       this._pendingTokenBalances = {}
-      const RPC = this.wallet.rpcClient()
+      const RPC = this.wallet.rpcClient
       if (this.wallet.fullSync) {
         RPC.accounts.history(this.address, -1, true).then(async (history): Promise<void> => {
           if (history) {

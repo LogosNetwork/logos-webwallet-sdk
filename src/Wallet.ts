@@ -1,6 +1,6 @@
 import mqttPattern from './Utils/mqttPattern'
-import Logos from '@logosnetwork/logos-rpc-client'
-import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
+import Logos, { LogosConstructorOptions } from '@logosnetwork/logos-rpc-client'
+import { AES, defaultMQTT, defaultRPC, testnetDelegates, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
 import { pbkdf2Sync } from 'pbkdf2'
 import * as nacl from 'tweetnacl/nacl'
 import Blake2b from './Utils/blake2b'
@@ -11,9 +11,9 @@ import LogosAccount, { LogosAccountJSON, LogosAccountOptions } from './LogosAcco
 import { Request, Issuance } from './Requests'
 import { AccountOptions } from './Account'
 
-interface RPCOptions {
+export interface RPCOptions {
   proxy?: string;
-  delegates: string[];
+  node: string;
 }
 interface AccountJSONMap {
   [address: string]: LogosAccountJSON;
@@ -59,6 +59,7 @@ interface WalletOptions {
   validateSync?: boolean;
   mqtt?: string;
   rpc?: RPCOptions|false;
+  localCluster: boolean;
   version?: number;
 }
 
@@ -104,6 +105,8 @@ export default class Wallet {
   private _mqtt: string
 
   private _mqttClient: MqttClient
+
+  private _delegates: string[]
 
 /**
   * ### Instantiating
@@ -161,6 +164,7 @@ export default class Wallet {
     validateSync: true,
     mqtt: defaultMQTT,
     rpc: defaultRPC,
+    localCluster: false,
     version: 1
   }) {
     this.loadOptions(options)
@@ -280,6 +284,14 @@ export default class Wallet {
       this._rpc = options.rpc
     } else {
       this._rpc = defaultRPC
+    }
+
+    const delegates = this.rpcClient.epochs.delegateIPs()
+    for (let index in delegates) {
+      delegates[index] = testnetDelegates[delegates[index]['ip']]
+    }
+    for (const delegate of Object.values(delegates)) {
+      this._delegates.push(`http://${delegate}:55000`)
     }
 
     /**
@@ -627,6 +639,27 @@ export default class Wallet {
   }
 
   /**
+   * Returns a Logos RPC Client Instance using the given delegate id
+   *
+   * @returns {Logos}
+   * #### Example
+   * ```typescript
+   * const rpcClient = wallet.rpcClient
+   * ```
+   */
+  public get rpcClient (): Logos {
+    if (this.rpc) {
+      const rpcInfo: LogosConstructorOptions = {
+        url: this.rpc.node
+      }
+      if (this.rpc.proxy) rpcInfo.proxyURL = this.rpc.proxy
+      return new Logos(rpcInfo)
+    } else {
+      return null
+    }
+  }
+
+  /**
    * The password of the wallet
    * in the future we will remove the ability to store the password and request it in realtime so it is in memory for less time
    * #### Example
@@ -648,6 +681,28 @@ export default class Wallet {
    */  
   public set password (password: string) {
     this._password = password
+  }
+
+  /**
+   * The current delegates of the network
+   * #### Example
+   * ```typescript
+   * const delegates = wallet.delegates
+   * ```
+   */
+  public get delegates (): string[] {
+    return this._delegates
+  }
+
+  /**
+   * The current delegates of the network
+   * #### Example
+   * ```typescript
+   * wallet.delegates = ['http://3.215.28.211:55000'] // Should be 32 length but I cba
+   * ```
+   */  
+  public set delegates (delegates: string[]) {
+    this._delegates = delegates
   }
 
   /**
@@ -987,27 +1042,6 @@ export default class Wallet {
   }
 
   /**
-   * Returns a Logos RPC Client Instance using the given delegate id
-   *
-   * @param {number} delegateIndex - The delegate you wish to connect to
-   * @returns {Logos}
-   * #### Example
-   * ```typescript
-   * const rpcClient = wallet.rpcClient()
-   * ```
-   */
-  public rpcClient (delegateIndex = 0): Logos {
-    if (this.rpc) {
-      return new Logos({
-        url: `http://${this.rpc.delegates[delegateIndex]}:55000`,
-        proxyURL: this.rpc.proxy
-      })
-    } else {
-      return null
-    }
-  }
-
-  /**
    * Constructs the wallet from an encrypted base64 encoded wallet and the password
    *
    * @param {string} - encrypted wallet
@@ -1188,7 +1222,10 @@ export default class Wallet {
         const requestObject = JSON.parse(request.toString())
         if (topic === 'delegateChange' && this.rpc) {
           console.info(`MQTT Delegate Change`)
-          this.rpc.delegates = Object.values(requestObject)
+          this.delegates = []
+          for (const delegate of Object.values(requestObject)) {
+            this.delegates.push(`http://${delegate}:55000`)
+          }
         } else {
           const params = mqttPattern('account/+address', topic)
           if (params) {
