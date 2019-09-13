@@ -296,12 +296,8 @@ export default class Wallet {
     this._delegates = []
     if (this.rpcClient) {
       this.rpcClient.epochs.delegateIPs().then(delegates => {
-        const newDelegates: { [index: number]: string } = {}
         for (const index in delegates) {
-          newDelegates[index] = testnetDelegates[delegates[index].ip]
-        }
-        for (const delegate of Object.values(newDelegates)) {
-          this._delegates.push(delegate)
+          this._delegates.push(testnetDelegates[delegates[index].ip])
         }
       })
     }
@@ -1335,10 +1331,7 @@ export default class Wallet {
             this.delegates = []
             const delegates = this.rpcClient.epochs.delegateIPs()
             for (const index in delegates) {
-              delegates[index] = testnetDelegates[delegates[index].ip]
-            }
-            for (const delegate of Object.values(delegates)) {
-              this.delegates.push(delegate)
+              this.delegates.push(testnetDelegates[delegates[index].ip])
             }
           }
         }
