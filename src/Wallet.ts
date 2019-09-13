@@ -292,12 +292,17 @@ export default class Wallet {
       this._rpc = defaultRPC
     }
 
-    const delegates = this.rpcClient.epochs.delegateIPs()
-    for (const index in delegates) {
-      delegates[index] = testnetDelegates[delegates[index].ip]
-    }
-    for (const delegate of Object.values(delegates)) {
-      this._delegates.push(delegate)
+    this._delegates = []
+    if (this.rpcClient) {
+      this.rpcClient.epochs.delegateIPs().then(delegates => {
+        const newDelegates: { [index: number]: string } = {}
+        for (const index in delegates) {
+          newDelegates[index] = testnetDelegates[delegates[index].ip]
+        }
+        for (const delegate of Object.values(newDelegates)) {
+          this._delegates.push(delegate)
+        }
+      })
     }
 
     /**
@@ -728,7 +733,7 @@ export default class Wallet {
    * The current delegates of the network
    * #### Example
    * ```typescript
-   * wallet.delegates = ['http://3.215.28.211:55000'] // Should be 32 length but I cba
+   * wallet.delegates = ['3.215.28.211'] // Should be 32 length but I cba
    * ```
    */  
   public set delegates (delegates: string[]) {
@@ -1254,7 +1259,7 @@ export default class Wallet {
           console.info('MQTT Delegate Change')
           this.delegates = []
           for (const delegate of Object.values(requestObject)) {
-            this.delegates.push(`http://${delegate}:55000`)
+            this.delegates.push(delegate as string)
           }
         } else {
           const params = mqttPattern('account/+address', topic)
@@ -1290,7 +1295,53 @@ export default class Wallet {
         console.log(msg.data)
         const json = JSON.parse(msg.data)
         if (json.topic === 'confirmation') {
-          console.log('Confirmed', json.message.hash)
+          const message = json.message
+          if (message.type === 'RequestBlock') {
+            for (const request of message.requests) {
+              request.timestamp = message.timestamp
+              request.requestBlockHash = message.hash
+              // Publish Transaction to Origin
+              if (request.token_id) {
+                const tokenAccountAddress = accountFromHexKey(request.token_id)
+                console.log(tokenAccountAddress)
+                // Publish Request to Token Account Address
+              }
+              if ((request.type === 'send' || request.type === 'token_send') && request.transactions) {
+                const publishedAccounts: string[] = []
+                for (const transaction of request.transactions) {
+                  if (request.origin !== transaction.destination &&
+                    !publishedAccounts.includes(transaction.destination)) {
+                    publishedAccounts.push(transaction.destination)
+                    // Publish to transaction destination
+                    // TODO if we allow token sends to token accounts deduplicate when destination === token account
+                  }
+                }
+              } else if ((request.type === 'revoke' || request.type === 'withdraw_fee' || request.type === 'distribute' || request.type === 'withdraw_logos') && request.transaction) {
+                if (request.origin !== request.transaction.destination &&
+                  accountFromHexKey(request.token_id) !== request.transaction.destination) {
+                  // Publish request to single transaction destination
+                }
+              } else if (request.type === 'adjust_user_status' &&
+                request.account &&
+                request.origin !== request.account) {
+                // Publish request to request account
+              } else if (request.type === 'update_controller') {
+                if (request.origin !== request.controller.account &&
+                  accountFromHexKey(request.token_id) !== request.controller.account) {
+                  // Publish request to controller account
+                }
+              }
+            }
+          } else if (message.type === 'Epoch') {
+            this.delegates = []
+            const delegates = this.rpcClient.epochs.delegateIPs()
+            for (const index in delegates) {
+              delegates[index] = testnetDelegates[delegates[index].ip]
+            }
+            for (const delegate of Object.values(delegates)) {
+              this.delegates.push(delegate)
+            }
+          }
         }
       }
     }

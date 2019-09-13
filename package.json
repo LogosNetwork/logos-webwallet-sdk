@@ -41,6 +41,8 @@
     "@babel/preset-env": "^7.6.0",
     "@babel/register": "^7.6.0",
     "@types/node": "^12.7.5",
+    "@types/pbkdf2": "^3.0.0",
+    "@types/ws": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^2.2.0",
     "@typescript-eslint/parser": "^2.2.0",
     "awesome-typescript-loader": "^5.2.1",
@@ -59,8 +61,6 @@
   "dependencies": {
     "@babel/runtime": "^7.6.0",
     "@logosnetwork/logos-rpc-client": "^1.1.33",
-    "@types/pbkdf2": "^3.0.0",
-    "@types/ws": "^6.0.3",
     "big-integer": "^1.6.44",
     "core-js": "^3.2.1",
     "mqtt": "^3.0.0",
