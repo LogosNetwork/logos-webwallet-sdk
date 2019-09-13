@@ -12,6 +12,7 @@ import TokenAccount, { TokenAccountJSON, SyncedResponse } from './TokenAccount'
 import LogosAccount, { LogosAccountJSON, LogosAccountOptions } from './LogosAccount'
 import { Request, Issuance } from './Requests'
 import { AccountOptions } from './Account'
+import { Request as RpcRequest } from '@logosnetwork/logos-rpc-client/api'
 
 export interface RPCOptions {
   proxy?: string;
@@ -1300,36 +1301,34 @@ export default class Wallet {
             for (const request of message.requests) {
               request.timestamp = message.timestamp
               request.requestBlockHash = message.hash
-              // Publish Transaction to Origin
+              this.processRequest(request, request.origin)
               if (request.token_id) {
-                const tokenAccountAddress = accountFromHexKey(request.token_id)
-                console.log(tokenAccountAddress)
-                // Publish Request to Token Account Address
+                this.processRequest(request, accountFromHexKey(request.token_id))
               }
               if ((request.type === 'send' || request.type === 'token_send') && request.transactions) {
                 const publishedAccounts: string[] = []
                 for (const transaction of request.transactions) {
                   if (request.origin !== transaction.destination &&
+                    (!request.token_id || accountFromHexKey(request.token_id) !== transaction.destination) &&
                     !publishedAccounts.includes(transaction.destination)) {
                     publishedAccounts.push(transaction.destination)
-                    // Publish to transaction destination
-                    // TODO if we allow token sends to token accounts deduplicate when destination === token account
+                    this.processRequest(request, transaction.destination)
                   }
                 }
               } else if ((request.type === 'revoke' || request.type === 'withdraw_fee' || request.type === 'distribute' || request.type === 'withdraw_logos') && request.transaction) {
                 if (request.origin !== request.transaction.destination &&
                   accountFromHexKey(request.token_id) !== request.transaction.destination) {
-                  // Publish request to single transaction destination
+                  this.processRequest(request, request.transaction.destination)
                 }
               } else if (request.type === 'adjust_user_status' &&
                 request.account &&
+                accountFromHexKey(request.token_id) !== request.transaction.destination &&
                 request.origin !== request.account) {
-                // Publish request to request account
-              } else if (request.type === 'update_controller') {
-                if (request.origin !== request.controller.account &&
-                  accountFromHexKey(request.token_id) !== request.controller.account) {
-                  // Publish request to controller account
-                }
+                this.processRequest(request, request.transaction.destination)
+              } else if (request.type === 'update_controller' &&
+                request.origin !== request.controller.account &&
+                accountFromHexKey(request.token_id) !== request.controller.account) {
+                  this.processRequest(request, request.transaction.destination)
               }
             }
           } else if (message.type === 'Epoch') {
@@ -1344,6 +1343,25 @@ export default class Wallet {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Process Request finds the account if it is in our wallet and update its local ledger
+   *
+   * @param {RpcRequest} requestInfo - JSON of the request block
+   * @param {string} address - address we are looking for
+   * @param {boolean} logosAccount - update logos accounts
+   * @param {boolean} tokenAccount - update token accounts
+   * @returns {void}
+   * @private
+   */
+  private processRequest (requestInfo: RpcRequest, address: string, logosAccount: boolean = true, tokenAccount: boolean = true): void {
+    if (logosAccount && this.accounts[address]) {
+      this.accounts[address].processRequest(requestInfo)
+    }
+    if (tokenAccount && this.tokenAccounts[address]) {
+      this.tokenAccounts[address].processRequest(requestInfo)     
     }
   }
 
