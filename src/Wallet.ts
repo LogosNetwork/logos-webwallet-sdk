@@ -1324,50 +1324,46 @@ export default class Wallet {
       }
 
       ws.onmessage = (msg): void => {
-        console.log(msg.data)
-        const json = JSON.parse(msg.data)
-        if (json.topic === 'confirmation') {
-          const message = json.message
-          if (message.type === 'RequestBlock') {
-            for (const request of message.requests) {
-              request.timestamp = message.timestamp
-              request.requestBlockHash = message.hash
-              this.processRequest(request, request.origin)
-              if (request.token_id) {
-                this.processRequest(request, accountFromHexKey(request.token_id))
+        const message = JSON.parse(msg.data).block
+        if (message.type === 'RequestBlock') {
+          for (const request of message.requests) {
+            request.timestamp = message.timestamp
+            request.requestBlockHash = message.hash
+            this.processRequest(request, request.origin)
+            if (request.token_id) {
+              this.processRequest(request, accountFromHexKey(request.token_id))
+            }
+            if ((request.type === 'send' || request.type === 'token_send') && request.transactions) {
+              const publishedAccounts: string[] = []
+              for (const transaction of request.transactions) {
+                if (request.origin !== transaction.destination &&
+                  (!request.token_id || accountFromHexKey(request.token_id) !== transaction.destination) &&
+                  !publishedAccounts.includes(transaction.destination)) {
+                  publishedAccounts.push(transaction.destination)
+                  this.processRequest(request, transaction.destination)
+                }
               }
-              if ((request.type === 'send' || request.type === 'token_send') && request.transactions) {
-                const publishedAccounts: string[] = []
-                for (const transaction of request.transactions) {
-                  if (request.origin !== transaction.destination &&
-                    (!request.token_id || accountFromHexKey(request.token_id) !== transaction.destination) &&
-                    !publishedAccounts.includes(transaction.destination)) {
-                    publishedAccounts.push(transaction.destination)
-                    this.processRequest(request, transaction.destination)
-                  }
-                }
-              } else if ((request.type === 'revoke' || request.type === 'withdraw_fee' || request.type === 'distribute' || request.type === 'withdraw_logos') && request.transaction) {
-                if (request.origin !== request.transaction.destination &&
-                  accountFromHexKey(request.token_id) !== request.transaction.destination) {
-                  this.processRequest(request, request.transaction.destination)
-                }
-              } else if (request.type === 'adjust_user_status' &&
-                request.account &&
-                accountFromHexKey(request.token_id) !== request.transaction.destination &&
-                request.origin !== request.account) {
-                this.processRequest(request, request.transaction.destination)
-              } else if (request.type === 'update_controller' &&
-                request.origin !== request.controller.account &&
-                accountFromHexKey(request.token_id) !== request.controller.account) {
+            } else if ((request.type === 'revoke' || request.type === 'withdraw_fee' || request.type === 'distribute' || request.type === 'withdraw_logos') && request.transaction) {
+              if (request.origin !== request.transaction.destination &&
+                accountFromHexKey(request.token_id) !== request.transaction.destination) {
                 this.processRequest(request, request.transaction.destination)
               }
+            } else if (request.type === 'adjust_user_status' &&
+              request.account &&
+              accountFromHexKey(request.token_id) !== request.transaction.destination &&
+              request.origin !== request.account) {
+              this.processRequest(request, request.transaction.destination)
+            } else if (request.type === 'update_controller' &&
+              request.origin !== request.controller.account &&
+              accountFromHexKey(request.token_id) !== request.controller.account) {
+              this.processRequest(request, request.transaction.destination)
             }
-          } else if (message.type === 'Epoch') {
-            this.delegates = []
-            const delegates = this.rpcClient.epochs.delegateIPs()
-            for (const index in delegates) {
-              this.delegates.push(testnetDelegates[delegates[index].ip])
-            }
+          }
+        } else if (message.type === 'Epoch') {
+          this.delegates = []
+          const delegates = this.rpcClient.epochs.delegateIPs()
+          for (const index in delegates) {
+            this.delegates.push(testnetDelegates[delegates[index].ip])
           }
         }
       }
