@@ -1,7 +1,8 @@
-import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK } from '../Utils/Utils'
+import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, EMPTY_WORK } from '../Utils/Utils'
 import Blake2b from '../Utils/blake2b'
 import nacl from 'tweetnacl/nacl'
-import Logos from '@logosnetwork/logos-rpc-client'
+import Logos, { LogosConstructorOptions } from '@logosnetwork/logos-rpc-client'
+import { RPCOptions } from '../Wallet'
 export interface RequestOptions {
   origin?: string;
   previous?: string;
@@ -345,26 +346,20 @@ export default abstract class Request {
    * @param {string[]} delegates - current delegates
    * @returns {Promise<{hash:string}>} response of transcation publish
    */
-  public async publish (delegates: string[], proxy: string | null = null, port = '55000'): Promise<{hash: string}> {
-    let delegateId = null
-    if (this.previous !== GENESIS_HASH) {
-      delegateId = parseInt(this.previous.slice(-2), 16) % 32
-    } else {
-      // TODO 104 if token id and not token_send or issuance then use that else use origin
-      delegateId = parseInt(this.origin.slice(-2), 16) % 32
+  public async publish (rpcSettings: RPCOptions): Promise<{hash: string}> {
+    const rpcOptions: LogosConstructorOptions = {
+      url: `http://${rpcSettings.nodeURL}:${rpcSettings.nodePort}`
     }
-    const RPC = new Logos({
-      url: `http://${delegates[delegateId]}:${port}`,
-      proxyURL: proxy
-    })
-    console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
+    if (rpcSettings.proxy) rpcOptions.proxyURL = rpcSettings.proxy
+    const RPC = new Logos(rpcOptions)
+    console.info(`Publishing ${this.type} ${this.sequence}`)
     const response = await RPC.requests.publish(JSON.stringify(this.toJSON()))
     if (response.hash) {
-      console.info(`Delegate ${delegateId} accepted ${this.type} ${this.sequence}`)
+      console.info(`Request accepted ${this.type} ${this.sequence}`)
       return response
     } else {
-      console.error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
-      throw new Error(`Invalid Request: Rejected by Logos Node \n ${JSON.stringify(response)}`)
+      console.error(`Invalid Request: Rejected \n ${JSON.stringify(response)}`)
+      throw new Error(`Invalid Request: Rejected \n ${JSON.stringify(response)}`)
     }
   }
 

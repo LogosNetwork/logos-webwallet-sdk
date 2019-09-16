@@ -2,7 +2,7 @@ import mqttPattern from './Utils/mqttPattern'
 import WebSocket from 'ws'
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import Logos, { LogosConstructorOptions } from '@logosnetwork/logos-rpc-client'
-import { AES, defaultMQTT, defaultRPC, testnetDelegates, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
+import { AES, defaultMQTT, defaultRPC, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
 import { pbkdf2Sync } from 'pbkdf2'
 import nacl from 'tweetnacl/nacl'
 import Blake2b from './Utils/blake2b'
@@ -113,8 +113,6 @@ export default class Wallet {
 
   private _mqttClient: MqttClient
 
-  private _delegates: string[]
-
   /**
   * ### Instantiating
   * ```typescript
@@ -156,7 +154,7 @@ export default class Wallet {
   * | [[validateSync]] | when validateSync is true the SDK will check all signatures of all the requests in the account chains. This is recommended to be true but when syncing an account with a long history this can be computationally heavy. |
   * | [[ws]] | when ws is true connect to local logos node websocket. You should only use mqtt or ws not both! mqtt will take priority over WS the MQTT setup uses less resources at the current time. |
   * | [[mqtt]] | address of your mqtt server `'wss://pla.bs:8443'` is the default server. Check out the logos backend repo to run your own backend mqtt. |
-  * | [[rpc]] | Node information of the delegates where you are sending requests to. This will change in the future as we get more core node functionality such as websockets and proper tx acceptor delegate lists. See [[RPCOptions]] |
+  * | [[rpc]] | Node information where you are sending requests to. See [[RPCOptions]]. Do not use the ip address of a delegate node, it won't work and also delegates shouldn't have RPC enabled... |
   */
   public constructor (options: WalletOptions = {
     password: null,
@@ -294,9 +292,6 @@ export default class Wallet {
     } else {
       this._rpc = defaultRPC
     }
-
-    this._delegates = []
-    this.fetchDelegates()
 
     /**
      * PBKDF2 Iterations
@@ -670,7 +665,9 @@ export default class Wallet {
    * ```typescript
    * wallet.rpc = {
    *  proxy: 'https://pla.bs',
-   *  delegates: ['3.215.28.211', '3.214.93.111', '3.214.55.84', '3.214.51.200', '3.214.37.34', '3.214.209.198', '3.214.205.240', '3.214.204.82', '3.214.195.211', '3.214.188.128', '3.214.175.150', '3.213.75.16', '3.213.212.158', '3.213.17.31', '3.213.150.192', '3.213.110.174', '3.213.108.208', '3.212.255.243', '3.212.220.108', '3.209.93.207', '3.209.30.240', '3.208.253.215', '3.208.232.242', '18.233.235.87', '18.233.175.15', '18.211.221.254', '18.211.1.90', '18.208.239.123', '18.206.29.223', '18.204.189.145', '174.129.135.230', '100.25.175.142']
+   *  nodeURL: '3.215.28.211',
+   *  nodePort: '55000',
+   *  wsPort: '18000'
    * }
    * ```
    */  
@@ -679,7 +676,7 @@ export default class Wallet {
   }
 
   /**
-   * Returns a Logos RPC Client Instance using the given delegate id
+   * Returns a Logos RPC Client Instance
    *
    * @returns {Logos}
    * #### Example
@@ -721,28 +718,6 @@ export default class Wallet {
    */  
   public set password (password: string) {
     this._password = password
-  }
-
-  /**
-   * The current delegates of the network
-   * #### Example
-   * ```typescript
-   * const delegates = wallet.delegates
-   * ```
-   */
-  public get delegates (): string[] {
-    return this._delegates
-  }
-
-  /**
-   * The current delegates of the network
-   * #### Example
-   * ```typescript
-   * wallet.delegates = ['3.215.28.211'] // Should be 32 length but I cba
-   * ```
-   */  
-  public set delegates (delegates: string[]) {
-    this._delegates = delegates
   }
 
   /**
@@ -1101,32 +1076,6 @@ export default class Wallet {
   }
 
   /**
-   * Fetches the delegates from the server and sets our delegate list
-   *
-   * @returns {Promise<string[]>} returns the list of active delegates ips
-   * #### Example
-   * ```typescript
-   * const delegates = await wallet.fetchDelegates()
-   * ```
-   */
-  public async fetchDelegates (): Promise<string[]> {
-    if (this.rpcClient) {
-      const delegates = await this.rpcClient.epochs.delegateIPs()
-      this.delegates = []
-      for (const index in delegates) {
-        if (testnetDelegates[delegates[index].ip]) {
-          this.delegates.push(testnetDelegates[delegates[index].ip])
-        } else {
-          this.delegates.push(delegates[index].ip)
-        }
-      }
-      return this.delegates
-    } else {
-      return null
-    }
-  }
-
-  /**
    * Decrypts the wallet data
    *
    * @param {Buffer | string} - encrypted wallet
@@ -1272,7 +1221,6 @@ export default class Wallet {
       this._mqttClient.on('connect', (): void => {
         console.info('Webwallet SDK Connected to MQTT')
         this._wsConnected = true
-        this.subscribe('delegateChange')
         for (const address of Object.keys(this.accounts)) {
           this.subscribe(`account/${address}`)
         }
@@ -1286,22 +1234,14 @@ export default class Wallet {
       })
       this._mqttClient.on('message', (topic, request): void => {
         const requestObject = JSON.parse(request.toString())
-        if (topic === 'delegateChange' && this.rpc) {
-          console.info('MQTT Delegate Change')
-          this.delegates = []
-          for (const delegate of Object.values(requestObject)) {
-            this.delegates.push(delegate as string)
-          }
-        } else {
-          const params = mqttPattern('account/+address', topic)
-          if (params) {
-            if (this.accounts[params.address as string]) {
-              console.info(`MQTT Confirmation - Account - ${requestObject.type} - ${requestObject.sequence}`)
-              this.accounts[params.address as string].processRequest(requestObject)
-            } else if (this.tokenAccounts[params.address as string]) {
-              console.info(`MQTT Confirmation - TK Account - ${requestObject.type} - ${requestObject.sequence}`)
-              this.tokenAccounts[params.address as string].processRequest(requestObject)
-            }
+        const params = mqttPattern('account/+address', topic)
+        if (params) {
+          if (this.accounts[params.address as string]) {
+            console.info(`MQTT Confirmation - Account - ${requestObject.type} - ${requestObject.sequence}`)
+            this.accounts[params.address as string].processRequest(requestObject)
+          } else if (this.tokenAccounts[params.address as string]) {
+            console.info(`MQTT Confirmation - TK Account - ${requestObject.type} - ${requestObject.sequence}`)
+            this.tokenAccounts[params.address as string].processRequest(requestObject)
           }
         }
       })
@@ -1358,12 +1298,6 @@ export default class Wallet {
               accountFromHexKey(request.token_id) !== request.controller.account) {
               this.processRequest(request, request.transaction.destination)
             }
-          }
-        } else if (message.type === 'Epoch') {
-          this.delegates = []
-          const delegates = this.rpcClient.epochs.delegateIPs()
-          for (const index in delegates) {
-            this.delegates.push(testnetDelegates[delegates[index].ip])
           }
         }
       }
