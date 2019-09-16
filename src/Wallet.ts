@@ -299,7 +299,11 @@ export default class Wallet {
     if (this.rpcClient) {
       this.rpcClient.epochs.delegateIPs().then(delegates => {
         for (const index in delegates) {
-          this._delegates.push(testnetDelegates[delegates[index].ip])
+          if (testnetDelegates[delegates[index].ip]) {
+            this._delegates.push(testnetDelegates[delegates[index].ip])
+          } else {
+            this._delegates.push(delegates[index].ip)
+          }
         }
       })
     }
