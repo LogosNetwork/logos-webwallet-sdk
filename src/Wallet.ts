@@ -369,6 +369,18 @@ export default class Wallet {
     } else {
       this._mqtt = defaultMQTT
     }
+
+    /**
+     * Use local websockets
+     * @type {boolean} true if you want to use WS
+     * @private
+     */
+    if (options.ws !== undefined) {
+      this._ws = options.ws
+    } else {
+      this._ws = false
+    }
+
     this._wsConnected = false
     this.wsConnect()
   }
@@ -1284,6 +1296,7 @@ export default class Wallet {
 
       ws.onopen = (): void => {
         console.info('Webwallet SDK Connected to Logos Node Websocket')
+        this._wsConnected = true
         ws.send(JSON.stringify({
           action: 'subscribe', 
           topic: 'confirmation'
