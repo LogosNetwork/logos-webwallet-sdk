@@ -1,6 +1,6 @@
 import { hexToUint8, decToHex, keyFromAccount, MAXUINT128, deserializeSettings, deserializeController, deserializeControllers, accountFromHexKey, byteCount, stringToHex, isAlphanumeric, isAlphanumericExtended, changeEndianness, serializeControllers, convertObjectToArray } from '../Utils/Utils'
 import Request, { RequestOptions, RequestJSON } from './Request'
-import * as bigInt from 'big-integer'
+import bigInt from 'big-integer'
 import { Settings, Controller, Privileges } from '../TokenAccount'
 import { Settings as RpcSettings, Controller as RpcController } from '@logosnetwork/logos-rpc-client/api'
 import Blake2b from '../Utils/blake2b'

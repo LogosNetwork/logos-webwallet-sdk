@@ -1,4 +1,4 @@
-import * as bigInt from 'big-integer'
+import bigInt from 'big-integer'
 import Account, { AccountJSON, AccountOptions } from './Account'
 import { Settings as RpcSettings, Privileges as RpcPrivileges, Request as RpcRequest } from '@logosnetwork/logos-rpc-client/api'
 import {

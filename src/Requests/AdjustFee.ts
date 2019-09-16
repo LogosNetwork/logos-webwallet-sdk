@@ -1,6 +1,6 @@
 import { hexToUint8, decToHex } from '../Utils/Utils'
 import TokenRequest, { TokenRequestOptions, TokenRequestJSON } from './TokenRequest'
-import * as bigInt from 'big-integer'
+import bigInt from 'big-integer'
 type feeType = 'flat' | 'percentage'
 export interface AdjustFeeOptions extends TokenRequestOptions {
   feeType?: feeType;

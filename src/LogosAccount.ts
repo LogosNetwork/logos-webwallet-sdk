@@ -4,7 +4,7 @@ import {
   GENESIS_HASH,
   minimumFee
 } from './Utils/Utils'
-import * as bigInt from 'big-integer'
+import bigInt from 'big-integer'
 import Account, { AccountOptions, AccountJSON } from './Account'
 import { Request as RpcRequest, Transaction } from '@logosnetwork/logos-rpc-client/api'
 
