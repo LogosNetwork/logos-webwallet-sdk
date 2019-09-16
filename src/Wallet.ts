@@ -16,7 +16,9 @@ import { Request as RpcRequest } from '@logosnetwork/logos-rpc-client/api'
 
 export interface RPCOptions {
   proxy?: string;
-  node: string;
+  nodeURL: string;
+  nodePort: string;
+  wsPort?: string;
 }
 interface AccountJSONMap {
   [address: string]: LogosAccountJSON;
@@ -682,7 +684,7 @@ export default class Wallet {
   public get rpcClient (): Logos {
     if (this.rpc) {
       const rpcInfo: LogosConstructorOptions = {
-        url: this.rpc.node
+        url: `http://${this.rpc.nodeURL}:${this.rpc.nodePort}`
       }
       if (this.rpc.proxy) rpcInfo.proxyURL = this.rpc.proxy
       return new Logos(rpcInfo)
@@ -1272,7 +1274,7 @@ export default class Wallet {
         }
       })
     } else if (this.ws && this.rpc) {
-      const ws = new ReconnectingWebSocket(`ws://${this.rpc.node}:18000`, [], {
+      const ws = new ReconnectingWebSocket(`ws://${this.rpc.nodeURL}:${this.rpc.wsPort}`, [], {
         WebSocket,
         connectionTimeout: 1000,
         maxRetries: 1000,

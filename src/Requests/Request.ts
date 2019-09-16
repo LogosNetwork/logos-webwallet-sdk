@@ -345,7 +345,7 @@ export default abstract class Request {
    * @param {string[]} delegates - current delegates
    * @returns {Promise<{hash:string}>} response of transcation publish
    */
-  public async publish (delegates: string[], proxy: string | null = null): Promise<{hash: string}> {
+  public async publish (delegates: string[], proxy: string | null = null, port = '55000'): Promise<{hash: string}> {
     let delegateId = null
     if (this.previous !== GENESIS_HASH) {
       delegateId = parseInt(this.previous.slice(-2), 16) % 32
@@ -354,7 +354,7 @@ export default abstract class Request {
       delegateId = parseInt(this.origin.slice(-2), 16) % 32
     }
     const RPC = new Logos({
-      url: `http://${delegates[delegateId]}:55000`,
+      url: `http://${delegates[delegateId]}:${port}`,
       proxyURL: proxy
     })
     console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)

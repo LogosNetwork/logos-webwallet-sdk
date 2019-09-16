@@ -9,7 +9,9 @@ export const GENESIS_HASH = '000000000000000000000000000000000000000000000000000
 export const MAXUINT128 = '340282366920938463463374607431768211455'
 export const defaultRPC = {
   proxy: 'https://pla.bs',
-  node: 'http://3.215.28.211:55000'
+  nodeURL: '3.215.28.211',
+  nodePort: '55000',
+  wsPort: '18000'
 }
 export const defaultMQTT = 'wss://pla.bs:8443'
 export const Iso10126 = {
