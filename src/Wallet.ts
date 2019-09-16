@@ -296,17 +296,7 @@ export default class Wallet {
     }
 
     this._delegates = []
-    if (this.rpcClient) {
-      this.rpcClient.epochs.delegateIPs().then(delegates => {
-        for (const index in delegates) {
-          if (testnetDelegates[delegates[index].ip]) {
-            this._delegates.push(testnetDelegates[delegates[index].ip])
-          } else {
-            this._delegates.push(delegates[index].ip)
-          }
-        }
-      })
-    }
+    this.fetchDelegates()
 
     /**
      * PBKDF2 Iterations
@@ -1108,6 +1098,32 @@ export default class Wallet {
     const walletData = JSON.parse(decryptedBytes.toString('utf8'))
     this.loadOptions(walletData)
     return this
+  }
+
+  /**
+   * Fetches the delegates from the server and sets our delegate list
+   *
+   * @returns {Promise<string[]>} returns the list of active delegates ips
+   * #### Example
+   * ```typescript
+   * const delegates = await wallet.fetchDelegates()
+   * ```
+   */
+  public async fetchDelegates (): Promise<string[]> {
+    if (this.rpcClient) {
+      const delegates = await this.rpcClient.epochs.delegateIPs()
+      this.delegates = []
+      for (const index in delegates) {
+        if (testnetDelegates[delegates[index].ip]) {
+          this.delegates.push(testnetDelegates[delegates[index].ip])
+        } else {
+          this.delegates.push(delegates[index].ip)
+        }
+      }
+      return this.delegates
+    } else {
+      return null
+    }
   }
 
   /**
