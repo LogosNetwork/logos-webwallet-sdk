@@ -1324,7 +1324,7 @@ export default class Wallet {
               } else if (request.type === 'update_controller' &&
                 request.origin !== request.controller.account &&
                 accountFromHexKey(request.token_id) !== request.controller.account) {
-                  this.processRequest(request, request.transaction.destination)
+                this.processRequest(request, request.transaction.destination)
               }
             }
           } else if (message.type === 'Epoch') {
@@ -1349,7 +1349,7 @@ export default class Wallet {
    * @returns {void}
    * @private
    */
-  private processRequest (requestInfo: RpcRequest, address: string, logosAccount: boolean = true, tokenAccount: boolean = true): void {
+  private processRequest (requestInfo: RpcRequest, address: string, logosAccount = true, tokenAccount = true): void {
     if (logosAccount && this.accounts[address]) {
       this.accounts[address].processRequest(requestInfo)
     }

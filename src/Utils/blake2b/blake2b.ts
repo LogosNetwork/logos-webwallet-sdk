@@ -1,7 +1,10 @@
 export interface WasmModule {
   buffer: Uint8Array;
   memory: Uint8Array;
+  /* eslint-disable */
+  // tslint:disable-next-line
   exports: any;
+  /* eslint-enable */
   realloc: (size: number) => void;
   onload: (cb: (err?: Error) => void) => void;
 }
