@@ -1,7 +1,7 @@
-
-export interface WasmModule extends WebAssembly.Instance {
+export interface WasmModule {
   buffer: Uint8Array;
   memory: Uint8Array;
+  exports: any;
   realloc: (size: number) => void;
   onload: (cb: (err?: Error) => void) => void;
 }
