@@ -1,5 +1,34 @@
 // const LogosWallet = require('../')
 // const Wallet = LogosWallet.Wallet
+// let create = async () => {
+//     let wallet = new Wallet({
+//         password: 'strongasfuck',
+//         ws: true,
+//         mqtt: null,
+//         batchSends: false,
+//         p2pPropagation: true,
+//         fullSync: false,
+//         rpc: {
+//             nodeURL: '54.91.230.200',
+//             nodePort: '55000',
+//             wsPort: '18000'
+//         }
+//     })
+//     let account = await wallet.createAccount({
+//         privateKey: '34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4'
+//     })
+//     for (let i = 0; i < 3; i++) {
+//         await account.createSendRequest([{
+//           destination: 'lgs_185kudcrstuwcxch1kxpf83owdaqjzbasajf946oohpb1t1qj3p43srbissz',
+//           amount: '250000000000000000000000000000'
+//         }])
+//         await account.createSendRequest([{
+//           destination: 'lgs_185kudcrstuwcxch1kxpf83owdaqjzbasajf946oohpb1t1qj3p43srbissz',
+//           amount: '500000000000000000000000000000'
+//         }])        
+//     }    
+// }
+// create()
 // const Utils = LogosWallet.Utils
 // let create = async () => {
 //   let wallet = new Wallet({
