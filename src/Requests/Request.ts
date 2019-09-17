@@ -1,4 +1,4 @@
-import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, EMPTY_WORK } from '../Utils/Utils'
+import { keyFromAccount, hexToUint8, uint8ToHex, decToHex, changeEndianness, GENESIS_HASH, EMPTY_WORK } from '../Utils/Utils'
 import Blake2b from '../Utils/blake2b'
 import nacl from 'tweetnacl/nacl'
 import Logos, { LogosConstructorOptions } from '@logosnetwork/logos-rpc-client'
@@ -346,13 +346,30 @@ export default abstract class Request {
    * @param {string[]} delegates - current delegates
    * @returns {Promise<{hash:string}>} response of transcation publish
    */
-  public async publish (rpcSettings: RPCOptions): Promise<{hash: string}> {
-    const rpcOptions: LogosConstructorOptions = {
-      url: `http://${rpcSettings.nodeURL}:${rpcSettings.nodePort}`
+  public async publish (rpcSettings: RPCOptions, delegates: string[] = null): Promise<{hash: string}> {
+    let delegateId = null
+    if (delegates !== null) {
+      if (this.previous !== GENESIS_HASH) {
+        delegateId = parseInt(this.previous.slice(-2), 16) % 32
+      } else {
+        delegateId = parseInt(this.origin.slice(-2), 16) % 32
+      }
     }
-    if (rpcSettings.proxy) rpcOptions.proxyURL = rpcSettings.proxy
+    let rpcOptions: LogosConstructorOptions = null
+    if (delegateId !== null) {
+      rpcOptions = {
+        url: `http://${delegates[delegateId]}:${rpcSettings.nodePort}`
+      }
+      if (rpcSettings.proxy) rpcOptions.proxyURL = rpcSettings.proxy
+      console.info(`Publishing ${this.type} ${this.sequence} to Delegate ${delegateId}`)
+    } else {
+      rpcOptions = {
+        url: `http://${rpcSettings.nodeURL}:${rpcSettings.nodePort}`
+      }
+      if (rpcSettings.proxy) rpcOptions.proxyURL = rpcSettings.proxy
+      console.info(`Publishing ${this.type} ${this.sequence}`)
+    }
     const RPC = new Logos(rpcOptions)
-    console.info(`Publishing ${this.type} ${this.sequence}`)
     const response = await RPC.requests.publish(JSON.stringify(this.toJSON()))
     if (response.hash) {
       console.info(`Request accepted ${this.type} ${this.sequence}`)

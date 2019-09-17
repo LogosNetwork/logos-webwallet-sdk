@@ -788,7 +788,12 @@ export default abstract class Account {
       if (!request.published && await this.validateRequest(request)) {
         request.published = true
         try {
-          await request.publish(this.wallet.rpc)
+          if (this.wallet.p2pPropagation) {
+            await request.publish(this.wallet.rpc)
+          } else {
+            if (this.wallet.delegates.length === 0) await this.wallet.fetchDelegates()
+            await request.publish(this.wallet.rpc, this.wallet.delegates)
+          }     
         } catch (err) {
           console.error(err)
           this.removePendingRequests()
