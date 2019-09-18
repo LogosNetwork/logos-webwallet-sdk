@@ -64,52 +64,100 @@
 	<div class="row">
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
-				<a href="#blake2b-with-wasm-where-available" id="blake2b-with-wasm-where-available" style="color: inherit; text-decoration: none;">
-					<h1>blake2b with WASM where available</h1>
+				<a href="#logos-webwallet-sdk" id="logos-webwallet-sdk" style="color: inherit; text-decoration: none;">
+					<h1>logos-webwallet-sdk</h1>
 				</a>
-				<p>Blake2b implemented in WASM</p>
-				<pre><code>npm <span class="hljs-keyword">install</span> FuturePackageLocation</code></pre><p>Works in browsers that support WASM and Node.js 8+.
-				Also works in all browsers that don&#39;t support WASM by falling back to a JS implementation of blake2b</p>
-				<a href="#usage" id="usage" style="color: inherit; text-decoration: none;">
-					<h2>Usage</h2>
+				<p>Creates Logos wallets without full nodes</p>
+				<a href="#installation" id="installation" style="color: inherit; text-decoration: none;">
+					<h2>Installation</h2>
 				</a>
-				<pre><code class="language-js"><span class="hljs-keyword">import</span> Blake2b <span class="hljs-keyword">from</span> <span class="hljs-string">'FuturePackageLocation'</span>
-<span class="hljs-keyword">let</span> hash = <span class="hljs-keyword">new</span> Blake2b()
-  .update(Buffer.from(<span class="hljs-string">'hello'</span>)) <span class="hljs-comment">// pass in a buffer or uint8array</span>
-  .update(Buffer.from(<span class="hljs-string">' '</span>))
-  .update(Buffer.from(<span class="hljs-string">'world'</span>))
-  .digest(<span class="hljs-string">'hex'</span>)
-
-<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Blake2b hash of "hello world" is %s'</span>, hash)</code></pre>
-				<a href="#api" id="api" style="color: inherit; text-decoration: none;">
-					<h2>API</h2>
+				<pre><code><span class="hljs-selector-tag">npm</span> <span class="hljs-selector-tag">i</span> @<span class="hljs-keyword">logosnetwork</span>/<span class="hljs-keyword">logos</span>-<span class="hljs-keyword">webwallet</span>-<span class="hljs-keyword">sdk</span></code></pre>
+				<a href="#visual-demo" id="visual-demo" style="color: inherit; text-decoration: none;">
+					<h2>Visual Demo</h2>
 				</a>
-				<a href="#codelet-hash--new-blake2boutlen-number--32-key-uint8array--null-salt-uint8array--null-personal-uint8array--null-forceusejs-boolean--falsecode" id="codelet-hash--new-blake2boutlen-number--32-key-uint8array--null-salt-uint8array--null-personal-uint8array--null-forceusejs-boolean--falsecode" style="color: inherit; text-decoration: none;">
-					<h4><code>let hash = new Blake2b(outlen: number = 32, key: Uint8Array = null, salt: Uint8Array = null, personal: Uint8Array = null, forceUseJS: boolean = false)</code></h4>
+				<p><a href="https://pla.bs/forge">Demonstration</a></p>
+				<a href="#classes-documentation" id="classes-documentation" style="color: inherit; text-decoration: none;">
+					<h2>Classes Documentation</h2>
 				</a>
-				<p>Create a new hash instance. <code>outputLength</code> defaults to <code>32</code>.</p>
-				<a href="#codehashupdatedatacode" id="codehashupdatedatacode" style="color: inherit; text-decoration: none;">
-					<h4><code>hash.update(data)</code></h4>
+				<ul>
+					<li><a href="https://logosnetwork.github.io/logos-webwallet-sdk/classes/_wallet_.wallet.html">Wallet</a></li>
+					<li><a href="https://logosnetwork.github.io/logos-webwallet-sdk/classes/_logosaccount_.logosaccount.html">LogosAccount</a></li>
+					<li><a href="https://logosnetwork.github.io/logos-webwallet-sdk/classes/_tokenaccount_.tokenaccount.html">TokenAccount</a></li>
+				</ul>
+				<a href="#quick-examples" id="quick-examples" style="color: inherit; text-decoration: none;">
+					<h2>Quick Examples</h2>
 				</a>
-				<p>Update the hash with a new piece of data. <code>data</code> should be a buffer or uint8array.</p>
-				<a href="#codelet-digest--hashdigestout-39binary3939hex39uint8arraybuffercode" id="codelet-digest--hashdigestout-39binary3939hex39uint8arraybuffercode" style="color: inherit; text-decoration: none;">
-					<h4><code>let digest = hash.digest(out?: (&#39;binary&#39;|&#39;hex&#39;)|(Uint8Array|Buffer))</code></h4>
+				<a href="#sending-logos" id="sending-logos" style="color: inherit; text-decoration: none;">
+					<h3>Sending Logos</h3>
 				</a>
-				<p>Digest / Finalize the hash. Passing &#39;out&#39; as &#39;hex&#39; will return a hex output where as passing nothing or &#39;binary&#39; will return the binary output. You many also pass a final piece of data as a buffer or uint8array this will return the final hash in binary.</p>
-				<a href="#browser-demo" id="browser-demo" style="color: inherit; text-decoration: none;">
-					<h2>Browser demo</h2>
+				<pre><code class="language-js"><span class="hljs-keyword">const</span> SDK = <span class="hljs-built_in">require</span>(<span class="hljs-string">'@logosnetwork/logos-webwallet-sdk'</span>)
+<span class="hljs-keyword">const</span> wallet = <span class="hljs-keyword">new</span> SDK.Wallet({
+  <span class="hljs-attr">password</span>: <span class="hljs-string">'password'</span> <span class="hljs-comment">// Make this strong</span>
+})
+wallet.createAccount({
+  <span class="hljs-attr">privateKey</span>: <span class="hljs-string">'34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4'</span>
+}).then(<span class="hljs-function">(<span class="hljs-params">account</span>) =&gt;</span> {
+  account.createSendRequest([{
+    <span class="hljs-attr">destination</span>: <span class="hljs-string">'lgs_3mjbkiwijkbt3aqz8kzm5nmsfhtrbjwkmnyeqi1aoscc46t4xdnfdaunerr6'</span>,
+    <span class="hljs-attr">amount</span>: <span class="hljs-string">'300000000000000000000000000000'</span>
+  }])
+})</code></pre>
+				<a href="#creating-a-token" id="creating-a-token" style="color: inherit; text-decoration: none;">
+					<h3>Creating a Token</h3>
 				</a>
-				<p>TBD</p>
-				<a href="#contributing" id="contributing" style="color: inherit; text-decoration: none;">
-					<h2>Contributing</h2>
-				</a>
-				<p>The bulk of this module is implemented in WebAssembly in the <a href="blake2b.wat">blake2b.wat</a> file.
-				The format of this file is S-Expressions that can be compiled to their binary WASM representation by doing</p>
-				<pre><code><span class="hljs-selector-tag">wat2wasm</span> <span class="hljs-selector-tag">blake2b</span><span class="hljs-selector-class">.wat</span> <span class="hljs-selector-tag">-o</span> <span class="hljs-selector-tag">blake2b</span><span class="hljs-selector-class">.wasm</span></code></pre><p>If you do not have <code>wat2wasm</code> installed follow the instructions here, <a href="https://github.com/WebAssembly/wabt">https://github.com/WebAssembly/wabt</a></p>
-				<a href="#license" id="license" style="color: inherit; text-decoration: none;">
-					<h2>License</h2>
-				</a>
-				<p>MIT</p>
+				<pre><code class="language-js"><span class="hljs-keyword">const</span> SDK = <span class="hljs-built_in">require</span>(<span class="hljs-string">'@logosnetwork/logos-webwallet-sdk'</span>)
+<span class="hljs-keyword">const</span> wallet = <span class="hljs-keyword">new</span> SDK.Wallet({
+  <span class="hljs-attr">password</span>: <span class="hljs-string">'password'</span> <span class="hljs-comment">// Make this strong</span>
+})
+wallet.createAccount({
+  <span class="hljs-attr">privateKey</span>: <span class="hljs-string">'34F0A37AAD20F4A260F0A5B3CB3D7FB50673212263E58A380BC10474BB039CE4'</span>
+}).then(<span class="hljs-function">(<span class="hljs-params">account</span>) =&gt;</span> {
+  account.createTokenIssuanceRequest({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">`UnitTestCoin`</span>,
+    <span class="hljs-attr">symbol</span>: <span class="hljs-string">`UTC`</span>,
+    <span class="hljs-attr">totalSupply</span>: <span class="hljs-string">'1000'</span>,
+    <span class="hljs-attr">feeRate</span>: <span class="hljs-string">'1'</span>,
+    <span class="hljs-attr">issuerInfo</span>: <span class="hljs-string">'{"decimals":0,"website":"https://github.com/LogosNetwork/logos-webwallet-sdk"}'</span>,
+    <span class="hljs-attr">settings</span>: {
+      <span class="hljs-attr">issuance</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">modify_issuance</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">revoke</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">modify_revoke</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">freeze</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">modify_freeze</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">adjust_fee</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">modify_adjust_fee</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">whitelist</span>: <span class="hljs-literal">false</span>,
+      <span class="hljs-attr">modify_whitelist</span>: <span class="hljs-literal">true</span>
+    },
+    <span class="hljs-attr">controllers</span>: [{
+      <span class="hljs-attr">account</span>: <span class="hljs-string">'lgs_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtdo'</span>,
+      <span class="hljs-attr">privileges</span>: {
+        <span class="hljs-attr">change_issuance</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_modify_issuance</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_revoke</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_modify_revoke</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_freeze</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_modify_freeze</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_adjust_fee</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_modify_adjust_fee</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_whitelist</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">change_modify_whitelist</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">issuance</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">revoke</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">freeze</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">adjust_fee</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">whitelist</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">update_issuer_info</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">update_controller</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">burn</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">distribute</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">withdraw_fee</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">withdraw_logos</span>: <span class="hljs-literal">true</span>
+      }
+    }]
+  })
+})</code></pre>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">

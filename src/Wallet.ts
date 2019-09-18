@@ -45,6 +45,8 @@ interface WalletJSON {
   lazyErrors: boolean;
   tokenSync: boolean;
   validateSync: boolean;
+  ws: boolean;
+  p2pPropagation: boolean;  
   mqtt: string;
   rpc: RPCOptions|false;
 }
@@ -111,6 +113,8 @@ export default class Wallet {
   private _mqtt: string
 
   private _ws: boolean
+
+  private _wsClient: ReconnectingWebSocket
 
   private _mqttClient: MqttClient
 
@@ -553,7 +557,19 @@ export default class Wallet {
    * ```
    */
   public set ws (val: boolean) {
+    if (val === false &&
+      !this.mqtt &&
+      this.ws) {
+      this._wsClient.close()
+      this._wsConnected = false
+    }
     this._ws = val
+    if (this.ws &&
+      !this._wsConnected &&
+      (this.rpc && this.rpc.wsPort) &&
+      (this.rpc && this.rpc.nodeURL)) {
+      this.wsConnect()
+    }
   }
 
   /**
@@ -683,6 +699,10 @@ export default class Wallet {
    * ```
    */
   public set mqtt (val: string) {
+    if (val !== null && this._wsClient) {
+      this._wsClient.close()
+      this._wsConnected = false
+    }
     this.mqttDisconnect()
     this._mqtt = val
     this.wsConnect()
@@ -712,7 +732,31 @@ export default class Wallet {
    * ```
    */  
   public set rpc (val: RPCOptions|false) {
+    if (val &&
+      this._rpc) {
+      // New Node URL Disconnect from WS
+      // fetchDelegates incase of network switching
+      if (val.nodeURL !== this._rpc.nodeURL) {
+        if (!this.p2pPropagation) this.fetchDelegates()
+        if (!this.mqtt && this.ws) {
+          this._wsClient.close()
+          this._wsConnected = false
+        }
+      }
+      if (!this.mqtt && this.ws &&
+        ((val.wsPort && !this._rpc.wsPort) || (val.wsPort && val.wsPort !== this._rpc.wsPort))) {
+        this._wsClient.close()
+        this._wsConnected = false
+      }
+    }
     this._rpc = val
+    if (!this.mqtt &&
+      this.ws &&
+      !this._wsConnected &&
+      (this.rpc && this.rpc.wsPort) &&
+      (this.rpc && this.rpc.nodeURL)) {
+      this.wsConnect()
+    }
   }
 
   /**
@@ -1397,6 +1441,7 @@ export default class Wallet {
           }
         }
       }
+      this._wsClient = ws
     }
   }
 
@@ -1439,6 +1484,8 @@ export default class Wallet {
       lazyErrors: this.lazyErrors,
       tokenSync: this.tokenSync,
       validateSync: this.validateSync,
+      ws: this.ws,
+      p2pPropagation: this.p2pPropagation,
       mqtt: this.mqtt,
       rpc: this.rpc
     }

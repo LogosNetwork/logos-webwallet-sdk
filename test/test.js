@@ -19,11 +19,11 @@
 //     })
 //     for (let i = 0; i < 3; i++) {
 //         await account.createSendRequest([{
-//           destination: 'lgs_185kudcrstuwcxch1kxpf83owdaqjzbasajf946oohpb1t1qj3p43srbissz',
-//           amount: '250000000000000000000000000000'
+//           destination: 'lgs_3ywnwnos6anoi3aj9egbgtu9n5ap95cws1uo3jhdi1ad3w71fcjm5zu7qc1y',
+//           amount: '1000000000000000000000000000000'
 //         }])
 //         await account.createSendRequest([{
-//           destination: 'lgs_185kudcrstuwcxch1kxpf83owdaqjzbasajf946oohpb1t1qj3p43srbissz',
+//           destination: 'lgs_3ywnwnos6anoi3aj9egbgtu9n5ap95cws1uo3jhdi1ad3w71fcjm5zu7qc1y',
 //           amount: '500000000000000000000000000000'
 //         }])        
 //     }    
