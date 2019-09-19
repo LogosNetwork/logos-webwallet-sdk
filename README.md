@@ -11,9 +11,9 @@ npm i @logosnetwork/logos-webwallet-sdk
 [Demonstration](https://pla.bs/forge)
 
 ## Classes Documentation
- * [Wallet](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_wallet_.wallet.html)
- * [LogosAccount](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_logosaccount_.logosaccount.html)
- * [TokenAccount](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_tokenaccount_.tokenaccount.html)
+ * [Wallet](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_src_wallet_.wallet.html)
+ * [LogosAccount](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_src_logosaccount_.logosaccount.html)
+ * [TokenAccount](https://logosnetwork.github.io/logos-webwallet-sdk/classes/_src_tokenaccount_.tokenaccount.html)
 
 ## Quick Examples
 
