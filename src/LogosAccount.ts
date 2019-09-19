@@ -661,7 +661,7 @@ export default class LogosAccount extends Account {
       this.addToReceiveChain(request)
       return request
     } else {
-      console.error(`MQTT sent ${this.address} an unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
+      console.error(`Error processing new request for logos account ${this.address} unknown block type: ${requestInfo.type} hash: ${requestInfo.hash}`)
       return null
     }
   }

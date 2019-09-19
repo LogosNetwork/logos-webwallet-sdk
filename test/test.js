@@ -9,7 +9,7 @@
 //         p2pPropagation: true,
 //         fullSync: false,
 //         rpc: {
-//             nodeURL: '54.91.230.200',
+//             nodeURL: '3.95.164.238',
 //             nodePort: '55000',
 //             wsPort: '18000'
 //         }
@@ -19,11 +19,11 @@
 //     })
 //     for (let i = 0; i < 3; i++) {
 //         await account.createSendRequest([{
-//           destination: 'lgs_3ywnwnos6anoi3aj9egbgtu9n5ap95cws1uo3jhdi1ad3w71fcjm5zu7qc1y',
+//           destination: 'lgs_1fxszacdj3uqba7fccsxz3j8zbapotj31tjeytkuj5rdgafogdkgz9r9r37p',
 //           amount: '1000000000000000000000000000000'
 //         }])
 //         await account.createSendRequest([{
-//           destination: 'lgs_3ywnwnos6anoi3aj9egbgtu9n5ap95cws1uo3jhdi1ad3w71fcjm5zu7qc1y',
+//           destination: 'lgs_1fxszacdj3uqba7fccsxz3j8zbapotj31tjeytkuj5rdgafogdkgz9r9r37p',
 //           amount: '500000000000000000000000000000'
 //         }])        
 //     }    

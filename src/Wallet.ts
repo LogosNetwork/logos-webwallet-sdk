@@ -1,5 +1,5 @@
 import mqttPattern from './Utils/mqttPattern'
-import WebSocket from 'ws'
+import WebSocket from 'isomorphic-ws'
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import Logos, { LogosConstructorOptions } from '@logosnetwork/logos-rpc-client'
 import { AES, defaultMQTT, defaultRPC, testnetDelegates, uint8ToHex, stringToHex, Iso10126, hexToUint8, decToHex, accountFromHexKey } from './Utils/Utils'
@@ -557,19 +557,9 @@ export default class Wallet {
    * ```
    */
   public set ws (val: boolean) {
-    if (val === false &&
-      !this.mqtt &&
-      this.ws) {
-      this._wsClient.close()
-      this._wsConnected = false
-    }
+    this.wsDisconnect()
     this._ws = val
-    if (this.ws &&
-      !this._wsConnected &&
-      (this.rpc && this.rpc.wsPort) &&
-      (this.rpc && this.rpc.nodeURL)) {
-      this.wsConnect()
-    }
+    this.wsConnect()
   }
 
   /**
@@ -699,11 +689,7 @@ export default class Wallet {
    * ```
    */
   public set mqtt (val: string) {
-    if (val !== null && this._wsClient) {
-      this._wsClient.close()
-      this._wsConnected = false
-    }
-    this.mqttDisconnect()
+    this.wsDisconnect()
     this._mqtt = val
     this.wsConnect()
   }
@@ -732,31 +718,21 @@ export default class Wallet {
    * ```
    */  
   public set rpc (val: RPCOptions|false) {
-    if (val &&
-      this._rpc) {
-      // New Node URL Disconnect from WS
-      // fetchDelegates incase of network switching
-      if (val.nodeURL !== this._rpc.nodeURL) {
-        if (!this.p2pPropagation) this.fetchDelegates()
-        if (!this.mqtt && this.ws) {
-          this._wsClient.close()
-          this._wsConnected = false
-        }
-      }
-      if (!this.mqtt && this.ws &&
-        ((val.wsPort && !this._rpc.wsPort) || (val.wsPort && val.wsPort !== this._rpc.wsPort))) {
-        this._wsClient.close()
-        this._wsConnected = false
-      }
-    }
+    // Reset MQTT or WS
+    this.wsDisconnect()
+    const nodeChanged = val && this._rpc && this._rpc.nodeURL !== val.nodeURL
+
+    // Update wallet info
     this._rpc = val
-    if (!this.mqtt &&
-      this.ws &&
-      !this._wsConnected &&
-      (this.rpc && this.rpc.wsPort) &&
-      (this.rpc && this.rpc.nodeURL)) {
-      this.wsConnect()
+
+    // Fetch delegates && reset wallets in case of new network
+    if (nodeChanged) {
+      this.reset()
+      if (!this.p2pPropagation) this.fetchDelegates()
     }
+
+    // Reconnect to MQTT or WS
+    this.wsConnect()
   }
 
   /**
@@ -1120,45 +1096,45 @@ export default class Wallet {
    */
   public async sync (force = false): Promise<boolean> {
     return new Promise<boolean>((resolve): void => {
-            type SyncedPromises = Promise<SyncedResponse>[]
-            const isSyncedPromises: SyncedPromises = []
-            for (const account in this.accounts) {
-              if (!this.accounts[account].synced || force) {
-                isSyncedPromises.push(this.accounts[account].isSynced())
-              }
-            }
-            for (const tokenAccount in this.tokenAccounts) {
-              if (!this.tokenAccounts[tokenAccount].synced || force) {
-                isSyncedPromises.push(this.tokenAccounts[tokenAccount].isSynced())
-              }
-            }
-            if (isSyncedPromises.length > 0) {
-              Promise.all(isSyncedPromises).then((values): void => {
-                const syncPromises = []
-                for (const isSynced of values) {
-                  if (!isSynced.synced) {
-                    if (isSynced.type === 'LogosAccount') {
-                      syncPromises.push(this.accounts[isSynced.account].sync())
-                    } else if (isSynced.type === 'TokenAccount') {
-                      if (isSynced.remove) {
-                        delete this.tokenAccounts[isSynced.account]
-                      } else {
-                        syncPromises.push(this.tokenAccounts[isSynced.account].sync())
-                      }
-                    }
-                  }
-                }
-                if (syncPromises.length > 0) {
-                  Promise.all(syncPromises).then((): void => {
-                    resolve(true)
-                  })
+      type SyncedPromises = Promise<SyncedResponse>[]
+      const isSyncedPromises: SyncedPromises = []
+      for (const account in this.accounts) {
+        if (!this.accounts[account].synced || force) {
+          isSyncedPromises.push(this.accounts[account].isSynced())
+        }
+      }
+      for (const tokenAccount in this.tokenAccounts) {
+        if (!this.tokenAccounts[tokenAccount].synced || force) {
+          isSyncedPromises.push(this.tokenAccounts[tokenAccount].isSynced())
+        }
+      }
+      if (isSyncedPromises.length > 0) {
+        Promise.all(isSyncedPromises).then((values): void => {
+          const syncPromises = []
+          for (const isSynced of values) {
+            if (!isSynced.synced) {
+              if (isSynced.type === 'LogosAccount') {
+                syncPromises.push(this.accounts[isSynced.account].sync())
+              } else if (isSynced.type === 'TokenAccount') {
+                if (isSynced.remove) {
+                  delete this.tokenAccounts[isSynced.account]
                 } else {
-                  resolve(true)
+                  syncPromises.push(this.tokenAccounts[isSynced.account].sync())
                 }
-              })
-            } else {
-              resolve(true)
+              }
             }
+          }
+          if (syncPromises.length > 0) {
+            Promise.all(syncPromises).then((): void => {
+              resolve(true)
+            })
+          } else {
+            resolve(true)
+          }
+        })
+      } else {
+        resolve(true)
+      }
     })
   }
 
@@ -1331,11 +1307,12 @@ export default class Wallet {
    * @returns {void}
    * #### Example
    * ```typescript
-   * wallet.mqttDisconnect()
+   * wallet.wsDisconnect()
    * ```
    */
-  public mqttDisconnect (): void {
-    this._mqttClient.end()
+  public wsDisconnect (): void {
+    if (this._wsClient) this._wsClient.close()
+    if (this._mqttClient) this._mqttClient.end()
   }
 
   /**
@@ -1403,6 +1380,11 @@ export default class Wallet {
         }))
       }
 
+      ws.onclose = (): void => {
+        this._wsConnected = false
+        console.info('Webwallet SDK disconnected from Logos Node Websocket')
+      }
+
       ws.onmessage = (msg): void => {
         const message = JSON.parse(msg.data).block
         if (message.type === 'RequestBlock') {
@@ -1413,6 +1395,7 @@ export default class Wallet {
             if (request.token_id) {
               this.processRequest(request, accountFromHexKey(request.token_id))
             }
+            if (request.type && request.type.text) request.type = request.type.text
             if ((request.type === 'send' || request.type === 'token_send') && request.transactions) {
               const publishedAccounts: string[] = []
               for (const transaction of request.transactions) {
@@ -1461,6 +1444,18 @@ export default class Wallet {
     }
     if (tokenAccount && this.tokenAccounts[address]) {
       this.tokenAccounts[address].processRequest(requestInfo)     
+    }
+  }
+
+  /**
+   * Resets all LogosAccounts
+   *
+   * @returns {void}
+   * @private
+   */
+  private reset (): void {
+    for (const account of Object.values(this.accounts)) {
+      account.sync()
     }
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "@logosnetwork/logos-webwallet-sdk",
-  "version": "0.3.6",
+  "version": "0.3.10",
   "description": "Create Logos wallets with or without a full Logos node",
   "keywords": [
     "Logos",
@@ -21,7 +21,8 @@
     "unit:test": "./node_modules/.bin/mocha --reporter spec",
     "lint": "eslint src --ext .js,.ts",
     "lint:fix": "eslint src --ext .js,.ts --fix",
-    "build": "npm run lint && tsc --build && typedoc --out docs ./src",
+    "build": "npm run lint && tsc --build",
+    "docs": "typedoc --out docs ./src",
     "prepublishOnly": "NODE_ENV=production npm run build && npm run test"
   },
   "author": "Tyler Storm <tyler@prometheanlabs.io>",
@@ -64,6 +65,7 @@
     "@logosnetwork/logos-rpc-client": "^1.1.33",
     "big-integer": "^1.6.44",
     "core-js": "^3.2.1",
+    "isomorphic-ws": "^4.0.1",
     "mqtt": "^3.0.0",
     "pbkdf2": "^3.0.17",
     "reconnecting-websocket": "^4.2.0",
